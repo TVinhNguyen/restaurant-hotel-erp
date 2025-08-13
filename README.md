@@ -14,7 +14,7 @@ The goal of the project is to build a restaurant & hotel management system that 
 # 🚀 3/ How to run the project:
 a/ Clone the project:
 ```bash
-git clone https://github.com/username/PBL6-Hotel-Restaurant-Management.git
+git clone https://github.com/TVinhNguyen/restaurant-hotel-erp.git
 ```
 b/ Install frontend packages:
 ```bash
