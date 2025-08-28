@@ -134,6 +134,17 @@ const App = (props: React.PropsWithChildren<AppProps>) => {
                     canDelete: true,
                   },
                 },
+                {
+                  name: "reservations",
+                  list: "/reservations",
+                  create: "/reservations/create",
+                  edit: "/reservations/edit/:id",
+                  show: "/reservations/show/:id",
+                  meta: {
+                    canDelete: true,
+                  },
+                },
+                
               ]}
               options={{
                 syncWithLocation: true,
