@@ -388,6 +388,8 @@ Get all room types for a property
 ```json
 Query Parameters:
 - property_id: string (required)
+- page: number (default: 1)
+- limit: number (default: 10)
 
 Response:
 {
@@ -414,9 +416,14 @@ Response:
           "url": "https://example.com/room1.jpg",
           "caption": "Room view"
         }
-      ]
+      ],
+      "total_rooms": 25,
+      "available_rooms": 18
     }
-  ]
+  ],
+  "total": 5,
+  "page": 1,
+  "limit": 10
 }
 ```
 
@@ -439,17 +446,378 @@ Response:
   "id": "uuid",
   "property_id": "uuid",
   "name": "Deluxe Room",
-  // ... other fields
+  "description": "Spacious room with city view",
+  "max_adults": 2,
+  "max_children": 1,
+  "base_price": 150.00,
+  "bed_type": "Queen",
+  "created_at": "2025-09-12T00:00:00Z"
 }
 ```
+
+### GET /room-types/:id
+Get room type by ID
+```json
+Response:
+{
+  "id": "uuid",
+  "property_id": "uuid",
+  "name": "Deluxe Room",
+  "description": "Spacious room with city view",
+  "max_adults": 2,
+  "max_children": 1,
+  "base_price": 150.00,
+  "bed_type": "Queen",
+  "amenities": [
+    {
+      "id": "uuid",
+      "name": "WiFi",
+      "category": "room"
+    },
+    {
+      "id": "uuid",
+      "name": "Air Conditioning",
+      "category": "room"
+    }
+  ],
+  "photos": [
+    {
+      "id": "uuid",
+      "url": "https://example.com/room1.jpg",
+      "caption": "Room overview"
+    },
+    {
+      "id": "uuid",
+      "url": "https://example.com/room1-bathroom.jpg",
+      "caption": "Bathroom view"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "uuid",
+      "number": "101",
+      "floor": "1",
+      "operational_status": "available",
+      "housekeeping_status": "clean"
+    }
+  ],
+  "created_at": "2025-09-12T00:00:00Z",
+  "updated_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### PUT /room-types/:id
+Update room type
+```json
+Request Body:
+{
+  "name": "Premium Deluxe Room",
+  "description": "Updated description with premium amenities",
+  "base_price": 180.00,
+  "max_adults": 3
+}
+
+Response:
+{
+  "id": "uuid",
+  "property_id": "uuid",
+  "name": "Premium Deluxe Room",
+  "description": "Updated description with premium amenities",
+  "max_adults": 3,
+  "max_children": 1,
+  "base_price": 180.00,
+  "bed_type": "Queen",
+  "updated_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### DELETE /room-types/:id
+Delete room type
+```json
+Response:
+{
+  "message": "Room type deleted successfully",
+  "deleted_at": "2025-09-12T00:00:00Z"
+}
+```
+
+---
+
+## 7. Amenities Management
+
+### GET /amenities
+Get all amenities
+```json
+Query Parameters:
+- category: string (room, facility)
+- page: number (default: 1)
+- limit: number (default: 10)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "WiFi",
+      "category": "room",
+      "created_at": "2025-09-12T00:00:00Z"
+    },
+    {
+      "id": "uuid",
+      "name": "Swimming Pool",
+      "category": "facility",
+      "created_at": "2025-09-12T00:00:00Z"
+    }
+  ],
+  "total": 15,
+  "page": 1,
+  "limit": 10
+}
+```
+
+### POST /amenities
+Create new amenity
+```json
+Request Body:
+{
+  "name": "WiFi",
+  "category": "room"
+}
+
+Response:
+{
+  "id": "uuid",
+  "name": "WiFi",
+  "category": "room",
+  "created_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### GET /amenities/:id
+Get amenity by ID
+```json
+Response:
+{
+  "id": "uuid",
+  "name": "WiFi",
+  "category": "room",
+  "room_types": [
+    {
+      "id": "uuid",
+      "name": "Deluxe Room",
+      "property_name": "Grand Hotel"
+    }
+  ],
+  "created_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### PUT /amenities/:id
+Update amenity
+```json
+Request Body:
+{
+  "name": "High-Speed WiFi",
+  "category": "room"
+}
+
+Response:
+{
+  "id": "uuid",
+  "name": "High-Speed WiFi",
+  "category": "room",
+  "updated_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### DELETE /amenities/:id
+Delete amenity
+```json
+Response:
+{
+  "message": "Amenity deleted successfully",
+  "deleted_at": "2025-09-12T00:00:00Z"
+}
+```
+
+---
+
+## 8. Room Type Amenities Association
+
+### POST /room-types/:id/amenities
+Add amenity to room type
+```json
+Request Body:
+{
+  "amenity_id": "uuid"
+}
+
+Response:
+{
+  "room_type_id": "uuid",
+  "amenity_id": "uuid",
+  "amenity": {
+    "id": "uuid",
+    "name": "WiFi",
+    "category": "room"
+  },
+  "created_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### DELETE /room-types/:room_type_id/amenities/:amenity_id
+Remove amenity from room type
+```json
+Response:
+{
+  "message": "Amenity removed from room type successfully",
+  "deleted_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### POST /room-types/:id/amenities/bulk
+Add multiple amenities to room type
+```json
+Request Body:
+{
+  "amenity_ids": ["uuid1", "uuid2", "uuid3"]
+}
+
+Response:
+{
+  "room_type_id": "uuid",
+  "added_amenities": [
+    {
+      "amenity_id": "uuid1",
+      "name": "WiFi"
+    },
+    {
+      "amenity_id": "uuid2", 
+      "name": "Air Conditioning"
+    }
+  ],
+  "created_count": 2
+}
+```
+
+---
+
+## 9. Room Photos Management
+
+### GET /room-types/:id/photos
+Get all photos for room type
+```json
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "room_type_id": "uuid",
+      "url": "https://example.com/room1.jpg",
+      "caption": "Room overview",
+      "display_order": 1,
+      "created_at": "2025-09-12T00:00:00Z"
+    },
+    {
+      "id": "uuid",
+      "room_type_id": "uuid", 
+      "url": "https://example.com/room1-bathroom.jpg",
+      "caption": "Bathroom view",
+      "display_order": 2,
+      "created_at": "2025-09-12T00:00:00Z"
+    }
+  ]
+}
+```
+
+### POST /room-types/:id/photos
+Upload photo for room type
+```json
+Request Body (multipart/form-data):
+{
+  "file": "image file",
+  "caption": "Room overview",
+  "display_order": 1
+}
+
+Response:
+{
+  "id": "uuid",
+  "room_type_id": "uuid",
+  "url": "https://example.com/uploads/room1.jpg",
+  "caption": "Room overview", 
+  "display_order": 1,
+  "file_size": 1024000,
+  "mime_type": "image/jpeg",
+  "created_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### GET /photos/:id
+Get photo by ID
+```json
+Response:
+{
+  "id": "uuid",
+  "room_type": {
+    "id": "uuid",
+    "name": "Deluxe Room"
+  },
+  "url": "https://example.com/room1.jpg",
+  "caption": "Room overview",
+  "display_order": 1,
+  "file_size": 1024000,
+  "mime_type": "image/jpeg",
+  "created_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### PUT /photos/:id
+Update photo details
+```json
+Request Body:
+{
+  "caption": "Updated room overview",
+  "display_order": 2
+}
+
+Response:
+{
+  "id": "uuid",
+  "room_type_id": "uuid",
+  "url": "https://example.com/room1.jpg",
+  "caption": "Updated room overview",
+  "display_order": 2,
+  "updated_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### DELETE /photos/:id
+Delete photo
+```json
+Response:
+{
+  "message": "Photo deleted successfully",
+  "deleted_at": "2025-09-12T00:00:00Z"
+}
+```
+
+---
+
+## 10. Rooms Management
 
 ### GET /rooms
 Get all rooms
 ```json
 Query Parameters:
 - property_id: string (required)
+- room_type_id: string (optional)
 - floor: string (optional)
-- status: string (available, out_of_service)
+- operational_status: string (available, out_of_service)
+- housekeeping_status: string (clean, dirty, inspected)
+- view_type: string (optional)
+- page: number (default: 1)
+- limit: number (default: 10)
 
 Response:
 {
@@ -459,15 +827,32 @@ Response:
       "property_id": "uuid",
       "room_type": {
         "id": "uuid",
-        "name": "Deluxe Room"
+        "name": "Deluxe Room",
+        "base_price": 150.00
       },
       "number": "101",
       "floor": "1",
       "view_type": "City View",
       "operational_status": "available",
-      "housekeeping_status": "clean"
+      "housekeeping_status": "clean",
+      "housekeeper_notes": null,
+      "current_reservation": null,
+      "last_checkout": "2025-09-10T11:00:00Z",
+      "created_at": "2025-09-12T00:00:00Z"
     }
-  ]
+  ],
+  "total": 50,
+  "page": 1,
+  "limit": 10,
+  "summary": {
+    "total_rooms": 50,
+    "available": 35,
+    "occupied": 12,
+    "out_of_service": 3,
+    "clean": 30,
+    "dirty": 15,
+    "inspected": 5
+  }
 }
 ```
 
@@ -489,7 +874,94 @@ Response:
   "property_id": "uuid",
   "room_type_id": "uuid",
   "number": "101",
-  // ... other fields
+  "floor": "1",
+  "view_type": "City View",
+  "operational_status": "available",
+  "housekeeping_status": "clean",
+  "housekeeper_notes": null,
+  "created_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### GET /rooms/:id
+Get room by ID
+```json
+Response:
+{
+  "id": "uuid",
+  "property": {
+    "id": "uuid",
+    "name": "Grand Hotel"
+  },
+  "room_type": {
+    "id": "uuid",
+    "name": "Deluxe Room",
+    "description": "Spacious room with city view",
+    "max_adults": 2,
+    "max_children": 1,
+    "base_price": 150.00,
+    "amenities": [
+      {
+        "id": "uuid",
+        "name": "WiFi"
+      }
+    ]
+  },
+  "number": "101",
+  "floor": "1",
+  "view_type": "City View",
+  "operational_status": "available",
+  "housekeeping_status": "clean",
+  "housekeeper_notes": null,
+  "current_reservation": {
+    "id": "uuid",
+    "confirmation_code": "ABC123",
+    "guest_name": "John Doe",
+    "check_in": "2025-09-15",
+    "check_out": "2025-09-17",
+    "status": "confirmed"
+  },
+  "status_history": [
+    {
+      "id": "uuid",
+      "status_type": "housekeeping",
+      "status": "clean",
+      "changed_at": "2025-09-12T08:00:00Z",
+      "changed_by": {
+        "id": "uuid",
+        "name": "Jane Smith"
+      },
+      "notes": "Room cleaned and inspected"
+    }
+  ],
+  "created_at": "2025-09-12T00:00:00Z",
+  "updated_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### PUT /rooms/:id
+Update room details
+```json
+Request Body:
+{
+  "number": "101A",
+  "floor": "1",
+  "view_type": "Ocean View",
+  "housekeeper_notes": "New carpet installed"
+}
+
+Response:
+{
+  "id": "uuid",
+  "property_id": "uuid",
+  "room_type_id": "uuid",
+  "number": "101A",
+  "floor": "1",
+  "view_type": "Ocean View",
+  "operational_status": "available",
+  "housekeeping_status": "clean",
+  "housekeeper_notes": "New carpet installed",
+  "updated_at": "2025-09-12T00:00:00Z"
 }
 ```
 
@@ -500,7 +972,7 @@ Request Body:
 {
   "operational_status": "out_of_service",
   "housekeeping_status": "dirty",
-  "notes": "Maintenance required"
+  "notes": "Maintenance required for air conditioning"
 }
 
 Response:
@@ -508,13 +980,387 @@ Response:
   "id": "uuid",
   "operational_status": "out_of_service",
   "housekeeping_status": "dirty",
-  "updated_at": "2025-09-11T00:00:00Z"
+  "housekeeper_notes": "Maintenance required for air conditioning",
+  "status_history": {
+    "id": "uuid",
+    "status_type": "operational",
+    "status": "out_of_service",
+    "changed_at": "2025-09-12T10:30:00Z",
+    "changed_by": "uuid",
+    "notes": "Maintenance required for air conditioning"
+  },
+  "updated_at": "2025-09-12T10:30:00Z"
+}
+```
+
+### DELETE /rooms/:id
+Delete room
+```json
+Response:
+{
+  "message": "Room deleted successfully",
+  "deleted_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### GET /rooms/available
+Get available rooms for date range
+```json
+Query Parameters:
+- property_id: string (required)
+- room_type_id: string (optional)
+- check_in: date (YYYY-MM-DD) (required)
+- check_out: date (YYYY-MM-DD) (required)
+- adults: number (optional)
+- children: number (optional)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "room_type": {
+        "id": "uuid",
+        "name": "Deluxe Room",
+        "max_adults": 2,
+        "max_children": 1,
+        "base_price": 150.00
+      },
+      "number": "101",
+      "floor": "1",
+      "view_type": "City View",
+      "operational_status": "available",
+      "housekeeping_status": "clean",
+      "is_suitable": true,
+      "rate_plans": [
+        {
+          "id": "uuid",
+          "name": "Standard Rate",
+          "price": 150.00,
+          "currency": "USD"
+        }
+      ]
+    }
+  ],
+  "search_criteria": {
+    "property_id": "uuid",
+    "check_in": "2025-09-15",
+    "check_out": "2025-09-17",
+    "nights": 2,
+    "adults": 2,
+    "children": 0
+  },
+  "availability_summary": {
+    "total_rooms_searched": 50,
+    "available_rooms": 25,
+    "occupied_rooms": 20,
+    "out_of_service": 5
+  }
+}
+```
+
+### POST /rooms/:id/maintenance
+Schedule room maintenance
+```json
+Request Body:
+{
+  "maintenance_type": "deep_cleaning",
+  "scheduled_date": "2025-09-15",
+  "estimated_duration_hours": 4,
+  "notes": "Deep cleaning and carpet replacement",
+  "assigned_staff_id": "uuid"
+}
+
+Response:
+{
+  "id": "uuid",
+  "room_id": "uuid",
+  "maintenance_type": "deep_cleaning",
+  "scheduled_date": "2025-09-15",
+  "estimated_duration_hours": 4,
+  "notes": "Deep cleaning and carpet replacement",
+  "status": "scheduled",
+  "assigned_staff": {
+    "id": "uuid",
+    "name": "Maintenance Team"
+  },
+  "created_at": "2025-09-12T00:00:00Z"
 }
 ```
 
 ---
 
-## 7. Reservations Management
+## 11. Room Status History
+
+### GET /rooms/:id/status-history
+Get room status history
+```json
+Query Parameters:
+- status_type: string (operational, housekeeping)
+- date_from: date (YYYY-MM-DD)
+- date_to: date (YYYY-MM-DD)
+- page: number (default: 1)
+- limit: number (default: 10)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "room": {
+        "id": "uuid",
+        "number": "101",
+        "room_type_name": "Deluxe Room"
+      },
+      "status_type": "housekeeping",
+      "status": "clean",
+      "previous_status": "dirty",
+      "changed_at": "2025-09-12T08:00:00Z",
+      "changed_by": {
+        "id": "uuid",
+        "name": "Jane Smith",
+        "department": "Housekeeping"
+      },
+      "notes": "Room cleaned and inspected after checkout",
+      "duration_in_previous_status": "02:30:00"
+    }
+  ],
+  "total": 25,
+  "page": 1,
+  "limit": 10
+}
+```
+
+### POST /room-status-history
+Create status history record
+```json
+Request Body:
+{
+  "room_id": "uuid",
+  "status_type": "housekeeping",
+  "status": "clean",
+  "changed_by": "uuid",
+  "notes": "Room cleaned and inspected"
+}
+
+Response:
+{
+  "id": "uuid",
+  "room_id": "uuid",
+  "status_type": "housekeeping",
+  "status": "clean",
+  "changed_at": "2025-09-12T08:00:00Z",
+  "changed_by": "uuid",
+  "notes": "Room cleaned and inspected",
+  "created_at": "2025-09-12T08:00:00Z"
+}
+```
+
+### GET /room-status-history/:id
+Get status history record by ID
+```json
+Response:
+{
+  "id": "uuid",
+  "room": {
+    "id": "uuid",
+    "number": "101",
+    "property_name": "Grand Hotel",
+    "room_type_name": "Deluxe Room"
+  },
+  "status_type": "housekeeping",
+  "status": "clean",
+  "previous_status": "dirty",
+  "changed_at": "2025-09-12T08:00:00Z",
+  "changed_by": {
+    "id": "uuid",
+    "name": "Jane Smith",
+    "employee_code": "EMP001",
+    "department": "Housekeeping"
+  },
+  "notes": "Room cleaned and inspected after checkout",
+  "duration_in_previous_status": "02:30:00",
+  "related_reservation": {
+    "id": "uuid",
+    "confirmation_code": "ABC123",
+    "guest_name": "John Doe"
+  }
+}
+```
+
+### PUT /room-status-history/:id
+Update status history record
+```json
+Request Body:
+{
+  "notes": "Updated: Room cleaned, inspected, and restocked"
+}
+
+Response:
+{
+  "id": "uuid",
+  "room_id": "uuid",
+  "status_type": "housekeeping",
+  "status": "clean",
+  "changed_at": "2025-09-12T08:00:00Z",
+  "changed_by": "uuid",
+  "notes": "Updated: Room cleaned, inspected, and restocked",
+  "updated_at": "2025-09-12T10:00:00Z"
+}
+```
+
+### DELETE /room-status-history/:id
+Delete status history record
+```json
+Response:
+{
+  "message": "Status history record deleted successfully",
+  "deleted_at": "2025-09-12T00:00:00Z"
+}
+```
+
+---
+
+## 12. Bulk Room Operations
+
+### POST /rooms/bulk-status-update
+Update multiple rooms status
+```json
+Request Body:
+{
+  "room_ids": ["uuid1", "uuid2", "uuid3"],
+  "operational_status": "available",
+  "housekeeping_status": "clean",
+  "notes": "Bulk update after maintenance completion",
+  "changed_by": "uuid"
+}
+
+Response:
+{
+  "updated_rooms": [
+    {
+      "id": "uuid1",
+      "number": "101",
+      "operational_status": "available",
+      "housekeeping_status": "clean"
+    },
+    {
+      "id": "uuid2", 
+      "number": "102",
+      "operational_status": "available",
+      "housekeeping_status": "clean"
+    }
+  ],
+  "updated_count": 2,
+  "status_history_created": 2,
+  "updated_at": "2025-09-12T00:00:00Z"
+}
+```
+
+### GET /rooms/housekeeping-report
+Get housekeeping status report
+```json
+Query Parameters:
+- property_id: string (required)
+- floor: string (optional)
+- date: date (YYYY-MM-DD, default: today)
+
+Response:
+{
+  "date": "2025-09-12",
+  "property": {
+    "id": "uuid",
+    "name": "Grand Hotel"
+  },
+  "summary": {
+    "total_rooms": 50,
+    "clean": 35,
+    "dirty": 10,
+    "inspected": 5,
+    "out_of_service": 0
+  },
+  "by_floor": [
+    {
+      "floor": "1",
+      "total": 10,
+      "clean": 7,
+      "dirty": 2,
+      "inspected": 1,
+      "out_of_service": 0
+    }
+  ],
+  "rooms": [
+    {
+      "id": "uuid",
+      "number": "101",
+      "floor": "1",
+      "room_type": "Deluxe",
+      "housekeeping_status": "clean",
+      "operational_status": "available",
+      "last_checkout": "2025-09-11T11:00:00Z",
+      "next_checkin": "2025-09-13T15:00:00Z",
+      "assigned_housekeeper": {
+        "id": "uuid",
+        "name": "Mary Johnson"
+      },
+      "priority": "normal"
+    }
+  ],
+  "generated_at": "2025-09-12T10:00:00Z"
+}
+```
+
+### GET /rooms/occupancy-forecast
+Get room occupancy forecast
+```json
+Query Parameters:
+- property_id: string (required)
+- date_from: date (YYYY-MM-DD, default: today)
+- date_to: date (YYYY-MM-DD, default: +30 days)
+- room_type_id: string (optional)
+
+Response:
+{
+  "property": {
+    "id": "uuid",
+    "name": "Grand Hotel"
+  },
+  "forecast_period": {
+    "from": "2025-09-12",
+    "to": "2025-10-12"
+  },
+  "daily_forecast": [
+    {
+      "date": "2025-09-12",
+      "total_rooms": 50,
+      "reserved": 35,
+      "available": 15,
+      "out_of_service": 0,
+      "occupancy_rate": 70.0,
+      "arrivals": 8,
+      "departures": 5,
+      "stayovers": 27
+    }
+  ],
+  "room_type_breakdown": [
+    {
+      "room_type": {
+        "id": "uuid",
+        "name": "Deluxe Room"
+      },
+      "total_rooms": 25,
+      "average_occupancy": 75.0,
+      "peak_date": "2025-09-20",
+      "peak_occupancy": 95.0
+    }
+  ],
+  "generated_at": "2025-09-12T10:00:00Z"
+}
+```
+
+---
+
+## 13. Reservations Management
 
 ### GET /reservations
 Get all reservations
@@ -627,35 +1473,17 @@ Response:
   },
   "assigned_room": {
     "id": "uuid",
-    "number": "101",
-    "floor": "1"
+    "number": "101"
   },
   "check_in": "2025-09-15",
   "check_out": "2025-09-17",
   "adults": 2,
   "children": 0,
   "status": "confirmed",
-  "payment_status": "paid",
+  "channel": "website",
   "total_amount": 300.00,
-  "tax_amount": 30.00,
-  "service_amount": 20.00,
-  "payments": [
-    {
-      "id": "uuid",
-      "amount": 300.00,
-      "method": "card",
-      "status": "captured",
-      "paid_at": "2025-09-11T00:00:00Z"
-    }
-  ],
-  "services": [
-    {
-      "id": "uuid",
-      "service_name": "Airport Transfer",
-      "quantity": 1,
-      "total_price": 50.00
-    }
-  ]
+  "payment_status": "paid",
+  "created_at": "2025-09-11T00:00:00Z"
 }
 ```
 
@@ -664,68 +1492,23 @@ Update reservation
 ```json
 Request Body:
 {
+  "check_in": "2025-09-16",
+  "check_out": "2025-09-18",
   "adults": 3,
-  "guest_notes": "Updated guest requirements",
-  "assigned_room_id": "uuid"
+  "children": 1,
+  "guest_notes": "Updated: Early check-in requested"
 }
 
 Response:
 {
   "id": "uuid",
+  "confirmation_code": "ABC123",
+  "check_in": "2025-09-16",
+  "check_out": "2025-09-18",
   "adults": 3,
-  "guest_notes": "Updated guest requirements",
-  // ... other fields
-  "updated_at": "2025-09-11T00:00:00Z"
-}
-```
-
-### PUT /reservations/:id/status
-Update reservation status
-```json
-Request Body:
-{
-  "status": "checked_in"
-}
-
-Response:
-{
-  "id": "uuid",
-  "status": "checked_in",
-  "updated_at": "2025-09-11T00:00:00Z"
-}
-```
-
-### POST /reservations/:id/check-in
-Check-in guest
-```json
-Request Body:
-{
-  "assigned_room_id": "uuid",
-  "notes": "Guest checked in early"
-}
-
-Response:
-{
-  "id": "uuid",
-  "status": "checked_in",
-  "assigned_room_id": "uuid",
-  "check_in_time": "2025-09-15T13:30:00Z"
-}
-```
-
-### POST /reservations/:id/check-out
-Check-out guest
-```json
-Request Body:
-{
-  "notes": "Guest checked out on time"
-}
-
-Response:
-{
-  "id": "uuid",
-  "status": "checked_out",
-  "check_out_time": "2025-09-17T11:45:00Z"
+  "children": 1,
+  "guest_notes": "Updated: Early check-in requested",
+  "updated_at": "2025-09-12T00:00:00Z"
 }
 ```
 
@@ -734,738 +1517,8 @@ Cancel reservation
 ```json
 Response:
 {
-  "id": "uuid",
-  "status": "cancelled",
-  "cancelled_at": "2025-09-11T00:00:00Z"
-}
-```
-
----
-
-## 8. Payments
-
-### GET /payments
-Get payments for reservation
-```json
-Query Parameters:
-- reservation_id: string (optional)
-- status: string (authorized, captured, refunded, voided)
-
-Response:
-{
-  "data": [
-    {
-      "id": "uuid",
-      "reservation_id": "uuid",
-      "amount": 300.00,
-      "currency": "USD",
-      "method": "card",
-      "transaction_id": "txn_123456",
-      "status": "captured",
-      "paid_at": "2025-09-11T00:00:00Z"
-    }
-  ]
-}
-```
-
-### POST /payments
-Process payment
-```json
-Request Body:
-{
-  "reservation_id": "uuid",
-  "amount": 300.00,
-  "currency": "USD",
-  "method": "card",
-  "transaction_id": "txn_123456"
-}
-
-Response:
-{
-  "id": "uuid",
-  "reservation_id": "uuid",
-  "amount": 300.00,
-  "currency": "USD",
-  "method": "card",
-  "status": "captured",
-  "paid_at": "2025-09-11T00:00:00Z"
-}
-```
-
-### POST /payments/:id/refund
-Refund payment
-```json
-Request Body:
-{
-  "amount": 100.00,
-  "reason": "Partial refund for early checkout"
-}
-
-Response:
-{
-  "id": "uuid",
-  "parent_payment_id": "uuid",
-  "amount": -100.00,
-  "status": "refunded",
-  "paid_at": "2025-09-11T00:00:00Z"
-}
-```
-
----
-
-## 9. Rate Plans & Pricing
-
-### GET /rate-plans
-Get rate plans
-```json
-Query Parameters:
-- property_id: string (required)
-- room_type_id: string (optional)
-
-Response:
-{
-  "data": [
-    {
-      "id": "uuid",
-      "property_id": "uuid",
-      "room_type": {
-        "id": "uuid",
-        "name": "Deluxe Room"
-      },
-      "name": "Standard Rate",
-      "cancellation_policy": "Free cancellation up to 24 hours",
-      "currency": "USD",
-      "min_stay": 1,
-      "max_stay": 7,
-      "is_refundable": true
-    }
-  ]
-}
-```
-
-### POST /rate-plans
-Create rate plan
-```json
-Request Body:
-{
-  "property_id": "uuid",
-  "room_type_id": "uuid",
-  "name": "Standard Rate",
-  "cancellation_policy": "Free cancellation up to 24 hours",
-  "currency": "USD",
-  "min_stay": 1,
-  "max_stay": 7,
-  "is_refundable": true
-}
-
-Response:
-{
-  "id": "uuid",
-  "property_id": "uuid",
-  "room_type_id": "uuid",
-  "name": "Standard Rate",
-  // ... other fields
-}
-```
-
-### GET /daily-rates
-Get daily rates
-```json
-Query Parameters:
-- rate_plan_id: string (required)
-- date_from: date (YYYY-MM-DD)
-- date_to: date (YYYY-MM-DD)
-
-Response:
-{
-  "data": [
-    {
-      "id": "uuid",
-      "rate_plan_id": "uuid",
-      "date": "2025-09-15",
-      "price": 150.00,
-      "available_rooms": 10,
-      "stop_sell": false
-    }
-  ]
-}
-```
-
-### POST /daily-rates
-Set daily rates
-```json
-Request Body:
-{
-  "rate_plan_id": "uuid",
-  "rates": [
-    {
-      "date": "2025-09-15",
-      "price": 150.00,
-      "available_rooms": 10
-    },
-    {
-      "date": "2025-09-16",
-      "price": 180.00,
-      "available_rooms": 8
-    }
-  ]
-}
-
-Response:
-{
-  "created": 2,
-  "rates": [
-    {
-      "id": "uuid",
-      "date": "2025-09-15",
-      "price": 150.00,
-      "available_rooms": 10
-    }
-  ]
-}
-```
-
----
-
-## 10. Restaurant Management
-
-### GET /restaurants
-Get restaurants
-```json
-Query Parameters:
-- property_id: string (required)
-
-Response:
-{
-  "data": [
-    {
-      "id": "uuid",
-      "property_id": "uuid",
-      "name": "Main Restaurant",
-      "description": "Fine dining restaurant",
-      "location": "Ground Floor",
-      "opening_hours": "18:00-23:00",
-      "cuisine_type": "International"
-    }
-  ]
-}
-```
-
-### POST /restaurants
-Create restaurant
-```json
-Request Body:
-{
-  "property_id": "uuid",
-  "name": "Main Restaurant",
-  "description": "Fine dining restaurant",
-  "location": "Ground Floor",
-  "opening_hours": "18:00-23:00",
-  "cuisine_type": "International"
-}
-
-Response:
-{
-  "id": "uuid",
-  "property_id": "uuid",
-  "name": "Main Restaurant",
-  // ... other fields
-}
-```
-
-### GET /restaurants/:id/tables
-Get restaurant tables
-```json
-Response:
-{
-  "data": [
-    {
-      "id": "uuid",
-      "restaurant_id": "uuid",
-      "area": {
-        "id": "uuid",
-        "name": "Main Dining"
-      },
-      "table_number": "T01",
-      "capacity": 4,
-      "status": "available"
-    }
-  ]
-}
-```
-
-### POST /restaurants/:id/tables
-Create table
-```json
-Request Body:
-{
-  "area_id": "uuid",
-  "table_number": "T01",
-  "capacity": 4
-}
-
-Response:
-{
-  "id": "uuid",
-  "restaurant_id": "uuid",
-  "area_id": "uuid",
-  "table_number": "T01",
-  "capacity": 4,
-  "status": "available"
-}
-```
-
-### GET /restaurants/:id/menu
-Get restaurant menu
-```json
-Response:
-{
-  "categories": [
-    {
-      "id": "uuid",
-      "name": "Appetizers",
-      "description": "Start your meal",
-      "display_order": 1,
-      "items": [
-        {
-          "id": "uuid",
-          "name": "Caesar Salad",
-          "description": "Fresh romaine lettuce with caesar dressing",
-          "price": 12.50,
-          "currency": "USD",
-          "preparation_time_minutes": 10,
-          "is_available": true,
-          "is_vegetarian": true,
-          "allergens": "Contains dairy, gluten",
-          "calories": 250
-        }
-      ]
-    }
-  ]
-}
-```
-
-### POST /restaurants/:id/menu/categories
-Create menu category
-```json
-Request Body:
-{
-  "name": "Appetizers",
-  "description": "Start your meal",
-  "display_order": 1
-}
-
-Response:
-{
-  "id": "uuid",
-  "restaurant_id": "uuid",
-  "name": "Appetizers",
-  "description": "Start your meal",
-  "display_order": 1,
-  "is_active": true
-}
-```
-
-### POST /restaurants/:id/menu/items
-Create menu item
-```json
-Request Body:
-{
-  "category_id": "uuid",
-  "name": "Caesar Salad",
-  "description": "Fresh romaine lettuce with caesar dressing",
-  "price": 12.50,
-  "currency": "USD",
-  "preparation_time_minutes": 10,
-  "is_vegetarian": true,
-  "allergens": "Contains dairy, gluten",
-  "calories": 250
-}
-
-Response:
-{
-  "id": "uuid",
-  "restaurant_id": "uuid",
-  "category_id": "uuid",
-  "name": "Caesar Salad",
-  // ... other fields
-}
-```
-
----
-
-## 11. Table Bookings
-
-### GET /table-bookings
-Get table bookings
-```json
-Query Parameters:
-- restaurant_id: string (required)
-- booking_date: date (YYYY-MM-DD)
-- status: string (pending, confirmed, seated, completed, cancelled)
-
-Response:
-{
-  "data": [
-    {
-      "id": "uuid",
-      "restaurant": {
-        "id": "uuid",
-        "name": "Main Restaurant"
-      },
-      "guest": {
-        "id": "uuid",
-        "name": "John Doe"
-      },
-      "booking_date": "2025-09-15",
-      "booking_time": "19:00:00",
-      "pax": 4,
-      "status": "confirmed",
-      "assigned_table": {
-        "id": "uuid",
-        "table_number": "T01"
-      },
-      "special_requests": "Window seat preferred",
-      "duration_minutes": 90
-    }
-  ]
-}
-```
-
-### POST /table-bookings
-Create table booking
-```json
-Request Body:
-{
-  "restaurant_id": "uuid",
-  "guest_id": "uuid",
-  "booking_date": "2025-09-15",
-  "booking_time": "19:00:00",
-  "pax": 4,
-  "special_requests": "Window seat preferred"
-}
-
-Response:
-{
-  "id": "uuid",
-  "restaurant_id": "uuid",
-  "guest_id": "uuid",
-  "booking_date": "2025-09-15",
-  "booking_time": "19:00:00",
-  "pax": 4,
-  "status": "pending",
-  "special_requests": "Window seat preferred",
-  "duration_minutes": 90,
-  "created_at": "2025-09-11T00:00:00Z"
-}
-```
-
-### PUT /table-bookings/:id/status
-Update booking status
-```json
-Request Body:
-{
-  "status": "seated",
-  "assigned_table_id": "uuid"
-}
-
-Response:
-{
-  "id": "uuid",
-  "status": "seated",
-  "assigned_table_id": "uuid",
-  "updated_at": "2025-09-15T19:00:00Z"
-}
-```
-
----
-
-## 12. Restaurant Orders
-
-### GET /orders
-Get restaurant orders
-```json
-Query Parameters:
-- restaurant_id: string (required)
-- status: string (pending, confirmed, preparing, ready, served, completed)
-- order_type: string (dine_in, takeaway, delivery, room_service)
-- date: date (YYYY-MM-DD)
-
-Response:
-{
-  "data": [
-    {
-      "id": "uuid",
-      "order_number": "ORD-001",
-      "restaurant": {
-        "id": "uuid",
-        "name": "Main Restaurant"
-      },
-      "table": {
-        "id": "uuid",
-        "table_number": "T01"
-      },
-      "guest": {
-        "id": "uuid",
-        "name": "John Doe"
-      },
-      "order_type": "dine_in",
-      "status": "preparing",
-      "subtotal": 45.50,
-      "tax_amount": 4.55,
-      "service_charge": 2.25,
-      "total_amount": 52.30,
-      "payment_status": "unpaid",
-      "items": [
-        {
-          "id": "uuid",
-          "menu_item": {
-            "id": "uuid",
-            "name": "Caesar Salad"
-          },
-          "quantity": 2,
-          "unit_price": 12.50,
-          "total_price": 25.00,
-          "status": "preparing"
-        }
-      ],
-      "created_at": "2025-09-15T19:30:00Z"
-    }
-  ]
-}
-```
-
-### POST /orders
-Create restaurant order
-```json
-Request Body:
-{
-  "restaurant_id": "uuid",
-  "table_id": "uuid",
-  "guest_id": "uuid",
-  "order_type": "dine_in",
-  "items": [
-    {
-      "menu_item_id": "uuid",
-      "quantity": 2,
-      "special_instructions": "No croutons"
-    }
-  ],
-  "special_instructions": "Rush order"
-}
-
-Response:
-{
-  "id": "uuid",
-  "order_number": "ORD-001",
-  "restaurant_id": "uuid",
-  "table_id": "uuid",
-  "guest_id": "uuid",
-  "order_type": "dine_in",
-  "status": "pending",
-  "subtotal": 25.00,
-  "total_amount": 27.25,
-  "payment_status": "unpaid",
-  "items": [
-    {
-      "id": "uuid",
-      "menu_item_id": "uuid",
-      "quantity": 2,
-      "unit_price": 12.50,
-      "total_price": 25.00,
-      "status": "pending",
-      "special_instructions": "No croutons"
-    }
-  ],
-  "created_at": "2025-09-15T19:30:00Z"
-}
-```
-
-### PUT /orders/:id/status
-Update order status
-```json
-Request Body:
-{
-  "status": "ready"
-}
-
-Response:
-{
-  "id": "uuid",
-  "status": "ready",
-  "updated_at": "2025-09-15T20:00:00Z"
-}
-```
-
-### POST /orders/:id/payment
-Process order payment
-```json
-Request Body:
-{
-  "amount": 52.30,
-  "currency": "USD",
-  "method": "card",
-  "transaction_id": "txn_789"
-}
-
-Response:
-{
-  "id": "uuid",
-  "order_id": "uuid",
-  "amount": 52.30,
-  "currency": "USD",
-  "method": "card",
-  "status": "captured",
-  "paid_at": "2025-09-15T20:30:00Z"
-}
-```
-
----
-
-## 13. Employee Management
-
-### GET /employees
-Get all employees
-```json
-Query Parameters:
-- property_id: string (optional)
-- department: string (Front Desk, Housekeeping, HR, F&B)
-- status: string (active, on_leave, terminated)
-- page: number (default: 1)
-- limit: number (default: 10)
-
-Response:
-{
-  "data": [
-    {
-      "id": "uuid",
-      "employee_code": "EMP001",
-      "full_name": "Jane Smith",
-      "department": "Front Desk",
-      "status": "active",
-      "hire_date": "2025-01-15",
-      "user": {
-        "id": "uuid",
-        "email": "jane@hotel.com"
-      },
-      "roles": [
-        {
-          "id": "uuid",
-          "role": {
-            "name": "Front Desk"
-          },
-          "property_id": "uuid"
-        }
-      ]
-    }
-  ],
-  "total": 15,
-  "page": 1,
-  "limit": 10
-}
-```
-
-### POST /employees
-Create new employee
-```json
-Request Body:
-{
-  "user_id": "uuid",
-  "employee_code": "EMP001",
-  "full_name": "Jane Smith",
-  "department": "Front Desk",
-  "hire_date": "2025-01-15"
-}
-
-Response:
-{
-  "id": "uuid",
-  "user_id": "uuid",
-  "employee_code": "EMP001",
-  "full_name": "Jane Smith",
-  "department": "Front Desk",
-  "status": "active",
-  "hire_date": "2025-01-15"
-}
-```
-
-### GET /employees/:id
-Get employee by ID
-```json
-Response:
-{
-  "id": "uuid",
-  "employee_code": "EMP001",
-  "full_name": "Jane Smith",
-  "department": "Front Desk",
-  "status": "active",
-  "hire_date": "2025-01-15",
-  "user": {
-    "id": "uuid",
-    "email": "jane@hotel.com",
-    "phone": "+84123456789"
-  },
-  "roles": [
-    {
-      "id": "uuid",
-      "property_id": "uuid",
-      "role": {
-        "id": "uuid",
-        "name": "Front Desk",
-        "description": "Reception and guest services"
-      },
-      "effective_from": "2025-01-15"
-    }
-  ],
-  "recent_shifts": [
-    {
-      "id": "uuid",
-      "working_date": "2025-09-11",
-      "start_time": "08:00:00",
-      "end_time": "16:00:00",
-      "shift_type": "morning"
-    }
-  ]
-}
-```
-
-### PUT /employees/:id
-Update employee
-```json
-Request Body:
-{
-  "department": "HR",
-  "status": "active"
-}
-
-Response:
-{
-  "id": "uuid",
-  "employee_code": "EMP001",
-  "full_name": "Jane Smith",
-  "department": "HR",
-  "status": "active",
-  "updated_at": "2025-09-11T00:00:00Z"
-}
-```
-
-### POST /employees/:id/roles
-Assign role to employee
-```json
-Request Body:
-{
-  "property_id": "uuid",
-  "role_id": "uuid",
-  "effective_from": "2025-09-11"
-}
-
-Response:
-{
-  "id": "uuid",
-  "employee_id": "uuid",
-  "property_id": "uuid",
-  "role_id": "uuid",
-  "effective_from": "2025-09-11"
+  "message": "Reservation cancelled successfully",
+  "cancelled_at": "2025-09-12T00:00:00Z"
 }
 ```
 
