@@ -2,7 +2,7 @@ import { Controller, Post, Get, Body, UseGuards, Request, HttpCode, HttpStatus }
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
+import type { AuthRequest } from './interfaces/user.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -16,26 +16,27 @@ export class AuthController {
   @UseGuards(AuthGuard('local'))
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Request() req: any, @Body() loginDto: LoginDto) {
+  login(@Request() req: AuthRequest) {
     return this.authService.login(req.user);
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout() {
+  logout() {
     return { message: 'Logged out successfully' };
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Request() req: any) {
+  refresh(@Request() req: AuthRequest) {
     return this.authService.refreshToken(req.user);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
-  async getProfile(@Request() req: any) {
+  getProfile(@Request() req: AuthRequest) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...user } = req.user;
     return user;
   }

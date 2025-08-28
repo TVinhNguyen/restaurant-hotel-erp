@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
+import { UserPayload } from './interfaces/user.interface';
 
 @Injectable()
 export class AuthService {
@@ -18,7 +19,9 @@ export class AuthService {
     const { email, password, name, phone } = registerDto;
 
     // Check if user exists
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
@@ -38,20 +41,25 @@ export class AuthService {
     const savedUser = await this.userRepository.save(user);
 
     // Remove password from response
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _, ...result } = savedUser;
     return result;
   }
 
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<UserPayload | null> {
     const user = await this.userRepository.findOne({ where: { email } });
-    if (user && await bcrypt.compare(password, user.passwordHash)) {
+    if (user && (await bcrypt.compare(password, user.passwordHash))) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { passwordHash, ...result } = user;
       return result;
     }
     return null;
   }
 
-  async login(user: any) {
+  login(user: UserPayload) {
     const payload = { email: user.email, sub: user.id };
     return {
       access_token: this.jwtService.sign(payload),
@@ -64,7 +72,7 @@ export class AuthService {
     };
   }
 
-  async refreshToken(user: any) {
+  refreshToken(user: UserPayload) {
     const payload = { email: user.email, sub: user.id };
     return {
       access_token: this.jwtService.sign(payload),
