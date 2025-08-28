@@ -190,6 +190,15 @@ const App = (props: React.PropsWithChildren<AppProps>) => {
                     icon: "💰",
                   },
                 },
+                {
+                  name: "evaluations",
+                  list: "/hr-management/evaluations",
+                  meta: {
+                    label: "Employee Evaluations",
+                    parent: "hr-management",
+                    icon: "⭐",
+                  },
+                },
               ]}
               options={{
                 syncWithLocation: true,
