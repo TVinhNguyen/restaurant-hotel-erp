@@ -104,7 +104,6 @@ const App = (props: React.PropsWithChildren<AppProps>) => {
 
   return (
     <>
-      <GitHubBanner />
       <RefineKbarProvider>
         <AntdRegistry>
           <ColorModeContextProvider defaultMode={defaultMode}>
@@ -144,7 +143,63 @@ const App = (props: React.PropsWithChildren<AppProps>) => {
                     canDelete: true,
                   },
                 },
-                
+                {
+                  name: "hr-management",
+                  list: "/hr-management",
+                  meta: {
+                    label: "HR Management",
+                    icon: "👥",
+                  },
+                },
+                {
+                  name: "hr-dashboard",
+                  list: "/hr-management/dashboard",
+                  meta: {
+                    label: "HR Dashboard",
+                    parent: "hr-management",
+                    icon: "📊",
+                  },
+                },
+                {
+                  name: "employees",
+                  list: "/hr-management/employees",
+                  create: "/hr-management/create",
+                  edit: "/hr-management/edit/:id",
+                  show: "/hr-management/show/:id",
+                  meta: {
+                    label: "Employee Management",
+                    parent: "hr-management",
+                    icon: "👤",
+                    canDelete: true,
+                  },
+                },
+                {
+                  name: "attendance",
+                  list: "/hr-management/attendance",
+                  meta: {
+                    label: "Attendance Tracking",
+                    parent: "hr-management",
+                    icon: "🕐",
+                  },
+                },
+                {
+                  name: "leaves",
+                  list: "/hr-management/leaves",
+                  meta: {
+                    label: "Leave Management",
+                    parent: "hr-management",
+                    icon: "📅",
+                  },
+                },
+                {
+                  name: "payroll",
+                  list: "/hr-management/payroll",
+                  meta: {
+                    label: "Payroll Management",
+                    parent: "hr-management",
+                    icon: "💰",
+                  },
+                },
               ]}
               options={{
                 syncWithLocation: true,
