@@ -83,7 +83,7 @@ export default function ReservationShow() {
           {canAssignRoom && (
             <Button 
               type="primary"
-              onClick={() => router.push(`/reservations/assign-room/${record?.id}`)}
+              onClick={() => router.push(`/reservations/room-assignment?reservationId=${record?.id}`)}
             >
               Assign Room
             </Button>
@@ -104,12 +104,23 @@ export default function ReservationShow() {
               Check Out
             </Button>
           )}
-          <Button onClick={() => router.push(`/reservations/payments/${record?.id}`)}>
+          <Button onClick={() => router.push(`/reservations/payments-folio?reservationId=${record?.id}`)}>
             Payments
           </Button>
           <Button onClick={() => router.push(`/reservations/services/${record?.id}`)}>
             Services
           </Button>
+          <Button onClick={() => router.push(`/reservations/table-booking/${record?.id}`)}>
+            F&B Booking
+          </Button>
+          {record?.status !== 'cancelled' && record?.status !== 'no_show' && (
+            <Button 
+              danger
+              onClick={() => router.push(`/reservations/cancel/${record?.id}`)}
+            >
+              Cancel/No-Show
+            </Button>
+          )}
           {defaultButtons}
         </Space>
       )}

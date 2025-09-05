@@ -31,7 +31,7 @@ export function QuickActions({ reservationId, status, hasAssignedRoom }: QuickAc
         description: 'Assign a room to this reservation',
         icon: <HomeOutlined />,
         type: 'primary' as const,
-        onClick: () => router.push(`/reservations/assign-room/${reservationId}`)
+        onClick: () => router.push(`/reservations/room-assignment?reservationId=${reservationId}`)
       });
     }
     
@@ -67,7 +67,7 @@ export function QuickActions({ reservationId, status, hasAssignedRoom }: QuickAc
       description: 'View and manage reservation payments',
       icon: <CreditCardOutlined />,
       type: 'default' as const,
-      onClick: () => router.push(`/reservations/payments/${reservationId}`)
+      onClick: () => router.push(`/reservations/payments-folio?reservationId=${reservationId}`)
     },
     {
       key: 'services',

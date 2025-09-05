@@ -57,7 +57,7 @@ export default function ReservationEdit() {
           {canAssignRoom && (
             <Button 
               type="primary"
-              onClick={() => router.push(`/reservations/assign-room/${reservationData?.id}`)}
+              onClick={() => router.push(`/reservations/room-assignment?reservationId=${reservationData?.id}`)}
             >
               Assign Room
             </Button>
@@ -78,7 +78,7 @@ export default function ReservationEdit() {
               Check Out
             </Button>
           )}
-          <Button onClick={() => router.push(`/reservations/payments/${reservationData?.id}`)}>
+          <Button onClick={() => router.push(`/reservations/payments-folio?reservationId=${reservationData?.id}`)}>
             Payments
           </Button>
           <Button onClick={() => router.push(`/reservations/services/${reservationData?.id}`)}>
