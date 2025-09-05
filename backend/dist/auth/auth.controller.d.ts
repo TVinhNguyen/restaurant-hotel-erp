@@ -1,6 +1,6 @@
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
+import type { AuthRequest } from './interfaces/user.interface';
 export declare class AuthController {
     private authService;
     constructor(authService: AuthService);
@@ -12,20 +12,25 @@ export declare class AuthController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    login(req: any, loginDto: LoginDto): Promise<{
+    login(req: AuthRequest): {
         access_token: string;
         user: {
-            id: any;
-            email: any;
-            name: any;
-            phone: any;
+            id: string;
+            email: string;
+            name: string | undefined;
+            phone: string | undefined;
         };
-    }>;
-    logout(): Promise<{
+    };
+    logout(): {
         message: string;
-    }>;
-    refresh(req: any): Promise<{
+    };
+    refresh(req: AuthRequest): {
         access_token: string;
-    }>;
-    getProfile(req: any): Promise<any>;
+    };
+    getProfile(req: AuthRequest): {
+        id: string;
+        email: string;
+        name?: string;
+        phone?: string;
+    };
 }
