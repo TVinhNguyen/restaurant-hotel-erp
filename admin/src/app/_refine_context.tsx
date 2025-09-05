@@ -134,6 +134,99 @@ const App = (props: React.PropsWithChildren<AppProps>) => {
                   },
                 },
                 {
+                  name: "reservations",
+                  list: "/reservations",
+                  meta: {
+                    label: "Reservations",
+                    icon: "🏨",
+                  },
+                },
+                {
+                  name: "new-booking",
+                  list: "/reservations/new",
+                  meta: {
+                    label: "New Booking Wizard",
+                    parent: "reservations",
+                    icon: "✨",
+                  },
+                },
+                {
+                  name: "reservations-dashboard",
+                  list: "/reservations/dashboard",
+                  meta: {
+                    label: "Booking Dashboard",
+                    parent: "reservations",
+                    icon: "📊",
+                  },
+                },
+                {
+                  name: "booking-pipeline",
+                  list: "/reservations/booking-pipeline",
+                  create: "/reservations/new",
+                  edit: "/reservations/edit/:id",
+                  show: "/reservations/show/:id",
+                  meta: {
+                    label: "Booking Pipeline",
+                    parent: "reservations",
+                    icon: "📋",
+                    canDelete: true,
+                  },
+                },
+                {
+                  name: "availability-pricing",
+                  list: "/reservations/availability-pricing",
+                  meta: {
+                    label: "Availability & Pricing",
+                    parent: "reservations",
+                    icon: "💰",
+                  },
+                },
+                {
+                  name: "room-assignment",
+                  list: "/reservations/room-assignment",
+                  meta: {
+                    label: "Room Assignment",
+                    parent: "reservations",
+                    icon: "🛏️",
+                  },
+                },
+                {
+                  name: "stay-operations",
+                  list: "/reservations/stay-operations",
+                  meta: {
+                    label: "Stay Operations",
+                    parent: "reservations",
+                    icon: "🚪",
+                  },
+                },
+                {
+                  name: "payments-folio",
+                  list: "/reservations/payments-folio",
+                  meta: {
+                    label: "Payments & Folio",
+                    parent: "reservations",
+                    icon: "💳",
+                  },
+                },
+                {
+                  name: "reservation-services",
+                  list: "/reservations/services",
+                  meta: {
+                    label: "Services",
+                    parent: "reservations",
+                    icon: "🛎️",
+                  },
+                },
+                {
+                  name: "reservation-reports",
+                  list: "/reservations/reports",
+                  meta: {
+                    label: "Reports & Analytics",
+                    parent: "reservations",
+                    icon: "📈",
+                  },
+                },
+                {
                   name: "hr-management",
                   list: "/hr-management",
                   meta: {
