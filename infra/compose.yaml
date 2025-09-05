@@ -8,14 +8,24 @@ services:
       POSTGRES_DB: erp
     ports: ["5432:5432"]
     volumes: ["pg:/var/lib/postgresql/data"]
+    networks: [devnet]
 
   redis:
     image: redis:7
     ports: ["6379:6379"]
+    networks: [devnet]
 
   rabbitmq:
     image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: myuser
+      RABBITMQ_DEFAULT_PASS: mypass
     ports: ["5672:5672", "15672:15672"]
+    networks: [devnet]
 
 volumes:
   pg:
+
+networks:
+  devnet:
+    name: devnet  # đặt tên cố định để stack khác join vào

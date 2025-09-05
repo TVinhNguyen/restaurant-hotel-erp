@@ -2,6 +2,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
+import { UserPayload } from './interfaces/user.interface';
 export declare class AuthService {
     private userRepository;
     private jwtService;
@@ -14,18 +15,18 @@ export declare class AuthService {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    validateUser(email: string, password: string): Promise<any>;
-    login(user: any): Promise<{
+    validateUser(email: string, password: string): Promise<UserPayload | null>;
+    login(user: UserPayload): {
         access_token: string;
         user: {
-            id: any;
-            email: any;
-            name: any;
-            phone: any;
+            id: string;
+            email: string;
+            name: string | undefined;
+            phone: string | undefined;
         };
-    }>;
-    refreshToken(user: any): Promise<{
+    };
+    refreshToken(user: UserPayload): {
         access_token: string;
-    }>;
+    };
     findById(id: string): Promise<User | null>;
 }

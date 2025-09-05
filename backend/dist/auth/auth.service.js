@@ -61,7 +61,9 @@ let AuthService = class AuthService {
     }
     async register(registerDto) {
         const { email, password, name, phone } = registerDto;
-        const existingUser = await this.userRepository.findOne({ where: { email } });
+        const existingUser = await this.userRepository.findOne({
+            where: { email },
+        });
         if (existingUser) {
             throw new common_1.ConflictException('Email already exists');
         }
@@ -79,13 +81,13 @@ let AuthService = class AuthService {
     }
     async validateUser(email, password) {
         const user = await this.userRepository.findOne({ where: { email } });
-        if (user && await bcrypt.compare(password, user.passwordHash)) {
+        if (user && (await bcrypt.compare(password, user.passwordHash))) {
             const { passwordHash, ...result } = user;
             return result;
         }
         return null;
     }
-    async login(user) {
+    login(user) {
         const payload = { email: user.email, sub: user.id };
         return {
             access_token: this.jwtService.sign(payload),
@@ -97,7 +99,7 @@ let AuthService = class AuthService {
             },
         };
     }
-    async refreshToken(user) {
+    refreshToken(user) {
         const payload = { email: user.email, sub: user.id };
         return {
             access_token: this.jwtService.sign(payload),
