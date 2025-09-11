@@ -13,7 +13,9 @@ export declare class PropertiesController {
         hasNext: boolean;
         hasPrev: boolean;
     }>;
-    findOne(id: string): Promise<import("../entities").Property>;
+    findOneWithRooms(id: string): Promise<import("../entities").Property>;
+    findOneWithRestaurants(id: string): Promise<import("../entities").Property>;
+    findOne(id: string, include?: string): Promise<import("../entities").Property>;
     create(createPropertyDto: CreatePropertyDto): Promise<import("../entities").Property>;
     update(id: string, updatePropertyDto: UpdatePropertyDto): Promise<import("../entities").Property>;
     remove(id: string): Promise<{

@@ -32,7 +32,17 @@ let PropertiesController = class PropertiesController {
             type,
         });
     }
-    async findOne(id) {
+    async findOneWithRooms(id) {
+        return await this.propertiesService.findOneWithRooms(id);
+    }
+    async findOneWithRestaurants(id) {
+        return await this.propertiesService.findOneWithRestaurants(id);
+    }
+    async findOne(id, include) {
+        if (include) {
+            const relations = include.split(',').map(rel => rel.trim());
+            return await this.propertiesService.findOneWithDetails(id, relations);
+        }
         return await this.propertiesService.findOne(id);
     }
     async create(createPropertyDto) {
@@ -57,10 +67,25 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PropertiesController.prototype, "findAll", null);
 __decorate([
-    (0, common_1.Get)(':id'),
+    (0, common_1.Get)(':id/rooms'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PropertiesController.prototype, "findOneWithRooms", null);
+__decorate([
+    (0, common_1.Get)(':id/restaurants'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PropertiesController.prototype, "findOneWithRestaurants", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('include')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], PropertiesController.prototype, "findOne", null);
 __decorate([

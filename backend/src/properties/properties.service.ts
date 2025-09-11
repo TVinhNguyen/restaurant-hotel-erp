@@ -45,7 +45,61 @@ export class PropertiesService {
   async findOne(id: string): Promise<Property> {
     const property = await this.propertyRepository.findOne({
       where: { id },
-      relations: ['roomTypes', 'rooms', 'restaurants'],
+      // Only load basic info, no relations for performance
+    });
+
+    if (!property) {
+      throw new NotFoundException(`Property with ID ${id} not found`);
+    }
+
+    return property;
+  }
+
+  async findOneWithDetails(id: string, includeRelations: string[] = []): Promise<Property> {
+    // Allow selective loading of relations
+    const allowedRelations = [
+      'roomTypes', 
+      'rooms', 
+      'restaurants', 
+      'ratePlans', 
+      'propertyServices',
+      'promotions',
+      'taxRules',
+      'reservations',
+      'workingShifts'
+    ];
+    
+    const validRelations = includeRelations.filter(rel => allowedRelations.includes(rel));
+    
+    const property = await this.propertyRepository.findOne({
+      where: { id },
+      relations: validRelations,
+    });
+
+    if (!property) {
+      throw new NotFoundException(`Property with ID ${id} not found`);
+    }
+
+    return property;
+  }
+
+  async findOneWithRooms(id: string): Promise<Property> {
+    const property = await this.propertyRepository.findOne({
+      where: { id },
+      relations: ['roomTypes', 'rooms'],
+    });
+
+    if (!property) {
+      throw new NotFoundException(`Property with ID ${id} not found`);
+    }
+
+    return property;
+  }
+
+  async findOneWithRestaurants(id: string): Promise<Property> {
+    const property = await this.propertyRepository.findOne({
+      where: { id },
+      relations: ['restaurants'],
     });
 
     if (!property) {

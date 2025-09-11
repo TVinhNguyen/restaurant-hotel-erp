@@ -1,4 +1,5 @@
 import { Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service';
 import { JwtPayload } from '../interfaces/user.interface';
 declare const JwtStrategy_base: new (...args: [opt: import("passport-jwt").StrategyOptionsWithRequest] | [opt: import("passport-jwt").StrategyOptionsWithoutRequest]) => Strategy & {
@@ -6,7 +7,8 @@ declare const JwtStrategy_base: new (...args: [opt: import("passport-jwt").Strat
 };
 export declare class JwtStrategy extends JwtStrategy_base {
     private authService;
-    constructor(authService: AuthService);
+    private configService;
+    constructor(authService: AuthService, configService: ConfigService);
     validate(payload: JwtPayload): Promise<import("../../entities").User>;
 }
 export {};

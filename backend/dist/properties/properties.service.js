@@ -46,7 +46,48 @@ let PropertiesService = class PropertiesService {
     async findOne(id) {
         const property = await this.propertyRepository.findOne({
             where: { id },
-            relations: ['roomTypes', 'rooms', 'restaurants'],
+        });
+        if (!property) {
+            throw new common_1.NotFoundException(`Property with ID ${id} not found`);
+        }
+        return property;
+    }
+    async findOneWithDetails(id, includeRelations = []) {
+        const allowedRelations = [
+            'roomTypes',
+            'rooms',
+            'restaurants',
+            'ratePlans',
+            'propertyServices',
+            'promotions',
+            'taxRules',
+            'reservations',
+            'workingShifts'
+        ];
+        const validRelations = includeRelations.filter(rel => allowedRelations.includes(rel));
+        const property = await this.propertyRepository.findOne({
+            where: { id },
+            relations: validRelations,
+        });
+        if (!property) {
+            throw new common_1.NotFoundException(`Property with ID ${id} not found`);
+        }
+        return property;
+    }
+    async findOneWithRooms(id) {
+        const property = await this.propertyRepository.findOne({
+            where: { id },
+            relations: ['roomTypes', 'rooms'],
+        });
+        if (!property) {
+            throw new common_1.NotFoundException(`Property with ID ${id} not found`);
+        }
+        return property;
+    }
+    async findOneWithRestaurants(id) {
+        const property = await this.propertyRepository.findOne({
+            where: { id },
+            relations: ['restaurants'],
         });
         if (!property) {
             throw new common_1.NotFoundException(`Property with ID ${id} not found`);
