@@ -19,22 +19,28 @@ class RegisterDto {
 }
 exports.RegisterDto = RegisterDto;
 __decorate([
-    (0, class_validator_1.IsEmail)(),
+    (0, class_validator_1.IsEmail)({}, { message: 'Please provide a valid email address' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(6),
+    (0, class_validator_1.MinLength)(6, { message: 'Password must be at least 6 characters long' }),
+    (0, class_validator_1.MaxLength)(128, { message: 'Password must not exceed 128 characters' }),
+    (0, class_validator_1.Matches)(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/, {
+        message: 'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+    }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(100, { message: 'Name must not exceed 100 characters' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "name", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^[\+]?[1-9][\d]{0,15}$/, { message: 'Please provide a valid phone number' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "phone", void 0);
 //# sourceMappingURL=register.dto.js.map

@@ -37,8 +37,29 @@ export class PropertiesController {
     });
   }
 
+  // Specific routes must come before dynamic routes
+  @Get(':id/rooms')
+  async findOneWithRooms(@Param('id') id: string) {
+    return await this.propertiesService.findOneWithRooms(id);
+  }
+
+  @Get(':id/restaurants')
+  async findOneWithRestaurants(@Param('id') id: string) {
+    return await this.propertiesService.findOneWithRestaurants(id);
+  }
+
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(
+    @Param('id') id: string,
+    @Query('include') include?: string,
+  ) {
+    // Parse comma-separated relations from query
+    if (include) {
+      const relations = include.split(',').map(rel => rel.trim());
+      return await this.propertiesService.findOneWithDetails(id, relations);
+    }
+    
+    // Default: return property without relations for better performance
     return await this.propertiesService.findOne(id);
   }
 

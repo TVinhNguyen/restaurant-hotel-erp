@@ -19,6 +19,9 @@ export declare class PropertiesService {
         hasPrev: boolean;
     }>;
     findOne(id: string): Promise<Property>;
+    findOneWithDetails(id: string, includeRelations?: string[]): Promise<Property>;
+    findOneWithRooms(id: string): Promise<Property>;
+    findOneWithRestaurants(id: string): Promise<Property>;
     create(createPropertyDto: CreatePropertyDto): Promise<Property>;
     update(id: string, updatePropertyDto: UpdatePropertyDto): Promise<Property>;
     remove(id: string): Promise<void>;

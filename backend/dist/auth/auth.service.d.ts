@@ -6,6 +6,7 @@ import { UserPayload } from './interfaces/user.interface';
 export declare class AuthService {
     private userRepository;
     private jwtService;
+    private readonly logger;
     constructor(userRepository: Repository<User>, jwtService: JwtService);
     register(registerDto: RegisterDto): Promise<{
         id: string;
@@ -25,9 +26,13 @@ export declare class AuthService {
             name: string | undefined;
             phone: string | undefined;
         };
+        expires_in: string;
+        token_type: string;
     };
     refreshToken(user: UserPayload): {
         access_token: string;
+        expires_in: string;
+        token_type: string;
     };
     findById(id: string): Promise<User | null>;
 }

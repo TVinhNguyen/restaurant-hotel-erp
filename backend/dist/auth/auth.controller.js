@@ -11,32 +11,60 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var AuthController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
 const auth_service_1 = require("./auth.service");
 const register_dto_1 = require("./dto/register.dto");
-let AuthController = class AuthController {
+let AuthController = AuthController_1 = class AuthController {
     authService;
+    logger = new common_1.Logger(AuthController_1.name);
     constructor(authService) {
         this.authService = authService;
     }
     async register(registerDto) {
-        return this.authService.register(registerDto);
+        this.logger.log(`Registration attempt for email: ${registerDto.email}`);
+        const result = await this.authService.register(registerDto);
+        return {
+            message: 'Registration successful',
+            user: result,
+        };
     }
     login(req) {
-        return this.authService.login(req.user);
+        this.logger.log(`Login successful for user: ${req.user.email}`);
+        const result = this.authService.login(req.user);
+        return {
+            message: 'Login successful',
+            ...result,
+        };
     }
     logout() {
-        return { message: 'Logged out successfully' };
+        return {
+            message: 'Logout successful',
+            timestamp: new Date().toISOString(),
+        };
     }
     refresh(req) {
-        return this.authService.refreshToken(req.user);
+        if (!req.user) {
+            throw new common_1.UnauthorizedException('Invalid token');
+        }
+        const result = this.authService.refreshToken(req.user);
+        return {
+            message: 'Token refreshed successfully',
+            ...result,
+        };
     }
     getProfile(req) {
+        if (!req.user) {
+            throw new common_1.UnauthorizedException('Invalid token');
+        }
         const { passwordHash, ...user } = req.user;
-        return user;
+        return {
+            message: 'Profile retrieved successfully',
+            user,
+        };
     }
 };
 exports.AuthController = AuthController;
@@ -80,7 +108,7 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "getProfile", null);
-exports.AuthController = AuthController = __decorate([
+exports.AuthController = AuthController = AuthController_1 = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], AuthController);

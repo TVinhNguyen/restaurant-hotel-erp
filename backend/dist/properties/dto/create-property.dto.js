@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreatePropertyDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 class CreatePropertyDto {
     name;
     address;
@@ -61,16 +62,19 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsIn)(['Hotel', 'Resort', 'Restaurant Chain']),
+    (0, class_transformer_1.Transform)(({ obj }) => obj.property_type || obj.propertyType),
     __metadata("design:type", String)
 ], CreatePropertyDto.prototype, "propertyType", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ obj }) => obj.check_in_time || obj.checkInTime),
     __metadata("design:type", String)
 ], CreatePropertyDto.prototype, "checkInTime", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ obj }) => obj.check_out_time || obj.checkOutTime),
     __metadata("design:type", String)
 ], CreatePropertyDto.prototype, "checkOutTime", void 0);
 //# sourceMappingURL=create-property.dto.js.map
