@@ -41,13 +41,12 @@ let GuestsService = class GuestsService {
             limit,
             totalPages: Math.ceil(total / limit),
             hasNext: page * limit < total,
-            hasPrev: page > 1,
+            hasPrev: page > 1
         };
     }
     async findOne(id) {
         const guest = await this.guestRepository.findOne({
-            where: { id },
-            relations: ['reservations', 'tableBookings'],
+            where: { id }
         });
         if (!guest) {
             throw new common_1.NotFoundException(`Guest with ID ${id} not found`);

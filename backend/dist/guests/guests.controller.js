@@ -29,7 +29,7 @@ let GuestsController = class GuestsController {
         return await this.guestsService.findAll({
             page: pageNum,
             limit: limitNum,
-            search,
+            search
         });
     }
     async findOne(id) {
