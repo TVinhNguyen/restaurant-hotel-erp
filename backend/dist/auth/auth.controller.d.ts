@@ -11,6 +11,7 @@ export declare class AuthController {
         phone: string;
         createdAt: Date;
         updatedAt: Date;
+        employee: import("../entities").Employee;
     }>;
     login(req: AuthRequest): {
         access_token: string;
