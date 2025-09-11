@@ -1,5 +1,4 @@
-import { CreateRoomDto } from './create-room.dto';
-declare const UpdateRoomDto_base: import("@nestjs/mapped-types").MappedType<Partial<CreateRoomDto>>;
+declare const UpdateRoomDto_base: any;
 export declare class UpdateRoomDto extends UpdateRoomDto_base {
 }
 export {};

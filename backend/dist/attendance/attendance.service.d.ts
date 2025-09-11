@@ -20,38 +20,5 @@ export declare class AttendanceService {
     checkIn(employeeId: string): Promise<Attendance>;
     checkOut(employeeId: string): Promise<Attendance>;
     bulkCreateAttendance(bulkAttendanceDto: BulkAttendanceDto): Promise<Attendance[]>;
-    getAttendanceSummary(startDate: string, endDate: string, employeeId?: string): Promise<{
-        period: {
-            startDate: string;
-            endDate: string;
-        };
-        totalWorkingDays: number;
-        employeeSummary: any[];
-        overallStats: {
-            totalRecords: number;
-            presentCount: number;
-            absentCount: number;
-            lateCount: number;
-            overtimeCount: number;
-        };
-    }>;
-    getDailyAttendanceReport(date: string): Promise<{
-        date: string;
-        totalEmployees: number;
-        recordedAttendance: number;
-        unrecordedCount: number;
-        attendance: {
-            id: string;
-            employee: {
-                id: string;
-                name: string;
-                department: "Front Desk" | "Housekeeping" | "HR" | "F&B";
-            };
-            checkInTime: Date;
-            checkOutTime: Date;
-            hoursWorked: number;
-            notes: string;
-        }[];
-    }>;
-    private calculateHoursWorked;
+    getAttendanceSummary(startDate: string, endDate: string, employeeId?: string): Promise<void>;
 }

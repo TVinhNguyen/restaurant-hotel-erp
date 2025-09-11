@@ -14,7 +14,7 @@ const reports_service_1 = require("./reports.service");
 const reservation_entity_1 = require("../entities/reservation/reservation.entity");
 const payment_entity_1 = require("../entities/reservation/payment.entity");
 const table_booking_entity_1 = require("../entities/restaurant/table-booking.entity");
-const room_entity_1 = require("../entities/core/room.entity");
+const room_entity_1 = require("../entities/inventory/room.entity");
 let ReportsModule = class ReportsModule {
 };
 exports.ReportsModule = ReportsModule;

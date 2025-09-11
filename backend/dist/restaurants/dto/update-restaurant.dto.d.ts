@@ -1,5 +1,4 @@
-import { CreateRestaurantDto } from './create-restaurant.dto';
-declare const UpdateRestaurantDto_base: import("@nestjs/mapped-types").MappedType<Partial<CreateRestaurantDto>>;
+declare const UpdateRestaurantDto_base: any;
 export declare class UpdateRestaurantDto extends UpdateRestaurantDto_base {
 }
 export {};

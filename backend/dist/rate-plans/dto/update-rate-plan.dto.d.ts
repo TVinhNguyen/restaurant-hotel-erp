@@ -1,5 +1,4 @@
-import { CreateRatePlanDto } from './create-rate-plan.dto';
-declare const UpdateRatePlanDto_base: import("@nestjs/mapped-types").MappedType<Partial<CreateRatePlanDto>>;
+declare const UpdateRatePlanDto_base: any;
 export declare class UpdateRatePlanDto extends UpdateRatePlanDto_base {
 }
 export {};

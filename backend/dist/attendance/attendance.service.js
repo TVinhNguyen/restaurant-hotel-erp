@@ -144,8 +144,14 @@ let AttendanceService = class AttendanceService {
     }
     async bulkCreateAttendance(bulkAttendanceDto) {
         const { date, attendances } = bulkAttendanceDto;
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 1);
         const existingAttendances = await this.attendanceRepository.find({
-            where: { date },
+            where: {
+                checkInTime: (0, typeorm_2.Between)(startDate, endDate)
+            },
         });
         const existingEmployeeIds = existingAttendances.map(att => att.employeeId);
         const newAttendances = attendances.filter(att => !existingEmployeeIds.includes(att.employeeId));
@@ -154,9 +160,8 @@ let AttendanceService = class AttendanceService {
         }
         const attendanceEntities = newAttendances.map(att => this.attendanceRepository.create({
             employeeId: att.employeeId,
-            date,
-            checkInTime: att.checkInTime,
-            checkOutTime: att.checkOutTime,
+            checkInTime: att.checkInTime ? new Date(att.checkInTime) : null,
+            checkOutTime: att.checkOutTime ? new Date(att.checkOutTime) : null,
             notes: att.notes,
         }));
         return await this.attendanceRepository.save(attendanceEntities);
@@ -165,87 +170,81 @@ let AttendanceService = class AttendanceService {
         const queryBuilder = this.attendanceRepository
             .createQueryBuilder('attendance')
             .leftJoin('attendance.employee', 'employee')
-            .where('attendance.date BETWEEN :startDate AND :endDate', { startDate, endDate });
+            .where('attendance.checkInTime BETWEEN :startDate AND :endDate', { startDate, endDate });
         if (employeeId) {
             queryBuilder.andWhere('attendance.employeeId = :employeeId', { employeeId });
         }
         const attendanceRecords = await queryBuilder.getMany();
-        const employeeAttendance = attendanceRecords.reduce((acc, record) => {
-            if (!acc[record.employeeId]) {
-                acc[record.employeeId] = {
+        const employeeAttendance = {};
+        attendanceRecords.forEach(record => {
+            if (!employeeAttendance[record.employeeId]) {
+                employeeAttendance[record.employeeId] = {
                     employeeId: record.employeeId,
-                    present: 0,
-                    absent: 0,
-                    late: 0,
-                    halfDay: 0,
-                    overtime: 0,
                     totalDays: 0,
+                    hoursWorked: 0,
+                };
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const totalWorkingDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                return {
+                    period: { startDate, endDate },
+                    totalWorkingDays,
+                    employeeSummary: Object.values(employeeAttendance).map((summary) => ({
+                        ...summary,
+                        attendanceRate: totalWorkingDays > 0
+                            ? ((summary.present + summary.late + summary.halfDay) / totalWorkingDays * 100).toFixed(2)
+                            : 0,
+                    })),
+                    overallStats: {
+                        totalRecords: attendanceRecords.length,
+                        presentCount: attendanceRecords.filter(r => r.status === create_attendance_dto_1.AttendanceStatus.PRESENT).length,
+                        absentCount: attendanceRecords.filter(r => r.status === create_attendance_dto_1.AttendanceStatus.ABSENT).length,
+                        lateCount: attendanceRecords.filter(r => r.status === create_attendance_dto_1.AttendanceStatus.LATE).length,
+                        overtimeCount: attendanceRecords.filter(r => r.status === create_attendance_dto_1.AttendanceStatus.OVERTIME).length,
+                    },
                 };
             }
-            acc[record.employeeId][record.status.replace('_', '')]++;
-            acc[record.employeeId].totalDays++;
-            return acc;
-        }, {});
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const totalWorkingDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-        return {
-            period: { startDate, endDate },
-            totalWorkingDays,
-            employeeSummary: Object.values(employeeAttendance).map((summary) => ({
-                ...summary,
-                attendanceRate: totalWorkingDays > 0
-                    ? ((summary.present + summary.late + summary.halfDay) / totalWorkingDays * 100).toFixed(2)
-                    : 0,
-            })),
-            overallStats: {
-                totalRecords: attendanceRecords.length,
-                presentCount: attendanceRecords.filter(r => r.status === create_attendance_dto_1.AttendanceStatus.PRESENT).length,
-                absentCount: attendanceRecords.filter(r => r.status === create_attendance_dto_1.AttendanceStatus.ABSENT).length,
-                lateCount: attendanceRecords.filter(r => r.status === create_attendance_dto_1.AttendanceStatus.LATE).length,
-                overtimeCount: attendanceRecords.filter(r => r.status === create_attendance_dto_1.AttendanceStatus.OVERTIME).length,
-            },
-        };
-    }
-    async getDailyAttendanceReport(date) {
-        const startDate = new Date(date);
-        startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 1);
-        const attendance = await this.attendanceRepository.find({
-            where: {
-                checkInTime: (0, typeorm_2.Between)(startDate, endDate),
-            },
-            relations: ['employee'],
-            order: { checkInTime: 'ASC' },
+            async;
+            getDailyAttendanceReport(date, string);
+            {
+                const startDate = new Date(date);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 1);
+                const attendance = await this.attendanceRepository.find({
+                    where: {
+                        checkInTime: (0, typeorm_2.Between)(startDate, endDate),
+                    },
+                    relations: ['employee'],
+                    order: { checkInTime: 'ASC' },
+                });
+                const totalEmployees = await this.employeeRepository.count({
+                    where: { status: 'active' },
+                });
+                return {
+                    date,
+                    totalEmployees,
+                    recordedAttendance: attendance.length,
+                    unrecordedCount: totalEmployees - attendance.length,
+                    attendance: attendance.map(record => ({
+                        id: record.id,
+                        employee: {
+                            id: record.employee.id,
+                            name: record.employee.fullName,
+                            department: record.employee.department,
+                        },
+                        checkInTime: record.checkInTime,
+                        checkOutTime: record.checkOutTime,
+                        hoursWorked: this.calculateHoursWorked(record.checkInTime, record.checkOutTime),
+                        notes: record.notes,
+                    })),
+                };
+            }
+        }, private, calculateHoursWorked(checkIn, Date, checkOut ?  : Date), number, {
+            if(, checkOut) { }, return: 0,
+            const: diffMs = checkOut.getTime() - checkIn.getTime(),
+            return: Number((diffMs / (1000 * 60 * 60)).toFixed(2))
         });
-        const totalEmployees = await this.employeeRepository.count({
-            where: { status: 'active' },
-        });
-        return {
-            date,
-            totalEmployees,
-            recordedAttendance: attendance.length,
-            unrecordedCount: totalEmployees - attendance.length,
-            attendance: attendance.map(record => ({
-                id: record.id,
-                employee: {
-                    id: record.employee.id,
-                    name: record.employee.fullName,
-                    department: record.employee.department,
-                },
-                checkInTime: record.checkInTime,
-                checkOutTime: record.checkOutTime,
-                hoursWorked: this.calculateHoursWorked(record.checkInTime, record.checkOutTime),
-                notes: record.notes,
-            })),
-        };
-    }
-    calculateHoursWorked(checkIn, checkOut) {
-        if (!checkOut)
-            return 0;
-        const diffMs = checkOut.getTime() - checkIn.getTime();
-        return Number((diffMs / (1000 * 60 * 60)).toFixed(2));
     }
 };
 exports.AttendanceService = AttendanceService;

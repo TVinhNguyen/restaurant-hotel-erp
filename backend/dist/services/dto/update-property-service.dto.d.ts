@@ -1,5 +1,4 @@
-import { CreatePropertyServiceDto } from './create-property-service.dto';
-declare const UpdatePropertyServiceDto_base: import("@nestjs/mapped-types").MappedType<Partial<CreatePropertyServiceDto>>;
+declare const UpdatePropertyServiceDto_base: any;
 export declare class UpdatePropertyServiceDto extends UpdatePropertyServiceDto_base {
 }
 export {};
