@@ -83,6 +83,9 @@ let RestaurantsController = class RestaurantsController {
         return this.restaurantsService.cancelBooking(id);
     }
     async seatGuests(id, body) {
+        if (!body.tableId) {
+            throw new common_1.BadRequestException('Table ID is required');
+        }
         return this.restaurantsService.seatGuests(id, body.tableId);
     }
     async completeBooking(id) {

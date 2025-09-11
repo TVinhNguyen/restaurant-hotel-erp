@@ -45,4 +45,8 @@ export declare class RestaurantsService {
     findBookingById(id: string): Promise<RestaurantTableBooking>;
     updateBooking(id: string, updateBookingDto: UpdateTableBookingDto): Promise<RestaurantTableBooking>;
     deleteBooking(id: string): Promise<void>;
+    confirmBooking(id: string): Promise<RestaurantTableBooking>;
+    cancelBooking(id: string): Promise<RestaurantTableBooking>;
+    seatGuests(id: string, tableId: string): Promise<RestaurantTableBooking>;
+    completeBooking(id: string): Promise<RestaurantTableBooking>;
 }

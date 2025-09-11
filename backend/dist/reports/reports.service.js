@@ -19,7 +19,7 @@ const typeorm_2 = require("typeorm");
 const reservation_entity_1 = require("../entities/reservation/reservation.entity");
 const payment_entity_1 = require("../entities/reservation/payment.entity");
 const table_booking_entity_1 = require("../entities/restaurant/table-booking.entity");
-const room_entity_1 = require("../entities/core/room.entity");
+const room_entity_1 = require("../entities/inventory/room.entity");
 let ReportsService = class ReportsService {
     reservationRepository;
     paymentRepository;
@@ -69,7 +69,7 @@ let ReportsService = class ReportsService {
             totalRoomsQuery.where('room.propertyId = :propertyId', { propertyId });
         }
         const totalRooms = await totalRoomsQuery.getCount();
-        const occupiedRooms = reservations.filter(res => res.status === 'checked_in').length;
+        const occupiedRooms = reservations.filter((res) => res.status === 'checked_in').length;
         const occupancyRate = totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
         return {
             period: { startDate, endDate },
@@ -78,8 +78,8 @@ let ReportsService = class ReportsService {
             occupancyRate: Number(occupancyRate.toFixed(2)),
             availableRooms: totalRooms - occupiedRooms,
             roomTypeBreakdown: reservations.reduce((acc, res) => {
-                if (res.room) {
-                    const roomType = res.room.roomTypeId || 'unknown';
+                if (res.assignedRoom) {
+                    const roomType = res.assignedRoom.roomTypeId || 'unknown';
                     acc[roomType] = (acc[roomType] || 0) + 1;
                 }
                 return acc;
@@ -92,8 +92,8 @@ let ReportsService = class ReportsService {
             .createQueryBuilder('payment')
             .leftJoinAndSelect('payment.reservation', 'reservation')
             .leftJoinAndSelect('reservation.room', 'room')
-            .where('payment.paymentDate BETWEEN :startDate AND :endDate', { startDate, endDate })
-            .andWhere('payment.status = :status', { status: 'completed' });
+            .where('payment.paidAt BETWEEN :startDate AND :endDate', { startDate, endDate })
+            .andWhere('payment.paymentStatus = :status', { status: 'completed' });
         if (propertyId) {
             paymentQuery.andWhere('reservation.propertyId = :propertyId', { propertyId });
         }
@@ -104,7 +104,7 @@ let ReportsService = class ReportsService {
         const totalRevenue = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
         const averageRevenue = payments.length > 0 ? totalRevenue / payments.length : 0;
         const revenueByMethod = payments.reduce((acc, payment) => {
-            acc[payment.method] = (acc[payment.method] || 0) + Number(payment.amount);
+            acc[payment.paymentMethod] = (acc[payment.paymentMethod] || 0) + Number(payment.amount);
             return acc;
         }, {});
         return {
@@ -130,9 +130,9 @@ let ReportsService = class ReportsService {
         }
         const bookings = await bookingQuery.getMany();
         const totalBookings = bookings.length;
-        const completedBookings = bookings.filter(b => b.status === 'completed').length;
-        const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
-        const noShowBookings = bookings.filter(b => b.status === 'no_show').length;
+        const completedBookings = bookings.filter((b) => b.status === 'completed').length;
+        const cancelledBookings = bookings.filter((b) => b.status === 'cancelled').length;
+        const noShowBookings = bookings.filter((b) => b.status === 'no_show').length;
         return {
             period: { startDate, endDate },
             totalBookings,
@@ -180,8 +180,8 @@ let ReportsService = class ReportsService {
         const paymentQuery = this.paymentRepository
             .createQueryBuilder('payment')
             .leftJoin('payment.reservation', 'reservation')
-            .where('payment.paymentDate BETWEEN :startDate AND :endDate', { startDate, endDate })
-            .andWhere('payment.status = :status', { status: 'completed' });
+            .where('payment.paidAt BETWEEN :startDate AND :endDate', { startDate, endDate })
+            .andWhere('payment.paymentStatus = :status', { status: 'completed' });
         if (propertyId) {
             paymentQuery.andWhere('reservation.propertyId = :propertyId', { propertyId });
         }
@@ -206,7 +206,7 @@ let ReportsService = class ReportsService {
     }
     groupRevenueByDay(payments) {
         return payments.reduce((acc, payment) => {
-            const date = payment.paymentDate.toISOString().split('T')[0];
+            const date = payment.paidAt.toISOString().split('T')[0];
             acc[date] = (acc[date] || 0) + Number(payment.amount);
             return acc;
         }, {});

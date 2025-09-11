@@ -1,11 +1,11 @@
 import { AttendanceService } from './attendance.service';
-import { CreateAttendanceDto, UpdateAttendanceDto, BulkAttendanceDto, AttendanceStatus } from './dto/create-attendance.dto';
+import { CreateAttendanceDto, UpdateAttendanceDto, BulkAttendanceDto } from './dto/create-attendance.dto';
 export declare class AttendanceController {
     private readonly attendanceService;
     constructor(attendanceService: AttendanceService);
     createAttendance(createAttendanceDto: CreateAttendanceDto): Promise<import("../entities").Attendance>;
     bulkCreateAttendance(bulkAttendanceDto: BulkAttendanceDto): Promise<import("../entities").Attendance[]>;
-    findAllAttendance(page?: number, limit?: number, employeeId?: string, date?: string, status?: AttendanceStatus, startDate?: string, endDate?: string): Promise<{
+    findAllAttendance(page?: number, limit?: number, employeeId?: string, date?: string, startDate?: string, endDate?: string): Promise<{
         data: import("../entities").Attendance[];
         total: number;
         page: number;
@@ -33,16 +33,16 @@ export declare class AttendanceController {
         recordedAttendance: number;
         unrecordedCount: number;
         attendance: {
-            id: string;
+            id: any;
             employee: {
-                id: string;
-                name: string;
-                department: "Front Desk" | "Housekeeping" | "HR" | "F&B";
+                id: any;
+                name: any;
+                department: any;
             };
-            checkInTime: Date;
-            checkOutTime: Date;
+            checkInTime: any;
+            checkOutTime: any;
             hoursWorked: number;
-            notes: string;
+            notes: any;
         }[];
     }>;
     findAttendanceById(id: string): Promise<import("../entities").Attendance>;

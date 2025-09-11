@@ -41,16 +41,16 @@ export declare class AttendanceService {
         recordedAttendance: number;
         unrecordedCount: number;
         attendance: {
-            id: string;
+            id: any;
             employee: {
-                id: string;
-                name: string;
-                department: "Front Desk" | "Housekeeping" | "HR" | "F&B";
+                id: any;
+                name: any;
+                department: any;
             };
-            checkInTime: Date;
-            checkOutTime: Date;
+            checkInTime: any;
+            checkOutTime: any;
             hoursWorked: number;
-            notes: string;
+            notes: any;
         }[];
     }>;
     private calculateHoursWorked;
