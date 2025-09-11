@@ -1,0 +1,419 @@
+# 🚀 COMPLETE API LIST FOR TESTING
+# Restaurant Hotel ERP System - Ready APIs
+# Base URL: http://localhost:3000
+
+===============================================
+## 🟢 BASIC SYSTEM APIs (FULLY IMPLEMENTED)
+===============================================
+
+### Health Check
+GET    /health                    # System health status
+GET    /                         # Root endpoint
+
+Response example:
+{
+  "ok": true,
+  "ts": "2025-09-11T00:00:00Z"
+}
+
+===============================================
+## 🟢 AUTHENTICATION APIs (FULLY IMPLEMENTED)
+===============================================
+
+### User Authentication
+POST   /auth/register            # User registration
+POST   /auth/login               # User login
+POST   /auth/logout              # User logout
+POST   /auth/refresh             # Refresh JWT token
+GET    /auth/me                  # Current user profile
+
+### Login Example:
+POST /auth/login
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+===============================================
+## 🟢 USERS MANAGEMENT APIs
+===============================================
+
+GET    /users                    # List all users (Admin only)
+GET    /users/:id                # Get user by ID
+PUT    /users/:id                # Update user
+DELETE /users/:id                # Delete user (Admin only)
+
+Query params: page, limit, search
+
+===============================================
+## 🟢 PROPERTIES MANAGEMENT APIs
+===============================================
+
+GET    /properties               # List all properties
+GET    /properties/:id           # Get property details
+POST   /properties               # Create new property
+PUT    /properties/:id           # Update property
+DELETE /properties/:id           # Delete property
+
+Query params: page, limit, type (Hotel, Resort, Restaurant Chain)
+
+===============================================
+## 🟢 GUESTS MANAGEMENT APIs
+===============================================
+
+GET    /guests                   # List all guests
+GET    /guests/:id               # Get guest details with reservations
+POST   /guests                   # Create new guest profile
+PUT    /guests/:id               # Update guest information
+DELETE /guests/:id               # Delete guest
+
+Query params: page, limit, search (name, email, phone)
+
+===============================================
+## 🟢 ROOM TYPES & INVENTORY APIs
+===============================================
+
+### Room Types
+GET    /room-types               # List room types
+GET    /room-types/:id           # Get room type details
+POST   /room-types               # Create room type
+PUT    /room-types/:id           # Update room type
+DELETE /room-types/:id           # Delete room type
+
+Query params: property_id (required)
+
+### Rooms
+GET    /rooms                    # List all rooms
+GET    /rooms/:id                # Get room details
+POST   /rooms                    # Create new room
+PUT    /rooms/:id                # Update room
+DELETE /rooms/:id               # Delete room
+PUT    /rooms/:id/status         # Update room status
+
+Query params: property_id, floor, status (available, out_of_service)
+
+===============================================
+## 🟢 RESERVATIONS MANAGEMENT APIs
+===============================================
+
+GET    /reservations             # List reservations with filters
+GET    /reservations/:id         # Get reservation details
+POST   /reservations             # Create new reservation
+PUT    /reservations/:id         # Update reservation
+DELETE /reservations/:id         # Cancel reservation
+
+### Workflow Actions
+PUT    /reservations/:id/status  # Update reservation status
+POST   /reservations/:id/check-in   # Check-in guest
+POST   /reservations/:id/check-out  # Check-out guest
+PUT    /reservations/:id/room    # Assign room to reservation
+
+Query params: property_id, status, check_in_from, check_in_to, page, limit
+
+===============================================
+## 🟢 RATE PLANS & PRICING APIs
+===============================================
+
+### Rate Plans
+GET    /rate-plans               # List rate plans
+GET    /rate-plans/:id           # Get rate plan details
+POST   /rate-plans               # Create rate plan
+PUT    /rate-plans/:id           # Update rate plan
+DELETE /rate-plans/:id           # Delete rate plan
+
+### Daily Rates
+GET    /daily-rates              # List daily rates
+POST   /daily-rates              # Set daily rates (bulk)
+PUT    /daily-rates/:id          # Update daily rate
+
+Query params: property_id, room_type_id, date_from, date_to
+
+===============================================
+## 🟢 PAYMENTS MANAGEMENT APIs
+===============================================
+
+GET    /payments                 # List payments
+GET    /payments/:id             # Get payment details
+POST   /payments                 # Process payment
+PUT    /payments/:id             # Update payment status
+POST   /payments/:id/refund      # Process refund
+
+Query params: reservation_id, status (authorized, captured, refunded)
+
+===============================================
+## 🟢 SERVICES MANAGEMENT APIs
+===============================================
+
+### Property Services
+GET    /services                 # List available services
+GET    /services/:id             # Get service details
+POST   /services                 # Create service
+PUT    /services/:id             # Update service
+DELETE /services/:id             # Delete service
+
+### Reservation Services
+GET    /reservation-services     # List reservation services
+POST   /reservation-services     # Add service to reservation
+PUT    /reservation-services/:id # Update reservation service
+DELETE /reservation-services/:id # Remove service
+
+===============================================
+## 🟢 RESTAURANT MANAGEMENT APIs
+===============================================
+
+### Restaurants
+GET    /restaurants              # List restaurants
+GET    /restaurants/:id          # Get restaurant details
+POST   /restaurants              # Create restaurant
+PUT    /restaurants/:id          # Update restaurant
+DELETE /restaurants/:id          # Delete restaurant
+
+### Tables Management
+GET    /restaurants/:id/tables   # Get restaurant tables
+POST   /restaurants/:id/tables   # Create table
+PUT    /tables/:id               # Update table
+DELETE /tables/:id               # Delete table
+PUT    /tables/:id/status        # Update table status
+
+### Menu Management
+GET    /restaurants/:id/menu     # Get restaurant menu
+POST   /restaurants/:id/menu/categories  # Create menu category
+POST   /restaurants/:id/menu/items       # Create menu item
+PUT    /menu/categories/:id      # Update category
+PUT    /menu/items/:id           # Update menu item
+
+===============================================
+## 🟢 TABLE BOOKINGS APIs
+===============================================
+
+GET    /table-bookings           # List table bookings
+GET    /table-bookings/:id       # Get booking details
+POST   /table-bookings           # Create table booking
+PUT    /table-bookings/:id       # Update booking
+DELETE /table-bookings/:id       # Cancel booking
+PUT    /table-bookings/:id/status # Update booking status
+
+Query params: restaurant_id, booking_date, status
+
+===============================================
+## 🟢 RESTAURANT ORDERS APIs
+===============================================
+
+GET    /orders                   # List restaurant orders
+GET    /orders/:id               # Get order details
+POST   /orders                   # Create restaurant order
+PUT    /orders/:id               # Update order
+DELETE /orders/:id               # Cancel order
+PUT    /orders/:id/status        # Update order status
+POST   /orders/:id/payment       # Process order payment
+
+Query params: restaurant_id, status, order_type, date
+
+===============================================
+## 🟢 EMPLOYEE MANAGEMENT APIs (HR)
+===============================================
+
+### Employees
+GET    /employees                # List all employees
+GET    /employees/:id            # Get employee details
+POST   /employees                # Create new employee
+PUT    /employees/:id            # Update employee
+DELETE /employees/:id            # Delete employee
+POST   /employees/:id/roles      # Assign role to employee
+
+Query params: property_id, department, status, page, limit
+
+===============================================
+## 🟢 WORKING SHIFTS APIs
+===============================================
+
+GET    /working-shifts           # List working shifts
+GET    /working-shifts/:id       # Get shift details
+POST   /working-shifts           # Create working shift
+PUT    /working-shifts/:id       # Update working shift
+DELETE /working-shifts/:id       # Delete working shift
+
+Query params: property_id, employee_id, date_from, date_to, shift_type
+
+===============================================
+## 🟢 ATTENDANCE MANAGEMENT APIs
+===============================================
+
+GET    /attendance               # List attendance records
+GET    /attendance/:id           # Get attendance details
+POST   /attendance/check-in      # Employee check-in
+PUT    /attendance/:id/check-out # Employee check-out
+PUT    /attendance/:id           # Update attendance record
+
+Query params: employee_id, date_from, date_to
+
+===============================================
+## 🟢 LEAVE MANAGEMENT APIs
+===============================================
+
+GET    /leaves                   # List leave requests
+GET    /leaves/:id               # Get leave details
+POST   /leaves                   # Submit leave request
+PUT    /leaves/:id               # Update leave request
+PUT    /leaves/:id/approve       # Approve/reject leave
+DELETE /leaves/:id               # Delete leave request
+
+Query params: employee_id, status, leave_type, date_from, date_to
+
+===============================================
+## 🟢 PAYROLL MANAGEMENT APIs
+===============================================
+
+GET    /payrolls                 # List payroll records
+GET    /payrolls/:id             # Get payroll details
+GET    /payrolls/:id/details     # Get detailed payroll breakdown
+POST   /payrolls                 # Create payroll record
+PUT    /payrolls/:id             # Update payroll
+DELETE /payrolls/:id             # Delete payroll
+
+Query params: employee_id, period (YYYY-MM)
+
+===============================================
+## 🟢 REPORTS & ANALYTICS APIs
+===============================================
+
+### Occupancy Reports
+GET    /reports/occupancy        # Get occupancy report
+Query params: property_id, date_from, date_to, group_by
+
+### Revenue Reports
+GET    /reports/revenue          # Get revenue report
+Query params: property_id, date_from, date_to, breakdown
+
+### Restaurant Sales
+GET    /reports/restaurant-sales # Get restaurant sales report
+Query params: restaurant_id, date_from, date_to
+
+### Staff Performance
+GET    /reports/staff-performance # Get staff performance report
+Query params: property_id, department, period
+
+===============================================
+## 🟢 ROLES MANAGEMENT APIs
+===============================================
+
+GET    /roles                    # List all roles
+GET    /roles/:id                # Get role details
+POST   /roles                    # Create new role (Admin only)
+PUT    /roles/:id                # Update role
+DELETE /roles/:id               # Delete role
+
+===============================================
+## 🧪 TESTING INFORMATION
+===============================================
+
+### Base URL
+Production: http://localhost:3000
+Development: http://localhost:3000
+
+### Authentication
+All protected endpoints require Bearer token:
+Authorization: Bearer <your_jwt_token>
+
+### Quick Test Commands
+
+# 1. Health Check (No auth required)
+curl -X GET http://localhost:3000/health
+
+# 2. Register User
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"123456","name":"Test User"}'
+
+# 3. Login
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"123456"}'
+
+# 4. Get Current User (Replace TOKEN)
+curl -X GET http://localhost:3000/auth/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 5. List Properties
+curl -X GET http://localhost:3000/properties \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 6. List Reservations
+curl -X GET http://localhost:3000/reservations \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+===============================================
+## 📊 COMMON QUERY PARAMETERS
+===============================================
+
+### Pagination (Available on all list endpoints)
+- page: number (default: 1)
+- limit: number (default: 10, max: 100)
+
+### Search & Filtering
+- search: string (text search)
+- status: string (entity status)
+- date_from: date (YYYY-MM-DD)
+- date_to: date (YYYY-MM-DD)
+
+### Sorting
+- sort: string (field name)
+- order: string (asc, desc)
+
+===============================================
+## 🔒 ERROR RESPONSES
+===============================================
+
+400 Bad Request - Validation errors
+401 Unauthorized - Authentication required
+403 Forbidden - Insufficient permissions
+404 Not Found - Resource not found
+409 Conflict - Resource already exists
+500 Internal Server Error - Server error
+
+===============================================
+## 🚀 STARTUP INSTRUCTIONS
+===============================================
+
+1. Start PostgreSQL database
+2. Run database migrations: npx prisma db push
+3. Generate Prisma client: npx prisma generate
+4. Start backend: npm run start:dev
+5. Backend runs on: http://localhost:3000
+
+===============================================
+## 📋 TESTING TOOLS RECOMMENDED
+===============================================
+
+- Postman/Insomnia (API Client)
+- curl (Command line)
+- VS Code REST Client extension
+- Swagger UI (if configured)
+- Prisma Studio (Database viewer): npx prisma studio
+
+===============================================
+## 🎯 PRIORITY TESTING ORDER
+===============================================
+
+1. Health Check (/health)
+2. Authentication (/auth/login, /auth/register)
+3. Properties Management (/properties)
+4. Guests Management (/guests)
+5. Room Types & Rooms (/room-types, /rooms)
+6. Reservations (/reservations)
+7. Payments (/payments)
+8. Services (/services, /reservation-services)
+9. Restaurant Management (/restaurants, /tables, /orders)
+10. HR Management (/employees, /attendance, /leaves)
+
+===============================================
+## ✅ ALL APIs READY FOR TESTING!
+===============================================
+
+Total Endpoints: 120+ endpoints across 18 modules
+Status: All controllers and services implemented
+Database: PostgreSQL with complete schema
+Authentication: JWT-based with role permissions
+Documentation: Complete API documentation available
+
+Ready to start testing! 🚀
