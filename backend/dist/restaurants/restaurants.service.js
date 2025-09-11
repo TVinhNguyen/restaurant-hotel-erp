@@ -149,12 +149,12 @@ let RestaurantsService = class RestaurantsService {
         const bookings = await this.bookingRepository.find({
             where: {
                 restaurantId,
-                bookingDate: date,
+                bookingDate: new Date(date),
                 bookingTime: time,
                 status: (0, typeorm_2.In)(['confirmed', 'seated']),
             },
         });
-        const bookedTableIds = bookings.map(booking => booking.tableId).filter(Boolean);
+        const bookedTableIds = bookings.map(booking => booking.assignedTableId).filter(Boolean);
         return suitableTables.filter(table => !bookedTableIds.includes(table.id));
     }
     async createTableBooking(createBookingDto) {
@@ -208,6 +208,51 @@ let RestaurantsService = class RestaurantsService {
     async deleteBooking(id) {
         const booking = await this.findBookingById(id);
         await this.bookingRepository.remove(booking);
+    }
+    async confirmBooking(id) {
+        const booking = await this.findBookingById(id);
+        if (booking.status !== 'pending') {
+            throw new common_1.BadRequestException(`Cannot confirm booking with status: ${booking.status}`);
+        }
+        await this.bookingRepository.update(id, { status: 'confirmed' });
+        return this.findBookingById(id);
+    }
+    async cancelBooking(id) {
+        const booking = await this.findBookingById(id);
+        if (booking.status === 'completed') {
+            throw new common_1.BadRequestException('Cannot cancel completed booking');
+        }
+        await this.bookingRepository.update(id, { status: 'cancelled' });
+        return this.findBookingById(id);
+    }
+    async seatGuests(id, tableId) {
+        const booking = await this.findBookingById(id);
+        if (booking.status !== 'confirmed') {
+            throw new common_1.BadRequestException(`Cannot seat guests for booking with status: ${booking.status}`);
+        }
+        const table = await this.findTableById(tableId);
+        if (table.status !== create_table_dto_1.TableStatus.AVAILABLE) {
+            throw new common_1.BadRequestException('Selected table is not available');
+        }
+        await this.tableRepository.update(tableId, { status: create_table_dto_1.TableStatus.OCCUPIED });
+        await this.bookingRepository.update(id, {
+            status: 'seated',
+            assignedTableId: tableId
+        });
+        return this.findBookingById(id);
+    }
+    async completeBooking(id) {
+        const booking = await this.findBookingById(id);
+        if (booking.status !== 'seated') {
+            throw new common_1.BadRequestException(`Cannot complete booking with status: ${booking.status}`);
+        }
+        if (booking.assignedTableId) {
+            await this.tableRepository.update(booking.assignedTableId, {
+                status: create_table_dto_1.TableStatus.AVAILABLE
+            });
+        }
+        await this.bookingRepository.update(id, { status: 'completed' });
+        return this.findBookingById(id);
     }
 };
 exports.RestaurantsService = RestaurantsService;

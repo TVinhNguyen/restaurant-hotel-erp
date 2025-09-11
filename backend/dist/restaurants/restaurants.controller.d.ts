@@ -46,10 +46,10 @@ export declare class RestaurantsController {
     deleteBooking(id: string): Promise<{
         message: string;
     }>;
-    confirmBooking(id: string): Promise<any>;
-    cancelBooking(id: string): Promise<any>;
+    confirmBooking(id: string): Promise<import("../entities").TableBooking>;
+    cancelBooking(id: string): Promise<import("../entities").TableBooking>;
     seatGuests(id: string, body: {
         tableId?: string;
-    }): Promise<any>;
-    completeBooking(id: string): Promise<any>;
+    }): Promise<import("../entities").TableBooking>;
+    completeBooking(id: string): Promise<import("../entities").TableBooking>;
 }

@@ -28,8 +28,8 @@ let AttendanceController = class AttendanceController {
     async bulkCreateAttendance(bulkAttendanceDto) {
         return this.attendanceService.bulkCreateAttendance(bulkAttendanceDto);
     }
-    async findAllAttendance(page = 1, limit = 10, employeeId, date, status, startDate, endDate) {
-        return this.attendanceService.findAllAttendance(page, limit, employeeId, date, status, startDate, endDate);
+    async findAllAttendance(page = 1, limit = 10, employeeId, date, startDate, endDate) {
+        return this.attendanceService.findAllAttendance(page, limit, employeeId, date, startDate, endDate);
     }
     async getAttendanceSummary(startDate, endDate, employeeId) {
         return this.attendanceService.getAttendanceSummary(startDate, endDate, employeeId);
@@ -75,11 +75,10 @@ __decorate([
     __param(1, (0, common_1.Query)('limit', common_1.ParseIntPipe)),
     __param(2, (0, common_1.Query)('employeeId')),
     __param(3, (0, common_1.Query)('date')),
-    __param(4, (0, common_1.Query)('status')),
-    __param(5, (0, common_1.Query)('startDate')),
-    __param(6, (0, common_1.Query)('endDate')),
+    __param(4, (0, common_1.Query)('startDate')),
+    __param(5, (0, common_1.Query)('endDate')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Number, String, String, String, String, String]),
+    __metadata("design:paramtypes", [Number, Number, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], AttendanceController.prototype, "findAllAttendance", null);
 __decorate([

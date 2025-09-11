@@ -2,7 +2,7 @@ import { Repository } from 'typeorm';
 import { Reservation } from '../entities/reservation/reservation.entity';
 import { Payment } from '../entities/reservation/payment.entity';
 import { TableBooking } from '../entities/restaurant/table-booking.entity';
-import { Room } from '../entities/core/room.entity';
+import { Room } from '../entities/inventory/room.entity';
 import { ReportQueryDto, OccupancyReportDto, RevenueReportDto, RestaurantReportDto } from './dto/report-query.dto';
 export declare class ReportsService {
     private reservationRepository;
