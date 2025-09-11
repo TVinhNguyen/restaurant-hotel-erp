@@ -69,7 +69,7 @@ let ReportsService = class ReportsService {
             totalRoomsQuery.where('room.propertyId = :propertyId', { propertyId });
         }
         const totalRooms = await totalRoomsQuery.getCount();
-        const occupiedRooms = reservations.filter(res => res.status === 'checked_in').length;
+        const occupiedRooms = reservations.filter((res) => res.status === 'checked_in').length;
         const occupancyRate = totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
         return {
             period: { startDate, endDate },
@@ -78,8 +78,8 @@ let ReportsService = class ReportsService {
             occupancyRate: Number(occupancyRate.toFixed(2)),
             availableRooms: totalRooms - occupiedRooms,
             roomTypeBreakdown: reservations.reduce((acc, res) => {
-                if (res.room) {
-                    const roomType = res.room.roomTypeId || 'unknown';
+                if (res.assignedRoom) {
+                    const roomType = res.assignedRoom.roomTypeId || 'unknown';
                     acc[roomType] = (acc[roomType] || 0) + 1;
                 }
                 return acc;
@@ -130,9 +130,9 @@ let ReportsService = class ReportsService {
         }
         const bookings = await bookingQuery.getMany();
         const totalBookings = bookings.length;
-        const completedBookings = bookings.filter(b => b.status === 'completed').length;
-        const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
-        const noShowBookings = bookings.filter(b => b.status === 'no_show').length;
+        const completedBookings = bookings.filter((b) => b.status === 'completed').length;
+        const cancelledBookings = bookings.filter((b) => b.status === 'cancelled').length;
+        const noShowBookings = bookings.filter((b) => b.status === 'no_show').length;
         return {
             period: { startDate, endDate },
             totalBookings,

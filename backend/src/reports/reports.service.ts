@@ -42,7 +42,7 @@ export class ReportsService {
       totalRevenue,
       occupancyRate,
       averageRevenue: reservations.length > 0 ? totalRevenue / reservations.length : 0,
-      statusBreakdown: reservations.reduce((acc: { [key: string]: number }, res) => {
+      statusBreakdown: reservations.reduce((acc: { [key: string]: number }, res: any) => {
         acc[res.status] = (acc[res.status] || 0) + 1;
         return acc;
       }, {}),
@@ -69,7 +69,7 @@ export class ReportsService {
     }
 
     const totalRooms = await totalRoomsQuery.getCount();
-    const occupiedRooms = reservations.filter(res => res.status === 'checked_in').length;
+    const occupiedRooms = reservations.filter((res: any) => res.status === 'checked_in').length;
     const occupancyRate = totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
 
     return {
@@ -78,9 +78,9 @@ export class ReportsService {
       occupiedRooms,
       occupancyRate: Number(occupancyRate.toFixed(2)),
       availableRooms: totalRooms - occupiedRooms,
-      roomTypeBreakdown: reservations.reduce((acc: { [key: string]: number }, res) => {
-        if (res.room) {
-          const roomType = res.room.roomTypeId || 'unknown';
+      roomTypeBreakdown: reservations.reduce((acc: { [key: string]: number }, res: any) => {
+        if (res.assignedRoom) {
+          const roomType = res.assignedRoom.roomTypeId || 'unknown';
           acc[roomType] = (acc[roomType] || 0) + 1;
         }
         return acc;
@@ -108,10 +108,10 @@ export class ReportsService {
 
     const payments = await paymentQuery.getMany();
     
-    const totalRevenue = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    const totalRevenue = payments.reduce((sum: number, payment: any) => sum + Number(payment.amount), 0);
     const averageRevenue = payments.length > 0 ? totalRevenue / payments.length : 0;
 
-    const revenueByMethod = payments.reduce((acc: { [key: string]: number }, payment) => {
+    const revenueByMethod = payments.reduce((acc: { [key: string]: number }, payment: any) => {
       acc[payment.paymentMethod] = (acc[payment.paymentMethod] || 0) + Number(payment.amount);
       return acc;
     }, {});
@@ -145,9 +145,9 @@ export class ReportsService {
     const bookings = await bookingQuery.getMany();
 
     const totalBookings = bookings.length;
-    const completedBookings = bookings.filter(b => b.status === 'completed').length;
-    const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
-    const noShowBookings = bookings.filter(b => b.status === 'no_show').length;
+    const completedBookings = bookings.filter((b: any) => b.status === 'completed').length;
+    const cancelledBookings = bookings.filter((b: any) => b.status === 'cancelled').length;
+    const noShowBookings = bookings.filter((b: any) => b.status === 'no_show').length;
 
     return {
       period: { startDate, endDate },
@@ -156,12 +156,12 @@ export class ReportsService {
       cancelledBookings,
       noShowBookings,
       completionRate: totalBookings > 0 ? Number(((completedBookings / totalBookings) * 100).toFixed(2)) : 0,
-      statusBreakdown: bookings.reduce((acc: { [key: string]: number }, booking) => {
+      statusBreakdown: bookings.reduce((acc: { [key: string]: number }, booking: any) => {
         acc[booking.status] = (acc[booking.status] || 0) + 1;
         return acc;
       }, {}),
       averagePartySize: totalBookings > 0 ? 
-        Number((bookings.reduce((sum, b) => sum + b.pax, 0) / totalBookings).toFixed(2)) : 0,
+        Number((bookings.reduce((sum: number, b: any) => sum + b.pax, 0) / totalBookings).toFixed(2)) : 0,
     };
   }
 
@@ -213,7 +213,7 @@ export class ReportsService {
     }
 
     const payments = await paymentQuery.getMany();
-    return payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    return payments.reduce((sum: number, payment: any) => sum + Number(payment.amount), 0);
   }
 
   private async getOccupancyRate(startDate: string, endDate: string, propertyId?: string): Promise<number> {

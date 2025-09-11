@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   ParseIntPipe,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RestaurantsService } from './restaurants.service';
@@ -156,6 +157,9 @@ export class RestaurantsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: { tableId?: string },
   ) {
+    if (!body.tableId) {
+      throw new BadRequestException('Table ID is required');
+    }
     return this.restaurantsService.seatGuests(id, body.tableId);
   }
 
