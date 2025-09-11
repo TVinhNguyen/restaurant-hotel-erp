@@ -1,6 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User } from '../entities/auth/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { UserPayload } from './interfaces/user.interface';
 export declare class AuthService {
@@ -14,6 +14,7 @@ export declare class AuthService {
         phone: string;
         createdAt: Date;
         updatedAt: Date;
+        employee: import("../entities").Employee;
     }>;
     validateUser(email: string, password: string): Promise<UserPayload | null>;
     login(user: UserPayload): {

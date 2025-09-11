@@ -1,0 +1,2086 @@
+# Restaurant Hotel ERP API Documentation
+
+## Base URL
+```
+http://localhost:3000/api
+```
+
+## Authentication
+All protected endpoints require Bearer token authentication.
+```
+Authorization: Bearer <your_jwt_token>
+```
+
+---
+
+## 1. Authentication Module
+
+### POST /auth/login
+Login with email and password
+```json
+Request Body:
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+Response:
+{
+  "access_token": "jwt_token_here",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "User Name"
+  }
+}
+```
+
+### POST /auth/register
+Register new user account
+```json
+Request Body:
+{
+  "email": "user@example.com",
+  "name": "User Name",
+  "phone": "+84123456789",
+  "password": "password123"
+}
+
+Response:
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "name": "User Name",
+  "created_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### POST /auth/logout
+Logout current user
+```json
+Response:
+{
+  "message": "Logged out successfully"
+}
+```
+
+### GET /auth/profile
+Get current user profile
+```json
+Response:
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "name": "User Name",
+  "phone": "+84123456789",
+  "created_at": "2025-09-11T00:00:00Z"
+}
+```
+
+---
+
+## 2. Users Management
+
+### GET /users
+Get all users (Admin only)
+```json
+Query Parameters:
+- page: number (default: 1)
+- limit: number (default: 10)
+- search: string (optional)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "email": "user@example.com",
+      "name": "User Name",
+      "phone": "+84123456789",
+      "created_at": "2025-09-11T00:00:00Z"
+    }
+  ],
+  "total": 100,
+  "page": 1,
+  "limit": 10
+}
+```
+
+### GET /users/:id
+Get user by ID
+```json
+Response:
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "name": "User Name",
+  "phone": "+84123456789",
+  "created_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### PUT /users/:id
+Update user information
+```json
+Request Body:
+{
+  "name": "Updated Name",
+  "phone": "+84987654321"
+}
+
+Response:
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "name": "Updated Name",
+  "phone": "+84987654321",
+  "updated_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### DELETE /users/:id
+Delete user (Admin only)
+```json
+Response:
+{
+  "message": "User deleted successfully"
+}
+```
+
+---
+
+## 3. Roles Management
+
+### GET /roles
+Get all roles
+```json
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "Super Admin",
+      "description": "Full system access",
+      "scope": "global"
+    }
+  ]
+}
+```
+
+### POST /roles
+Create new role (Admin only)
+```json
+Request Body:
+{
+  "name": "Manager",
+  "description": "Property manager role",
+  "scope": "per_property"
+}
+
+Response:
+{
+  "id": "uuid",
+  "name": "Manager",
+  "description": "Property manager role",
+  "scope": "per_property"
+}
+```
+
+---
+
+## 4. Properties Management
+
+### GET /properties
+Get all properties
+```json
+Query Parameters:
+- page: number (default: 1)
+- limit: number (default: 10)
+- type: string (Hotel, Resort, Restaurant Chain)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "Grand Hotel",
+      "address": "123 Main Street",
+      "city": "Ho Chi Minh City",
+      "country": "Vietnam",
+      "phone": "+84281234567",
+      "email": "info@grandhotel.com",
+      "property_type": "Hotel",
+      "check_in_time": "14:00:00",
+      "check_out_time": "12:00:00"
+    }
+  ],
+  "total": 10,
+  "page": 1,
+  "limit": 10
+}
+```
+
+### POST /properties
+Create new property
+```json
+Request Body:
+{
+  "name": "Grand Hotel",
+  "address": "123 Main Street",
+  "city": "Ho Chi Minh City",
+  "country": "Vietnam",
+  "phone": "+84281234567",
+  "email": "info@grandhotel.com",
+  "property_type": "Hotel",
+  "check_in_time": "14:00:00",
+  "check_out_time": "12:00:00"
+}
+
+Response:
+{
+  "id": "uuid",
+  "name": "Grand Hotel",
+  "address": "123 Main Street",
+  // ... other fields
+}
+```
+
+### GET /properties/:id
+Get property by ID
+```json
+Response:
+{
+  "id": "uuid",
+  "name": "Grand Hotel",
+  "address": "123 Main Street",
+  // ... all property fields
+}
+```
+
+### PUT /properties/:id
+Update property
+```json
+Request Body:
+{
+  "name": "Updated Hotel Name",
+  "phone": "+84281234999"
+}
+
+Response:
+{
+  "id": "uuid",
+  "name": "Updated Hotel Name",
+  // ... updated fields
+}
+```
+
+### DELETE /properties/:id
+Delete property
+```json
+Response:
+{
+  "message": "Property deleted successfully"
+}
+```
+
+---
+
+## 5. Guests Management
+
+### GET /guests
+Get all guests
+```json
+Query Parameters:
+- page: number (default: 1)
+- limit: number (default: 10)
+- search: string (search by name, email, phone)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "phone": "+84123456789",
+      "loyalty_tier": "Gold",
+      "passport_id": "A1234567",
+      "consent_marketing": true,
+      "created_at": "2025-09-11T00:00:00Z"
+    }
+  ],
+  "total": 50,
+  "page": 1,
+  "limit": 10
+}
+```
+
+### POST /guests
+Create new guest
+```json
+Request Body:
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+84123456789",
+  "passport_id": "A1234567",
+  "consent_marketing": true
+}
+
+Response:
+{
+  "id": "uuid",
+  "name": "John Doe",
+  "email": "john@example.com",
+  // ... other fields
+  "created_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### GET /guests/:id
+Get guest by ID
+```json
+Response:
+{
+  "id": "uuid",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+84123456789",
+  "loyalty_tier": "Gold",
+  "passport_id": "A1234567",
+  "reservations": [
+    {
+      "id": "uuid",
+      "check_in": "2025-09-15",
+      "check_out": "2025-09-17",
+      "status": "confirmed"
+    }
+  ]
+}
+```
+
+### PUT /guests/:id
+Update guest information
+```json
+Request Body:
+{
+  "phone": "+84987654321",
+  "loyalty_tier": "Platinum"
+}
+
+Response:
+{
+  "id": "uuid",
+  "name": "John Doe",
+  "phone": "+84987654321",
+  "loyalty_tier": "Platinum",
+  // ... other fields
+  "updated_at": "2025-09-11T00:00:00Z"
+}
+```
+
+---
+
+## 6. Room Types & Inventory
+
+### GET /room-types
+Get all room types for a property
+```json
+Query Parameters:
+- property_id: string (required)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "property_id": "uuid",
+      "name": "Deluxe Room",
+      "description": "Spacious room with city view",
+      "max_adults": 2,
+      "max_children": 1,
+      "base_price": 150.00,
+      "bed_type": "Queen",
+      "amenities": [
+        {
+          "id": "uuid",
+          "name": "WiFi",
+          "category": "room"
+        }
+      ],
+      "photos": [
+        {
+          "id": "uuid",
+          "url": "https://example.com/room1.jpg",
+          "caption": "Room view"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### POST /room-types
+Create new room type
+```json
+Request Body:
+{
+  "property_id": "uuid",
+  "name": "Deluxe Room",
+  "description": "Spacious room with city view",
+  "max_adults": 2,
+  "max_children": 1,
+  "base_price": 150.00,
+  "bed_type": "Queen"
+}
+
+Response:
+{
+  "id": "uuid",
+  "property_id": "uuid",
+  "name": "Deluxe Room",
+  // ... other fields
+}
+```
+
+### GET /rooms
+Get all rooms
+```json
+Query Parameters:
+- property_id: string (required)
+- floor: string (optional)
+- status: string (available, out_of_service)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "property_id": "uuid",
+      "room_type": {
+        "id": "uuid",
+        "name": "Deluxe Room"
+      },
+      "number": "101",
+      "floor": "1",
+      "view_type": "City View",
+      "operational_status": "available",
+      "housekeeping_status": "clean"
+    }
+  ]
+}
+```
+
+### POST /rooms
+Create new room
+```json
+Request Body:
+{
+  "property_id": "uuid",
+  "room_type_id": "uuid",
+  "number": "101",
+  "floor": "1",
+  "view_type": "City View"
+}
+
+Response:
+{
+  "id": "uuid",
+  "property_id": "uuid",
+  "room_type_id": "uuid",
+  "number": "101",
+  // ... other fields
+}
+```
+
+### PUT /rooms/:id/status
+Update room status
+```json
+Request Body:
+{
+  "operational_status": "out_of_service",
+  "housekeeping_status": "dirty",
+  "notes": "Maintenance required"
+}
+
+Response:
+{
+  "id": "uuid",
+  "operational_status": "out_of_service",
+  "housekeeping_status": "dirty",
+  "updated_at": "2025-09-11T00:00:00Z"
+}
+```
+
+---
+
+## 7. Reservations Management
+
+### GET /reservations
+Get all reservations
+```json
+Query Parameters:
+- property_id: string (required)
+- status: string (pending, confirmed, checked_in, checked_out, cancelled)
+- check_in_from: date (YYYY-MM-DD)
+- check_in_to: date (YYYY-MM-DD)
+- page: number (default: 1)
+- limit: number (default: 10)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "confirmation_code": "ABC123",
+      "guest": {
+        "id": "uuid",
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "property": {
+        "id": "uuid",
+        "name": "Grand Hotel"
+      },
+      "room_type": {
+        "id": "uuid",
+        "name": "Deluxe Room"
+      },
+      "assigned_room": {
+        "id": "uuid",
+        "number": "101"
+      },
+      "check_in": "2025-09-15",
+      "check_out": "2025-09-17",
+      "adults": 2,
+      "children": 0,
+      "status": "confirmed",
+      "channel": "website",
+      "total_amount": 300.00,
+      "payment_status": "paid",
+      "created_at": "2025-09-11T00:00:00Z"
+    }
+  ],
+  "total": 25,
+  "page": 1,
+  "limit": 10
+}
+```
+
+### POST /reservations
+Create new reservation
+```json
+Request Body:
+{
+  "property_id": "uuid",
+  "guest_id": "uuid",
+  "room_type_id": "uuid",
+  "rate_plan_id": "uuid",
+  "check_in": "2025-09-15",
+  "check_out": "2025-09-17",
+  "adults": 2,
+  "children": 0,
+  "channel": "website",
+  "contact_name": "John Doe",
+  "contact_email": "john@example.com",
+  "contact_phone": "+84123456789",
+  "guest_notes": "Late arrival expected"
+}
+
+Response:
+{
+  "id": "uuid",
+  "confirmation_code": "ABC123",
+  "property_id": "uuid",
+  "guest_id": "uuid",
+  // ... all reservation fields
+  "created_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### GET /reservations/:id
+Get reservation by ID
+```json
+Response:
+{
+  "id": "uuid",
+  "confirmation_code": "ABC123",
+  "guest": {
+    "id": "uuid",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+84123456789"
+  },
+  "property": {
+    "id": "uuid",
+    "name": "Grand Hotel"
+  },
+  "room_type": {
+    "id": "uuid",
+    "name": "Deluxe Room",
+    "base_price": 150.00
+  },
+  "rate_plan": {
+    "id": "uuid",
+    "name": "Standard Rate",
+    "cancellation_policy": "Free cancellation up to 24 hours"
+  },
+  "assigned_room": {
+    "id": "uuid",
+    "number": "101",
+    "floor": "1"
+  },
+  "check_in": "2025-09-15",
+  "check_out": "2025-09-17",
+  "adults": 2,
+  "children": 0,
+  "status": "confirmed",
+  "payment_status": "paid",
+  "total_amount": 300.00,
+  "tax_amount": 30.00,
+  "service_amount": 20.00,
+  "payments": [
+    {
+      "id": "uuid",
+      "amount": 300.00,
+      "method": "card",
+      "status": "captured",
+      "paid_at": "2025-09-11T00:00:00Z"
+    }
+  ],
+  "services": [
+    {
+      "id": "uuid",
+      "service_name": "Airport Transfer",
+      "quantity": 1,
+      "total_price": 50.00
+    }
+  ]
+}
+```
+
+### PUT /reservations/:id
+Update reservation
+```json
+Request Body:
+{
+  "adults": 3,
+  "guest_notes": "Updated guest requirements",
+  "assigned_room_id": "uuid"
+}
+
+Response:
+{
+  "id": "uuid",
+  "adults": 3,
+  "guest_notes": "Updated guest requirements",
+  // ... other fields
+  "updated_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### PUT /reservations/:id/status
+Update reservation status
+```json
+Request Body:
+{
+  "status": "checked_in"
+}
+
+Response:
+{
+  "id": "uuid",
+  "status": "checked_in",
+  "updated_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### POST /reservations/:id/check-in
+Check-in guest
+```json
+Request Body:
+{
+  "assigned_room_id": "uuid",
+  "notes": "Guest checked in early"
+}
+
+Response:
+{
+  "id": "uuid",
+  "status": "checked_in",
+  "assigned_room_id": "uuid",
+  "check_in_time": "2025-09-15T13:30:00Z"
+}
+```
+
+### POST /reservations/:id/check-out
+Check-out guest
+```json
+Request Body:
+{
+  "notes": "Guest checked out on time"
+}
+
+Response:
+{
+  "id": "uuid",
+  "status": "checked_out",
+  "check_out_time": "2025-09-17T11:45:00Z"
+}
+```
+
+### DELETE /reservations/:id
+Cancel reservation
+```json
+Response:
+{
+  "id": "uuid",
+  "status": "cancelled",
+  "cancelled_at": "2025-09-11T00:00:00Z"
+}
+```
+
+---
+
+## 8. Payments
+
+### GET /payments
+Get payments for reservation
+```json
+Query Parameters:
+- reservation_id: string (optional)
+- status: string (authorized, captured, refunded, voided)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "reservation_id": "uuid",
+      "amount": 300.00,
+      "currency": "USD",
+      "method": "card",
+      "transaction_id": "txn_123456",
+      "status": "captured",
+      "paid_at": "2025-09-11T00:00:00Z"
+    }
+  ]
+}
+```
+
+### POST /payments
+Process payment
+```json
+Request Body:
+{
+  "reservation_id": "uuid",
+  "amount": 300.00,
+  "currency": "USD",
+  "method": "card",
+  "transaction_id": "txn_123456"
+}
+
+Response:
+{
+  "id": "uuid",
+  "reservation_id": "uuid",
+  "amount": 300.00,
+  "currency": "USD",
+  "method": "card",
+  "status": "captured",
+  "paid_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### POST /payments/:id/refund
+Refund payment
+```json
+Request Body:
+{
+  "amount": 100.00,
+  "reason": "Partial refund for early checkout"
+}
+
+Response:
+{
+  "id": "uuid",
+  "parent_payment_id": "uuid",
+  "amount": -100.00,
+  "status": "refunded",
+  "paid_at": "2025-09-11T00:00:00Z"
+}
+```
+
+---
+
+## 9. Rate Plans & Pricing
+
+### GET /rate-plans
+Get rate plans
+```json
+Query Parameters:
+- property_id: string (required)
+- room_type_id: string (optional)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "property_id": "uuid",
+      "room_type": {
+        "id": "uuid",
+        "name": "Deluxe Room"
+      },
+      "name": "Standard Rate",
+      "cancellation_policy": "Free cancellation up to 24 hours",
+      "currency": "USD",
+      "min_stay": 1,
+      "max_stay": 7,
+      "is_refundable": true
+    }
+  ]
+}
+```
+
+### POST /rate-plans
+Create rate plan
+```json
+Request Body:
+{
+  "property_id": "uuid",
+  "room_type_id": "uuid",
+  "name": "Standard Rate",
+  "cancellation_policy": "Free cancellation up to 24 hours",
+  "currency": "USD",
+  "min_stay": 1,
+  "max_stay": 7,
+  "is_refundable": true
+}
+
+Response:
+{
+  "id": "uuid",
+  "property_id": "uuid",
+  "room_type_id": "uuid",
+  "name": "Standard Rate",
+  // ... other fields
+}
+```
+
+### GET /daily-rates
+Get daily rates
+```json
+Query Parameters:
+- rate_plan_id: string (required)
+- date_from: date (YYYY-MM-DD)
+- date_to: date (YYYY-MM-DD)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "rate_plan_id": "uuid",
+      "date": "2025-09-15",
+      "price": 150.00,
+      "available_rooms": 10,
+      "stop_sell": false
+    }
+  ]
+}
+```
+
+### POST /daily-rates
+Set daily rates
+```json
+Request Body:
+{
+  "rate_plan_id": "uuid",
+  "rates": [
+    {
+      "date": "2025-09-15",
+      "price": 150.00,
+      "available_rooms": 10
+    },
+    {
+      "date": "2025-09-16",
+      "price": 180.00,
+      "available_rooms": 8
+    }
+  ]
+}
+
+Response:
+{
+  "created": 2,
+  "rates": [
+    {
+      "id": "uuid",
+      "date": "2025-09-15",
+      "price": 150.00,
+      "available_rooms": 10
+    }
+  ]
+}
+```
+
+---
+
+## 10. Restaurant Management
+
+### GET /restaurants
+Get restaurants
+```json
+Query Parameters:
+- property_id: string (required)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "property_id": "uuid",
+      "name": "Main Restaurant",
+      "description": "Fine dining restaurant",
+      "location": "Ground Floor",
+      "opening_hours": "18:00-23:00",
+      "cuisine_type": "International"
+    }
+  ]
+}
+```
+
+### POST /restaurants
+Create restaurant
+```json
+Request Body:
+{
+  "property_id": "uuid",
+  "name": "Main Restaurant",
+  "description": "Fine dining restaurant",
+  "location": "Ground Floor",
+  "opening_hours": "18:00-23:00",
+  "cuisine_type": "International"
+}
+
+Response:
+{
+  "id": "uuid",
+  "property_id": "uuid",
+  "name": "Main Restaurant",
+  // ... other fields
+}
+```
+
+### GET /restaurants/:id/tables
+Get restaurant tables
+```json
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "restaurant_id": "uuid",
+      "area": {
+        "id": "uuid",
+        "name": "Main Dining"
+      },
+      "table_number": "T01",
+      "capacity": 4,
+      "status": "available"
+    }
+  ]
+}
+```
+
+### POST /restaurants/:id/tables
+Create table
+```json
+Request Body:
+{
+  "area_id": "uuid",
+  "table_number": "T01",
+  "capacity": 4
+}
+
+Response:
+{
+  "id": "uuid",
+  "restaurant_id": "uuid",
+  "area_id": "uuid",
+  "table_number": "T01",
+  "capacity": 4,
+  "status": "available"
+}
+```
+
+### GET /restaurants/:id/menu
+Get restaurant menu
+```json
+Response:
+{
+  "categories": [
+    {
+      "id": "uuid",
+      "name": "Appetizers",
+      "description": "Start your meal",
+      "display_order": 1,
+      "items": [
+        {
+          "id": "uuid",
+          "name": "Caesar Salad",
+          "description": "Fresh romaine lettuce with caesar dressing",
+          "price": 12.50,
+          "currency": "USD",
+          "preparation_time_minutes": 10,
+          "is_available": true,
+          "is_vegetarian": true,
+          "allergens": "Contains dairy, gluten",
+          "calories": 250
+        }
+      ]
+    }
+  ]
+}
+```
+
+### POST /restaurants/:id/menu/categories
+Create menu category
+```json
+Request Body:
+{
+  "name": "Appetizers",
+  "description": "Start your meal",
+  "display_order": 1
+}
+
+Response:
+{
+  "id": "uuid",
+  "restaurant_id": "uuid",
+  "name": "Appetizers",
+  "description": "Start your meal",
+  "display_order": 1,
+  "is_active": true
+}
+```
+
+### POST /restaurants/:id/menu/items
+Create menu item
+```json
+Request Body:
+{
+  "category_id": "uuid",
+  "name": "Caesar Salad",
+  "description": "Fresh romaine lettuce with caesar dressing",
+  "price": 12.50,
+  "currency": "USD",
+  "preparation_time_minutes": 10,
+  "is_vegetarian": true,
+  "allergens": "Contains dairy, gluten",
+  "calories": 250
+}
+
+Response:
+{
+  "id": "uuid",
+  "restaurant_id": "uuid",
+  "category_id": "uuid",
+  "name": "Caesar Salad",
+  // ... other fields
+}
+```
+
+---
+
+## 11. Table Bookings
+
+### GET /table-bookings
+Get table bookings
+```json
+Query Parameters:
+- restaurant_id: string (required)
+- booking_date: date (YYYY-MM-DD)
+- status: string (pending, confirmed, seated, completed, cancelled)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "restaurant": {
+        "id": "uuid",
+        "name": "Main Restaurant"
+      },
+      "guest": {
+        "id": "uuid",
+        "name": "John Doe"
+      },
+      "booking_date": "2025-09-15",
+      "booking_time": "19:00:00",
+      "pax": 4,
+      "status": "confirmed",
+      "assigned_table": {
+        "id": "uuid",
+        "table_number": "T01"
+      },
+      "special_requests": "Window seat preferred",
+      "duration_minutes": 90
+    }
+  ]
+}
+```
+
+### POST /table-bookings
+Create table booking
+```json
+Request Body:
+{
+  "restaurant_id": "uuid",
+  "guest_id": "uuid",
+  "booking_date": "2025-09-15",
+  "booking_time": "19:00:00",
+  "pax": 4,
+  "special_requests": "Window seat preferred"
+}
+
+Response:
+{
+  "id": "uuid",
+  "restaurant_id": "uuid",
+  "guest_id": "uuid",
+  "booking_date": "2025-09-15",
+  "booking_time": "19:00:00",
+  "pax": 4,
+  "status": "pending",
+  "special_requests": "Window seat preferred",
+  "duration_minutes": 90,
+  "created_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### PUT /table-bookings/:id/status
+Update booking status
+```json
+Request Body:
+{
+  "status": "seated",
+  "assigned_table_id": "uuid"
+}
+
+Response:
+{
+  "id": "uuid",
+  "status": "seated",
+  "assigned_table_id": "uuid",
+  "updated_at": "2025-09-15T19:00:00Z"
+}
+```
+
+---
+
+## 12. Restaurant Orders
+
+### GET /orders
+Get restaurant orders
+```json
+Query Parameters:
+- restaurant_id: string (required)
+- status: string (pending, confirmed, preparing, ready, served, completed)
+- order_type: string (dine_in, takeaway, delivery, room_service)
+- date: date (YYYY-MM-DD)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "order_number": "ORD-001",
+      "restaurant": {
+        "id": "uuid",
+        "name": "Main Restaurant"
+      },
+      "table": {
+        "id": "uuid",
+        "table_number": "T01"
+      },
+      "guest": {
+        "id": "uuid",
+        "name": "John Doe"
+      },
+      "order_type": "dine_in",
+      "status": "preparing",
+      "subtotal": 45.50,
+      "tax_amount": 4.55,
+      "service_charge": 2.25,
+      "total_amount": 52.30,
+      "payment_status": "unpaid",
+      "items": [
+        {
+          "id": "uuid",
+          "menu_item": {
+            "id": "uuid",
+            "name": "Caesar Salad"
+          },
+          "quantity": 2,
+          "unit_price": 12.50,
+          "total_price": 25.00,
+          "status": "preparing"
+        }
+      ],
+      "created_at": "2025-09-15T19:30:00Z"
+    }
+  ]
+}
+```
+
+### POST /orders
+Create restaurant order
+```json
+Request Body:
+{
+  "restaurant_id": "uuid",
+  "table_id": "uuid",
+  "guest_id": "uuid",
+  "order_type": "dine_in",
+  "items": [
+    {
+      "menu_item_id": "uuid",
+      "quantity": 2,
+      "special_instructions": "No croutons"
+    }
+  ],
+  "special_instructions": "Rush order"
+}
+
+Response:
+{
+  "id": "uuid",
+  "order_number": "ORD-001",
+  "restaurant_id": "uuid",
+  "table_id": "uuid",
+  "guest_id": "uuid",
+  "order_type": "dine_in",
+  "status": "pending",
+  "subtotal": 25.00,
+  "total_amount": 27.25,
+  "payment_status": "unpaid",
+  "items": [
+    {
+      "id": "uuid",
+      "menu_item_id": "uuid",
+      "quantity": 2,
+      "unit_price": 12.50,
+      "total_price": 25.00,
+      "status": "pending",
+      "special_instructions": "No croutons"
+    }
+  ],
+  "created_at": "2025-09-15T19:30:00Z"
+}
+```
+
+### PUT /orders/:id/status
+Update order status
+```json
+Request Body:
+{
+  "status": "ready"
+}
+
+Response:
+{
+  "id": "uuid",
+  "status": "ready",
+  "updated_at": "2025-09-15T20:00:00Z"
+}
+```
+
+### POST /orders/:id/payment
+Process order payment
+```json
+Request Body:
+{
+  "amount": 52.30,
+  "currency": "USD",
+  "method": "card",
+  "transaction_id": "txn_789"
+}
+
+Response:
+{
+  "id": "uuid",
+  "order_id": "uuid",
+  "amount": 52.30,
+  "currency": "USD",
+  "method": "card",
+  "status": "captured",
+  "paid_at": "2025-09-15T20:30:00Z"
+}
+```
+
+---
+
+## 13. Employee Management
+
+### GET /employees
+Get all employees
+```json
+Query Parameters:
+- property_id: string (optional)
+- department: string (Front Desk, Housekeeping, HR, F&B)
+- status: string (active, on_leave, terminated)
+- page: number (default: 1)
+- limit: number (default: 10)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "employee_code": "EMP001",
+      "full_name": "Jane Smith",
+      "department": "Front Desk",
+      "status": "active",
+      "hire_date": "2025-01-15",
+      "user": {
+        "id": "uuid",
+        "email": "jane@hotel.com"
+      },
+      "roles": [
+        {
+          "id": "uuid",
+          "role": {
+            "name": "Front Desk"
+          },
+          "property_id": "uuid"
+        }
+      ]
+    }
+  ],
+  "total": 15,
+  "page": 1,
+  "limit": 10
+}
+```
+
+### POST /employees
+Create new employee
+```json
+Request Body:
+{
+  "user_id": "uuid",
+  "employee_code": "EMP001",
+  "full_name": "Jane Smith",
+  "department": "Front Desk",
+  "hire_date": "2025-01-15"
+}
+
+Response:
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "employee_code": "EMP001",
+  "full_name": "Jane Smith",
+  "department": "Front Desk",
+  "status": "active",
+  "hire_date": "2025-01-15"
+}
+```
+
+### GET /employees/:id
+Get employee by ID
+```json
+Response:
+{
+  "id": "uuid",
+  "employee_code": "EMP001",
+  "full_name": "Jane Smith",
+  "department": "Front Desk",
+  "status": "active",
+  "hire_date": "2025-01-15",
+  "user": {
+    "id": "uuid",
+    "email": "jane@hotel.com",
+    "phone": "+84123456789"
+  },
+  "roles": [
+    {
+      "id": "uuid",
+      "property_id": "uuid",
+      "role": {
+        "id": "uuid",
+        "name": "Front Desk",
+        "description": "Reception and guest services"
+      },
+      "effective_from": "2025-01-15"
+    }
+  ],
+  "recent_shifts": [
+    {
+      "id": "uuid",
+      "working_date": "2025-09-11",
+      "start_time": "08:00:00",
+      "end_time": "16:00:00",
+      "shift_type": "morning"
+    }
+  ]
+}
+```
+
+### PUT /employees/:id
+Update employee
+```json
+Request Body:
+{
+  "department": "HR",
+  "status": "active"
+}
+
+Response:
+{
+  "id": "uuid",
+  "employee_code": "EMP001",
+  "full_name": "Jane Smith",
+  "department": "HR",
+  "status": "active",
+  "updated_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### POST /employees/:id/roles
+Assign role to employee
+```json
+Request Body:
+{
+  "property_id": "uuid",
+  "role_id": "uuid",
+  "effective_from": "2025-09-11"
+}
+
+Response:
+{
+  "id": "uuid",
+  "employee_id": "uuid",
+  "property_id": "uuid",
+  "role_id": "uuid",
+  "effective_from": "2025-09-11"
+}
+```
+
+---
+
+## 14. Working Shifts
+
+### GET /working-shifts
+Get working shifts
+```json
+Query Parameters:
+- property_id: string (required)
+- employee_id: string (optional)
+- date_from: date (YYYY-MM-DD)
+- date_to: date (YYYY-MM-DD)
+- shift_type: string (morning, night, other)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "property": {
+        "id": "uuid",
+        "name": "Grand Hotel"
+      },
+      "employee": {
+        "id": "uuid",
+        "full_name": "Jane Smith",
+        "employee_code": "EMP001"
+      },
+      "working_date": "2025-09-11",
+      "start_time": "08:00:00",
+      "end_time": "16:00:00",
+      "shift_type": "morning",
+      "is_reassigned": false,
+      "attendance": {
+        "id": "uuid",
+        "check_in_time": "2025-09-11T08:05:00Z",
+        "check_out_time": "2025-09-11T16:02:00Z"
+      }
+    }
+  ]
+}
+```
+
+### POST /working-shifts
+Create working shift
+```json
+Request Body:
+{
+  "property_id": "uuid",
+  "employee_id": "uuid",
+  "working_date": "2025-09-11",
+  "start_time": "08:00:00",
+  "end_time": "16:00:00",
+  "shift_type": "morning",
+  "notes": "Regular shift"
+}
+
+Response:
+{
+  "id": "uuid",
+  "property_id": "uuid",
+  "employee_id": "uuid",
+  "working_date": "2025-09-11",
+  "start_time": "08:00:00",
+  "end_time": "16:00:00",
+  "shift_type": "morning",
+  "notes": "Regular shift",
+  "is_reassigned": false,
+  "created_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### PUT /working-shifts/:id
+Update working shift
+```json
+Request Body:
+{
+  "start_time": "09:00:00",
+  "end_time": "17:00:00",
+  "is_reassigned": true,
+  "notes": "Shift time adjusted"
+}
+
+Response:
+{
+  "id": "uuid",
+  "start_time": "09:00:00",
+  "end_time": "17:00:00",
+  "is_reassigned": true,
+  "notes": "Shift time adjusted",
+  "updated_at": "2025-09-11T00:00:00Z"
+}
+```
+
+---
+
+## 15. Attendance
+
+### GET /attendance
+Get attendance records
+```json
+Query Parameters:
+- employee_id: string (optional)
+- date_from: date (YYYY-MM-DD)
+- date_to: date (YYYY-MM-DD)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "employee": {
+        "id": "uuid",
+        "full_name": "Jane Smith",
+        "employee_code": "EMP001"
+      },
+      "working_shift": {
+        "id": "uuid",
+        "working_date": "2025-09-11",
+        "start_time": "08:00:00",
+        "end_time": "16:00:00"
+      },
+      "check_in_time": "2025-09-11T08:05:00Z",
+      "check_out_time": "2025-09-11T16:02:00Z",
+      "hours_worked": 7.95,
+      "is_late": true,
+      "is_early_out": false
+    }
+  ]
+}
+```
+
+### POST /attendance/check-in
+Check-in employee
+```json
+Request Body:
+{
+  "employee_id": "uuid",
+  "working_shift_id": "uuid",
+  "notes": "On time"
+}
+
+Response:
+{
+  "id": "uuid",
+  "employee_id": "uuid",
+  "working_shift_id": "uuid",
+  "check_in_time": "2025-09-11T08:05:00Z",
+  "notes": "On time"
+}
+```
+
+### PUT /attendance/:id/check-out
+Check-out employee
+```json
+Request Body:
+{
+  "notes": "Completed shift"
+}
+
+Response:
+{
+  "id": "uuid",
+  "check_out_time": "2025-09-11T16:02:00Z",
+  "notes": "Completed shift",
+  "hours_worked": 7.95
+}
+```
+
+---
+
+## 16. Leave Management
+
+### GET /leaves
+Get leave requests
+```json
+Query Parameters:
+- employee_id: string (optional)
+- status: string (pending, approved, rejected)
+- leave_type: string (annual, sick, unpaid, other)
+- date_from: date (YYYY-MM-DD)
+- date_to: date (YYYY-MM-DD)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "employee": {
+        "id": "uuid",
+        "full_name": "Jane Smith",
+        "employee_code": "EMP001"
+      },
+      "leave_date": "2025-09-20",
+      "number_of_days": 3,
+      "leave_type": "annual",
+      "status": "pending",
+      "reason": "Family vacation",
+      "approved_by": null,
+      "hr_note": null,
+      "created_at": "2025-09-11T00:00:00Z"
+    }
+  ]
+}
+```
+
+### POST /leaves
+Submit leave request
+```json
+Request Body:
+{
+  "employee_id": "uuid",
+  "leave_date": "2025-09-20",
+  "number_of_days": 3,
+  "leave_type": "annual",
+  "reason": "Family vacation"
+}
+
+Response:
+{
+  "id": "uuid",
+  "employee_id": "uuid",
+  "leave_date": "2025-09-20",
+  "number_of_days": 3,
+  "leave_type": "annual",
+  "status": "pending",
+  "reason": "Family vacation",
+  "created_at": "2025-09-11T00:00:00Z"
+}
+```
+
+### PUT /leaves/:id/approve
+Approve/reject leave request
+```json
+Request Body:
+{
+  "status": "approved",
+  "approved_by": "uuid",
+  "hr_note": "Approved for annual leave"
+}
+
+Response:
+{
+  "id": "uuid",
+  "status": "approved",
+  "approved_by": "uuid",
+  "hr_note": "Approved for annual leave",
+  "updated_at": "2025-09-11T00:00:00Z"
+}
+```
+
+---
+
+## 17. Payroll
+
+### GET /payrolls
+Get payroll records
+```json
+Query Parameters:
+- employee_id: string (optional)
+- period: string (YYYY-MM)
+
+Response:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "employee": {
+        "id": "uuid",
+        "full_name": "Jane Smith",
+        "employee_code": "EMP001"
+      },
+      "period": "2025-09",
+      "basic_salary": 1500.00,
+      "net_salary": 1650.00,
+      "bonus": 200.00,
+      "overtime_amount": 150.00,
+      "deductions_amount": 200.00,
+      "currency": "USD",
+      "created_at": "2025-09-30T00:00:00Z"
+    }
+  ]
+}
+```
+
+### POST /payrolls
+Create payroll record
+```json
+Request Body:
+{
+  "employee_id": "uuid",
+  "period": "2025-09",
+  "basic_salary": 1500.00,
+  "net_salary": 1650.00,
+  "bonus": 200.00,
+  "currency": "USD"
+}
+
+Response:
+{
+  "id": "uuid",
+  "employee_id": "uuid",
+  "period": "2025-09",
+  "basic_salary": 1500.00,
+  "net_salary": 1650.00,
+  "bonus": 200.00,
+  "currency": "USD",
+  "created_at": "2025-09-30T00:00:00Z"
+}
+```
+
+### GET /payrolls/:id/details
+Get detailed payroll breakdown
+```json
+Response:
+{
+  "id": "uuid",
+  "employee": {
+    "id": "uuid",
+    "full_name": "Jane Smith",
+    "employee_code": "EMP001"
+  },
+  "period": "2025-09",
+  "basic_salary": 1500.00,
+  "net_salary": 1650.00,
+  "bonus": 200.00,
+  "currency": "USD",
+  "overtime_records": [
+    {
+      "id": "uuid",
+      "number_of_hours": 10.5,
+      "rate": 15.00,
+      "amount": 157.50
+    }
+  ],
+  "deductions": [
+    {
+      "id": "uuid",
+      "type": "tax",
+      "amount": 150.00,
+      "reason_details": "Income tax"
+    }
+  ],
+  "attendance_summary": {
+    "total_days": 22,
+    "days_worked": 20,
+    "days_leave": 2,
+    "late_days": 1
+  }
+}
+```
+
+---
+
+## 18. Reports & Analytics
+
+### GET /reports/occupancy
+Get occupancy report
+```json
+Query Parameters:
+- property_id: string (required)
+- date_from: date (YYYY-MM-DD)
+- date_to: date (YYYY-MM-DD)
+- group_by: string (day, week, month)
+
+Response:
+{
+  "data": [
+    {
+      "date": "2025-09-11",
+      "total_rooms": 100,
+      "occupied_rooms": 85,
+      "occupancy_rate": 85.0,
+      "revenue": 12750.00,
+      "adr": 150.00
+    }
+  ],
+  "summary": {
+    "average_occupancy": 82.5,
+    "total_revenue": 89250.00,
+    "average_adr": 148.50
+  }
+}
+```
+
+### GET /reports/revenue
+Get revenue report
+```json
+Query Parameters:
+- property_id: string (required)
+- date_from: date (YYYY-MM-DD)
+- date_to: date (YYYY-MM-DD)
+- breakdown: string (room_type, channel, daily)
+
+Response:
+{
+  "data": [
+    {
+      "category": "Deluxe Room",
+      "revenue": 45000.00,
+      "percentage": 60.0,
+      "bookings": 300
+    },
+    {
+      "category": "Standard Room",
+      "revenue": 30000.00,
+      "percentage": 40.0,
+      "bookings": 400
+    }
+  ],
+  "total_revenue": 75000.00,
+  "total_bookings": 700
+}
+```
+
+### GET /reports/restaurant-sales
+Get restaurant sales report
+```json
+Query Parameters:
+- restaurant_id: string (required)
+- date_from: date (YYYY-MM-DD)
+- date_to: date (YYYY-MM-DD)
+
+Response:
+{
+  "data": [
+    {
+      "date": "2025-09-11",
+      "orders_count": 45,
+      "total_revenue": 2250.00,
+      "average_order_value": 50.00,
+      "top_items": [
+        {
+          "item_name": "Caesar Salad",
+          "quantity_sold": 15,
+          "revenue": 187.50
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_orders": 315,
+    "total_revenue": 15750.00,
+    "average_order_value": 50.00
+  }
+}
+```
+
+### GET /reports/staff-performance
+Get staff performance report
+```json
+Query Parameters:
+- property_id: string (required)
+- department: string (optional)
+- period: string (YYYY-MM)
+
+Response:
+{
+  "data": [
+    {
+      "employee": {
+        "id": "uuid",
+        "full_name": "Jane Smith",
+        "department": "Front Desk"
+      },
+      "attendance_rate": 95.5,
+      "punctuality_rate": 88.0,
+      "overtime_hours": 10.5,
+      "leave_days": 2,
+      "performance_rating": 4.2
+    }
+  ],
+  "department_summary": {
+    "average_attendance": 92.0,
+    "average_punctuality": 85.0,
+    "total_overtime": 156.5
+  }
+}
+```
+
+---
+
+## Error Responses
+
+All API endpoints return consistent error responses:
+
+### 400 Bad Request
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed",
+  "error": "Bad Request",
+  "details": [
+    {
+      "field": "email",
+      "message": "Email must be a valid email address"
+    }
+  ]
+}
+```
+
+### 401 Unauthorized
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid credentials",
+  "error": "Unauthorized"
+}
+```
+
+### 403 Forbidden
+```json
+{
+  "statusCode": 403,
+  "message": "Insufficient permissions",
+  "error": "Forbidden"
+}
+```
+
+### 404 Not Found
+```json
+{
+  "statusCode": 404,
+  "message": "Resource not found",
+  "error": "Not Found"
+}
+```
+
+### 409 Conflict
+```json
+{
+  "statusCode": 409,
+  "message": "Resource already exists",
+  "error": "Conflict"
+}
+```
+
+### 500 Internal Server Error
+```json
+{
+  "statusCode": 500,
+  "message": "Internal server error",
+  "error": "Internal Server Error"
+}
+```
+
+---
+
+## Rate Limiting
+
+- 100 requests per minute per IP for public endpoints
+- 1000 requests per minute per authenticated user
+- 5000 requests per minute for admin users
+
+Rate limit headers are included in responses:
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1694455200
+```
+
+---
+
+## Pagination
+
+All list endpoints support pagination:
+
+### Query Parameters
+- `page`: Page number (default: 1)
+- `limit`: Items per page (default: 10, max: 100)
+
+### Response Format
+```json
+{
+  "data": [...],
+  "total": 250,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 25,
+  "hasNext": true,
+  "hasPrev": false
+}
+```
+
+---
+
+## Webhooks
+
+The system supports webhooks for real-time notifications:
+
+### Webhook Events
+- `reservation.created`
+- `reservation.updated`
+- `reservation.cancelled`
+- `payment.completed`
+- `payment.failed`
+- `order.created`
+- `order.completed`
+
+### Webhook Payload Example
+```json
+{
+  "event": "reservation.created",
+  "timestamp": "2025-09-11T00:00:00Z",
+  "data": {
+    "id": "uuid",
+    "confirmation_code": "ABC123",
+    "property_id": "uuid",
+    "guest_id": "uuid",
+    "check_in": "2025-09-15",
+    "check_out": "2025-09-17",
+    "status": "confirmed"
+  }
+}
+```

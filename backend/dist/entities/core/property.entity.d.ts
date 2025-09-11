@@ -1,0 +1,31 @@
+import { RoomType } from '../inventory/room-type.entity';
+import { Room } from '../inventory/room.entity';
+import { RatePlan } from '../reservation/rate-plan.entity';
+import { PropertyService } from '../reservation/property-service.entity';
+import { Promotion } from '../reservation/promotion.entity';
+import { TaxRule } from '../reservation/tax-rule.entity';
+import { Reservation } from '../reservation/reservation.entity';
+import { Restaurant } from '../restaurant/restaurant.entity';
+import { WorkingShift } from '../hr/working-shift.entity';
+export declare class Property {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+    country: string;
+    phone: string;
+    email: string;
+    website: string;
+    propertyType: 'Hotel' | 'Resort' | 'Restaurant Chain';
+    checkInTime: string;
+    checkOutTime: string;
+    roomTypes: RoomType[];
+    rooms: Room[];
+    ratePlans: RatePlan[];
+    propertyServices: PropertyService[];
+    promotions: Promotion[];
+    taxRules: TaxRule[];
+    reservations: Reservation[];
+    restaurants: Restaurant[];
+    workingShifts: WorkingShift[];
+}
