@@ -23,14 +23,8 @@ let RoomTypesController = class RoomTypesController {
     constructor(roomTypesService) {
         this.roomTypesService = roomTypesService;
     }
-    async findAll(page, limit, propertyId) {
-        const pageNum = page ? parseInt(page, 10) : 1;
-        const limitNum = limit ? parseInt(limit, 10) : 10;
-        return await this.roomTypesService.findAll({
-            page: pageNum,
-            limit: limitNum,
-            propertyId,
-        });
+    async findAll(query) {
+        return await this.roomTypesService.findAll(query);
     }
     async findOne(id) {
         return await this.roomTypesService.findOne(id);
@@ -45,15 +39,23 @@ let RoomTypesController = class RoomTypesController {
         await this.roomTypesService.remove(id);
         return { message: 'Room type deleted successfully' };
     }
+    async addAmenity(roomTypeId, addAmenityDto) {
+        return await this.roomTypesService.addAmenity(roomTypeId, addAmenityDto.amenityId);
+    }
+    async removeAmenity(roomTypeId, amenityId) {
+        await this.roomTypesService.removeAmenity(roomTypeId, amenityId);
+        return { message: 'Amenity removed from room type successfully' };
+    }
+    async addMultipleAmenities(roomTypeId, bulkAddDto) {
+        return await this.roomTypesService.addMultipleAmenities(roomTypeId, bulkAddDto.amenityIds);
+    }
 };
 exports.RoomTypesController = RoomTypesController;
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('page')),
-    __param(1, (0, common_1.Query)('limit')),
-    __param(2, (0, common_1.Query)('propertyId')),
+    __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [create_room_type_dto_1.RoomTypeQueryDto]),
     __metadata("design:returntype", Promise)
 ], RoomTypesController.prototype, "findAll", null);
 __decorate([
@@ -86,6 +88,31 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], RoomTypesController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)(':id/amenities'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, create_room_type_dto_1.AddAmenityToRoomTypeDto]),
+    __metadata("design:returntype", Promise)
+], RoomTypesController.prototype, "addAmenity", null);
+__decorate([
+    (0, common_1.Delete)(':roomTypeId/amenities/:amenityId'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Param)('roomTypeId')),
+    __param(1, (0, common_1.Param)('amenityId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], RoomTypesController.prototype, "removeAmenity", null);
+__decorate([
+    (0, common_1.Post)(':id/amenities/bulk'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, create_room_type_dto_1.BulkAddAmenitiesToRoomTypeDto]),
+    __metadata("design:returntype", Promise)
+], RoomTypesController.prototype, "addMultipleAmenities", null);
 exports.RoomTypesController = RoomTypesController = __decorate([
     (0, common_1.Controller)('room-types'),
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),

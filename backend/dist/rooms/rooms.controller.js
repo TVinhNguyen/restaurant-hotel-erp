@@ -23,28 +23,8 @@ let RoomsController = class RoomsController {
     constructor(roomsService) {
         this.roomsService = roomsService;
     }
-    async findAll(page, limit, propertyId, roomTypeId, status, floor) {
-        const pageNum = page ? parseInt(page, 10) : 1;
-        const limitNum = limit ? parseInt(limit, 10) : 10;
-        return await this.roomsService.findAll({
-            page: pageNum,
-            limit: limitNum,
-            propertyId,
-            roomTypeId,
-            status,
-            floor,
-        });
-    }
-    async findAvailable(page, limit, propertyId, checkIn, checkOut) {
-        const pageNum = page ? parseInt(page, 10) : 1;
-        const limitNum = limit ? parseInt(limit, 10) : 10;
-        return await this.roomsService.findAvailable({
-            page: pageNum,
-            limit: limitNum,
-            propertyId,
-            checkIn,
-            checkOut,
-        });
+    async findAll(query) {
+        return await this.roomsService.findAll(query);
     }
     async findOne(id) {
         return await this.roomsService.findOne(id);
@@ -55,8 +35,8 @@ let RoomsController = class RoomsController {
     async update(id, updateRoomDto) {
         return await this.roomsService.update(id, updateRoomDto);
     }
-    async updateStatus(id, statusData) {
-        return await this.roomsService.updateStatus(id, statusData);
+    async updateStatus(id, updateStatusDto) {
+        return await this.roomsService.updateStatus(id, updateStatusDto);
     }
     async remove(id) {
         await this.roomsService.remove(id);
@@ -66,27 +46,11 @@ let RoomsController = class RoomsController {
 exports.RoomsController = RoomsController;
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('page')),
-    __param(1, (0, common_1.Query)('limit')),
-    __param(2, (0, common_1.Query)('propertyId')),
-    __param(3, (0, common_1.Query)('roomTypeId')),
-    __param(4, (0, common_1.Query)('status')),
-    __param(5, (0, common_1.Query)('floor')),
+    __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String, String, String]),
+    __metadata("design:paramtypes", [create_room_dto_1.RoomQueryDto]),
     __metadata("design:returntype", Promise)
 ], RoomsController.prototype, "findAll", null);
-__decorate([
-    (0, common_1.Get)('available'),
-    __param(0, (0, common_1.Query)('page')),
-    __param(1, (0, common_1.Query)('limit')),
-    __param(2, (0, common_1.Query)('propertyId')),
-    __param(3, (0, common_1.Query)('checkIn')),
-    __param(4, (0, common_1.Query)('checkOut')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String, String]),
-    __metadata("design:returntype", Promise)
-], RoomsController.prototype, "findAvailable", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -114,7 +78,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, create_room_dto_1.UpdateRoomStatusDto]),
     __metadata("design:returntype", Promise)
 ], RoomsController.prototype, "updateStatus", null);
 __decorate([

@@ -19,14 +19,12 @@ const properties_module_1 = require("./properties/properties.module");
 const guests_module_1 = require("./guests/guests.module");
 const room_types_module_1 = require("./room-types/room-types.module");
 const rooms_module_1 = require("./rooms/rooms.module");
+const amenities_module_1 = require("./amenities/amenities.module");
 const reservations_module_1 = require("./reservations/reservations.module");
 const payments_module_1 = require("./payments/payments.module");
 const employees_module_1 = require("./employees/employees.module");
 const services_module_1 = require("./services/services.module");
 const rate_plans_module_1 = require("./rate-plans/rate-plans.module");
-const restaurants_module_1 = require("./restaurants/restaurants.module");
-const reports_module_1 = require("./reports/reports.module");
-const attendance_module_1 = require("./attendance/attendance.module");
 const payroll_module_1 = require("./payroll/payroll.module");
 const leave_module_1 = require("./leave/leave.module");
 let AppModule = class AppModule {
@@ -53,14 +51,12 @@ exports.AppModule = AppModule = __decorate([
             guests_module_1.GuestsModule,
             room_types_module_1.RoomTypesModule,
             rooms_module_1.RoomsModule,
+            amenities_module_1.AmenitiesModule,
             reservations_module_1.ReservationsModule,
             payments_module_1.PaymentsModule,
             employees_module_1.EmployeesModule,
             services_module_1.ServicesModule,
             rate_plans_module_1.RatePlansModule,
-            restaurants_module_1.RestaurantsModule,
-            reports_module_1.ReportsModule,
-            attendance_module_1.AttendanceModule,
             payroll_module_1.PayrollModule,
             leave_module_1.LeaveModule,
         ],

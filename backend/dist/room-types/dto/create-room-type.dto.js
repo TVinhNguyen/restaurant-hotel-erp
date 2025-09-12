@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateRoomTypeDto = void 0;
+exports.RoomTypeQueryDto = exports.BulkAddAmenitiesToRoomTypeDto = exports.AddAmenityToRoomTypeDto = exports.CreateRoomTypeDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateRoomTypeDto {
     propertyId;
@@ -19,6 +19,7 @@ class CreateRoomTypeDto {
     maxChildren;
     basePrice;
     bedType;
+    amenityIds;
 }
 exports.CreateRoomTypeDto = CreateRoomTypeDto;
 __decorate([
@@ -57,4 +58,54 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateRoomTypeDto.prototype, "bedType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsUUID)('4', { each: true }),
+    __metadata("design:type", Array)
+], CreateRoomTypeDto.prototype, "amenityIds", void 0);
+class AddAmenityToRoomTypeDto {
+    amenityId;
+}
+exports.AddAmenityToRoomTypeDto = AddAmenityToRoomTypeDto;
+__decorate([
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], AddAmenityToRoomTypeDto.prototype, "amenityId", void 0);
+class BulkAddAmenitiesToRoomTypeDto {
+    amenityIds;
+}
+exports.BulkAddAmenitiesToRoomTypeDto = BulkAddAmenitiesToRoomTypeDto;
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsUUID)('4', { each: true }),
+    __metadata("design:type", Array)
+], BulkAddAmenitiesToRoomTypeDto.prototype, "amenityIds", void 0);
+class RoomTypeQueryDto {
+    propertyId;
+    search;
+    page = 1;
+    limit = 10;
+}
+exports.RoomTypeQueryDto = RoomTypeQueryDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], RoomTypeQueryDto.prototype, "propertyId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RoomTypeQueryDto.prototype, "search", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], RoomTypeQueryDto.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], RoomTypeQueryDto.prototype, "limit", void 0);
 //# sourceMappingURL=create-room-type.dto.js.map

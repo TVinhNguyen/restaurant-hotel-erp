@@ -12,12 +12,14 @@ const typeorm_1 = require("@nestjs/typeorm");
 const room_types_controller_1 = require("./room-types.controller");
 const room_types_service_1 = require("./room-types.service");
 const room_type_entity_1 = require("../entities/inventory/room-type.entity");
+const room_type_amenity_entity_1 = require("../entities/inventory/room-type-amenity.entity");
+const amenity_entity_1 = require("../entities/inventory/amenity.entity");
 let RoomTypesModule = class RoomTypesModule {
 };
 exports.RoomTypesModule = RoomTypesModule;
 exports.RoomTypesModule = RoomTypesModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([room_type_entity_1.RoomType])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([room_type_entity_1.RoomType, room_type_amenity_entity_1.RoomTypeAmenity, amenity_entity_1.Amenity])],
         controllers: [room_types_controller_1.RoomTypesController],
         providers: [room_types_service_1.RoomTypesService],
         exports: [room_types_service_1.RoomTypesService],
