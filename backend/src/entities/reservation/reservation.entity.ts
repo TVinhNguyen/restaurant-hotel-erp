@@ -14,6 +14,7 @@ import { RoomType } from '../inventory/room-type.entity';
 import { Room } from '../inventory/room.entity';
 import { RatePlan } from './rate-plan.entity';
 import { Payment } from './payment.entity';
+import { ReservationService } from './reservation-service.entity';
 
 @Entity({ schema: 'reservation', name: 'reservations' })
 export class Reservation {
@@ -118,4 +119,7 @@ export class Reservation {
 
   @OneToMany(() => Payment, (payment) => payment.reservation)
   payments: Payment[];
+
+  @OneToMany(() => ReservationService, (reservationService) => reservationService.reservation)
+  reservationServices: ReservationService[];
 }

@@ -3,10 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Property } from '../core/property.entity';
 import { Service } from './service.entity';
+import { ReservationService } from './reservation-service.entity';
 
 @Entity({ schema: 'reservation', name: 'property_services' })
 export class PropertyService {
@@ -36,4 +38,7 @@ export class PropertyService {
   @ManyToOne(() => Service, (service) => service.propertyServices)
   @JoinColumn({ name: 'service_id' })
   service: Service;
+
+  @OneToMany(() => ReservationService, (reservationService) => reservationService.propertyService)
+  reservationServices: ReservationService[];
 }
