@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RoomTypesService } from './room-types.service';
-import { CreateRoomTypeDto } from './dto/create-room-type.dto';
+import { CreateRoomTypeDto, AddAmenityToRoomTypeDto, BulkAddAmenitiesToRoomTypeDto, RoomTypeQueryDto } from './dto/create-room-type.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 
 @Controller('room-types')
@@ -22,19 +22,8 @@ export class RoomTypesController {
   constructor(private readonly roomTypesService: RoomTypesService) {}
 
   @Get()
-  async findAll(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('propertyId') propertyId?: string,
-  ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
-
-    return await this.roomTypesService.findAll({
-      page: pageNum,
-      limit: limitNum,
-      propertyId,
-    });
+  async findAll(@Query() query: RoomTypeQueryDto) {
+    return await this.roomTypesService.findAll(query);
   }
 
   @Get(':id')
@@ -60,5 +49,32 @@ export class RoomTypesController {
   async remove(@Param('id') id: string) {
     await this.roomTypesService.remove(id);
     return { message: 'Room type deleted successfully' };
+  }
+
+  // Amenity management endpoints
+  @Post(':id/amenities')
+  async addAmenity(
+    @Param('id') roomTypeId: string,
+    @Body() addAmenityDto: AddAmenityToRoomTypeDto,
+  ) {
+    return await this.roomTypesService.addAmenity(roomTypeId, addAmenityDto.amenityId);
+  }
+
+  @Delete(':roomTypeId/amenities/:amenityId')
+  @HttpCode(HttpStatus.OK)
+  async removeAmenity(
+    @Param('roomTypeId') roomTypeId: string,
+    @Param('amenityId') amenityId: string,
+  ) {
+    await this.roomTypesService.removeAmenity(roomTypeId, amenityId);
+    return { message: 'Amenity removed from room type successfully' };
+  }
+
+  @Post(':id/amenities/bulk')
+  async addMultipleAmenities(
+    @Param('id') roomTypeId: string,
+    @Body() bulkAddDto: BulkAddAmenitiesToRoomTypeDto,
+  ) {
+    return await this.roomTypesService.addMultipleAmenities(roomTypeId, bulkAddDto.amenityIds);
   }
 }
