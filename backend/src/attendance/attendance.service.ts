@@ -166,6 +166,10 @@ export class AttendanceService {
   async bulkCreateAttendance(bulkAttendanceDto: BulkAttendanceDto): Promise<Attendance[]> {
     const { date, attendances } = bulkAttendanceDto;
     
+    if (!date) {
+      throw new BadRequestException('Date is required for bulk attendance creation');
+    }
+    
     // Convert date to date range for checking existing records
     const startDate = new Date(date);
     startDate.setHours(0, 0, 0, 0);
@@ -181,16 +185,20 @@ export class AttendanceService {
 
     const existingEmployeeIds = existingAttendances.map(att => att.employeeId);
 
+    if (!attendances || attendances.length === 0) {
+      throw new BadRequestException('No attendance records provided');
+    }
+
     // Filter out employees who already have attendance for this date
     const newAttendances = attendances.filter(
-      att => !existingEmployeeIds.includes(att.employeeId)
+      (att: any) => !existingEmployeeIds.includes(att.employeeId)
     );
 
     if (newAttendances.length === 0) {
       throw new BadRequestException('All employees already have attendance records for this date');
     }
 
-    const attendanceEntities = newAttendances.map(att => {
+    const attendanceEntities = newAttendances.map((att: any) => {
       return this.attendanceRepository.create({
         employeeId: att.employeeId,
         checkInTime: att.checkInTime ? new Date(att.checkInTime) : undefined,
