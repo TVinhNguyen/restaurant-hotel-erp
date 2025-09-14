@@ -1,0 +1,41 @@
+{
+  "note": "Test data for Reservation Services API",
+  "samples": [
+    {
+      "description": "Sample 1: Basic reservation service with date provided",
+      "data": {
+        "reservationId": "e0e5d27b-c704-4c68-8d5c-4521ffa333a5",
+        "propertyServiceId": "946f31f8-7860-48fe-92d3-dc72a0f2f6f3",
+        "quantity": 2,
+        "totalPrice": 51.00,
+        "dateProvided": "2025-09-15"
+      }
+    },
+    {
+      "description": "Sample 2: Reservation service without date provided",
+      "data": {
+        "reservationId": "e0e5d27b-c704-4c68-8d5c-4521ffa333a5",
+        "propertyServiceId": "946f31f8-7860-48fe-92d3-dc72a0f2f6f3",
+        "quantity": 1,
+        "totalPrice": 25.50
+      }
+    },
+    {
+      "description": "Sample 3: Different reservation with multiple quantity",
+      "data": {
+        "reservationId": "f1f6d28c-d705-4d69-8e6d-4522ffb444b6",
+        "propertyServiceId": "946f31f8-7860-48fe-92d3-dc72a0f2f6f3",
+        "quantity": 3,
+        "totalPrice": 76.50,
+        "dateProvided": "2025-09-16"
+      }
+    }
+  ],
+  "validation_rules": {
+    "reservationId": "UUID - required",
+    "propertyServiceId": "UUID - required",
+    "quantity": "Number >= 0 - required",
+    "totalPrice": "Number >= 0 - required",
+    "dateProvided": "String (ISO date) - optional"
+  }
+}
