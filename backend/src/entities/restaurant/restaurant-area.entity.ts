@@ -5,6 +5,8 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Restaurant } from './restaurant.entity';
 import { RestaurantTable } from './restaurant-table.entity';
@@ -22,6 +24,12 @@ export class RestaurantArea {
 
   @Column({ type: 'text', nullable: true })
   description: string;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 
   // Relations
   @ManyToOne(() => Restaurant, (restaurant) => restaurant.areas)

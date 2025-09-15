@@ -2,12 +2,14 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurant } from '../entities/restaurant/restaurant.entity';
+import { RestaurantArea } from '../entities/restaurant/restaurant-area.entity';
 import { RestaurantTable } from '../entities/restaurant/restaurant-table.entity';
 import { TableBooking } from '../entities/restaurant/table-booking.entity';
 import { Property } from '../entities/core/property.entity';
 import { Guest } from '../entities/core/guest.entity';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
+import { CreateRestaurantAreaDto, UpdateRestaurantAreaDto } from './dto/create-restaurant-area.dto';
 import { CreateTableDto, UpdateTableDto } from './dto/create-table.dto';
 import { CreateTableBookingDto, UpdateTableBookingDto } from './dto/create-table-booking.dto';
 
@@ -16,6 +18,8 @@ export class RestaurantsService {
   constructor(
     @InjectRepository(Restaurant)
     private restaurantRepository: Repository<Restaurant>,
+    @InjectRepository(RestaurantArea)
+    private areaRepository: Repository<RestaurantArea>,
     @InjectRepository(RestaurantTable)
     private tableRepository: Repository<RestaurantTable>,
     @InjectRepository(TableBooking)
@@ -83,6 +87,51 @@ export class RestaurantsService {
   async deleteRestaurant(id: string): Promise<void> {
     const restaurant = await this.findRestaurantById(id);
     await this.restaurantRepository.remove(restaurant);
+  }
+
+  // RestaurantArea CRUD
+  async createArea(createAreaDto: CreateRestaurantAreaDto): Promise<RestaurantArea> {
+    // Verify restaurant exists
+    await this.findRestaurantById(createAreaDto.restaurantId);
+    
+    const area = this.areaRepository.create(createAreaDto);
+    return await this.areaRepository.save(area);
+  }
+
+  async findAreasByRestaurant(restaurantId: string): Promise<RestaurantArea[]> {
+    return await this.areaRepository.find({
+      where: { restaurantId },
+      relations: ['restaurant', 'tables'],
+    });
+  }
+
+  async findAreaById(id: string): Promise<RestaurantArea> {
+    const area = await this.areaRepository.findOne({
+      where: { id },
+      relations: ['restaurant', 'tables'],
+    });
+    if (!area) {
+      throw new NotFoundException('Restaurant area not found');
+    }
+    return area;
+  }
+
+  async updateArea(id: string, updateAreaDto: UpdateRestaurantAreaDto): Promise<RestaurantArea> {
+    const area = await this.findAreaById(id);
+    Object.assign(area, updateAreaDto);
+    return await this.areaRepository.save(area);
+  }
+
+  async deleteArea(id: string): Promise<void> {
+    const area = await this.findAreaById(id);
+    
+    // Check if area has tables
+    const tablesCount = await this.tableRepository.count({ where: { areaId: id } });
+    if (tablesCount > 0) {
+      throw new BadRequestException('Cannot delete area that contains tables');
+    }
+    
+    await this.areaRepository.remove(area);
   }
 
   // Table CRUD

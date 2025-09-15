@@ -22,6 +22,14 @@ export class CreateTableBookingDto {
   pax: number;
 
   @IsOptional()
+  @IsInt()
+  durationMinutes?: number;
+
+  @IsOptional()
+  @IsUUID()
+  assignedTableId?: string;
+
+  @IsOptional()
   @IsIn(['pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show'])
   status?: 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no_show';
 
@@ -58,6 +66,14 @@ export class UpdateTableBookingDto {
   @IsOptional()
   @IsInt()
   pax?: number;
+
+  @IsOptional()
+  @IsInt()
+  durationMinutes?: number;
+
+  @IsOptional()
+  @IsUUID()
+  assignedTableId?: string;
 
   @IsOptional()
   @IsIn(['pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show'])

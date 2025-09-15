@@ -23,7 +23,7 @@ import { PromotionsModule } from './promotions/promotions.module';
 import { TaxRulesModule } from './tax-rules/tax-rules.module';
 import { ReservationServicesModule } from './reservation-services/reservation-services.module';
 import { PropertyServicesModule } from './property-services/property-services.module';
-// import { RestaurantsModule } from './restaurants/restaurants.module';
+import { RestaurantsModule } from './restaurants/restaurants.module';
 // import { ReportsModule } from './reports/reports.module';
 // import { AttendanceModule } from './attendance/attendance.module';
 import { PayrollModule } from './payroll/payroll.module';
@@ -68,7 +68,7 @@ import { EmployeeEvaluationsModule } from './employee-evaluations/employee-evalu
     TaxRulesModule,
     ReservationServicesModule,
     PropertyServicesModule,
-    // RestaurantsModule, // Disabled due to compilation errors
+    RestaurantsModule, // ✅ ENABLED - Restaurant management module
     // ReportsModule, // Disabled due to compilation errors
     // AttendanceModule, // Disabled due to compilation errors
     PayrollModule,
