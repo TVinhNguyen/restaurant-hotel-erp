@@ -13,6 +13,7 @@ export enum EvaluationPeriod {
   ANNUAL = 'annual'
 }
 
+// may be changed later to satisfy the UI
 export class CreateEmployeeEvaluationDto {
   @IsOptional()
   @IsUUID()
