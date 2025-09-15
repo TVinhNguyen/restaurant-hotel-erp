@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from 'typeorm';
 import { Employee } from '../core/employee.entity';
 
@@ -14,7 +14,7 @@ export class EmployeeEvaluation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'employee_id', type: 'uuid' })
+  @Column({ name: 'employee_id', type: 'uuid', nullable: true })
   employeeId: string;
 
   @Column({ name: 'evaluated_by', type: 'uuid', nullable: true })
@@ -45,7 +45,7 @@ export class EmployeeEvaluation {
   updatedAt: Date;
 
   // Relations
-  @ManyToOne(() => Employee, (employee) => employee.evaluations)
+  @ManyToOne(() => Employee, employee => employee.evaluations)
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 

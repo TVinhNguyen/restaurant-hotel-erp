@@ -32,7 +32,7 @@ __decorate([
     __metadata("design:type", String)
 ], Deduction.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'employee_id', type: 'uuid' }),
+    (0, typeorm_1.Column)({ name: 'employee_id', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], Deduction.prototype, "employeeId", void 0);
 __decorate([
@@ -40,15 +40,15 @@ __decorate([
     __metadata("design:type", String)
 ], Deduction.prototype, "leaveId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 20 }),
+    (0, typeorm_1.Column)({ length: 20, nullable: true }),
     __metadata("design:type", String)
 ], Deduction.prototype, "type", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 12, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 12, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Deduction.prototype, "amount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date' }),
+    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], Deduction.prototype, "date", void 0);
 __decorate([
@@ -64,7 +64,7 @@ __decorate([
     __metadata("design:type", Date)
 ], Deduction.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee, (employee) => employee.deductions),
+    (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee, employee => employee.deductions),
     (0, typeorm_1.JoinColumn)({ name: 'employee_id' }),
     __metadata("design:type", employee_entity_1.Employee)
 ], Deduction.prototype, "employee", void 0);

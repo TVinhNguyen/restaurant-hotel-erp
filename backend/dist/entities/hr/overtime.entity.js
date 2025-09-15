@@ -33,7 +33,7 @@ __decorate([
     __metadata("design:type", String)
 ], Overtime.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'employee_id', type: 'uuid' }),
+    (0, typeorm_1.Column)({ name: 'employee_id', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], Overtime.prototype, "employeeId", void 0);
 __decorate([
@@ -41,15 +41,21 @@ __decorate([
     __metadata("design:type", String)
 ], Overtime.prototype, "workingShiftId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'number_of_hours', type: 'decimal', precision: 6, scale: 2 }),
+    (0, typeorm_1.Column)({
+        name: 'number_of_hours',
+        type: 'decimal',
+        precision: 6,
+        scale: 2,
+        nullable: true
+    }),
     __metadata("design:type", Number)
 ], Overtime.prototype, "numberOfHours", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 8, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 8, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Overtime.prototype, "rate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 12, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 12, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Overtime.prototype, "amount", void 0);
 __decorate([
@@ -65,7 +71,7 @@ __decorate([
     __metadata("design:type", Date)
 ], Overtime.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee, (employee) => employee.overtimes),
+    (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee, employee => employee.overtimes),
     (0, typeorm_1.JoinColumn)({ name: 'employee_id' }),
     __metadata("design:type", employee_entity_1.Employee)
 ], Overtime.prototype, "employee", void 0);

@@ -38,23 +38,23 @@ __decorate([
     __metadata("design:type", String)
 ], WorkingShift.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'property_id', type: 'uuid' }),
+    (0, typeorm_1.Column)({ name: 'property_id', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], WorkingShift.prototype, "propertyId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'employee_id', type: 'uuid' }),
+    (0, typeorm_1.Column)({ name: 'employee_id', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], WorkingShift.prototype, "employeeId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'working_date', type: 'date' }),
+    (0, typeorm_1.Column)({ name: 'working_date', type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], WorkingShift.prototype, "workingDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'start_time', type: 'time' }),
+    (0, typeorm_1.Column)({ name: 'start_time', type: 'time', nullable: true }),
     __metadata("design:type", String)
 ], WorkingShift.prototype, "startTime", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'end_time', type: 'time' }),
+    (0, typeorm_1.Column)({ name: 'end_time', type: 'time', nullable: true }),
     __metadata("design:type", String)
 ], WorkingShift.prototype, "endTime", void 0);
 __decorate([
@@ -62,11 +62,11 @@ __decorate([
     __metadata("design:type", String)
 ], WorkingShift.prototype, "shiftType", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'notes', type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], WorkingShift.prototype, "notes", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'is_reassigned', default: false }),
+    (0, typeorm_1.Column)({ name: 'is_reassigned', default: false, nullable: true }),
     __metadata("design:type", Boolean)
 ], WorkingShift.prototype, "isReassigned", void 0);
 __decorate([
@@ -78,21 +78,21 @@ __decorate([
     __metadata("design:type", Date)
 ], WorkingShift.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, (property) => property.workingShifts),
+    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, property => property.workingShifts),
     (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
     __metadata("design:type", property_entity_1.Property)
 ], WorkingShift.prototype, "property", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee, (employee) => employee.workingShifts),
+    (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee, employee => employee.workingShifts),
     (0, typeorm_1.JoinColumn)({ name: 'employee_id' }),
     __metadata("design:type", employee_entity_1.Employee)
 ], WorkingShift.prototype, "employee", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => attendance_entity_1.Attendance, (attendance) => attendance.workingShift),
+    (0, typeorm_1.OneToMany)(() => attendance_entity_1.Attendance, attendance => attendance.workingShift),
     __metadata("design:type", Array)
 ], WorkingShift.prototype, "attendances", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => overtime_entity_1.Overtime, (overtime) => overtime.workingShift),
+    (0, typeorm_1.OneToMany)(() => overtime_entity_1.Overtime, overtime => overtime.workingShift),
     __metadata("design:type", Array)
 ], WorkingShift.prototype, "overtimes", void 0);
 exports.WorkingShift = WorkingShift = __decorate([

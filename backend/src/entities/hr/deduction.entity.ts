@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from 'typeorm';
 import { Employee } from '../core/employee.entity';
 import { Leave } from './leave.entity';
@@ -15,19 +15,19 @@ export class Deduction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'employee_id', type: 'uuid' })
+  @Column({ name: 'employee_id', type: 'uuid', nullable: true })
   employeeId: string;
 
   @Column({ name: 'leave_id', type: 'uuid', nullable: true })
   leaveId: string;
 
-  @Column({ length: 20 })
+  @Column({ length: 20, nullable: true })
   type: 'tax' | 'insurance' | 'other';
 
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   amount: number;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: true })
   date: Date;
 
   @Column({ name: 'reason_details', type: 'text', nullable: true })
@@ -40,7 +40,7 @@ export class Deduction {
   updatedAt: Date;
 
   // Relations
-  @ManyToOne(() => Employee, (employee) => employee.deductions)
+  @ManyToOne(() => Employee, employee => employee.deductions)
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 

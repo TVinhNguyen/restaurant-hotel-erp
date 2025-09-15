@@ -29,6 +29,10 @@ const reports_module_1 = require("./reports/reports.module");
 const attendance_module_1 = require("./attendance/attendance.module");
 const payroll_module_1 = require("./payroll/payroll.module");
 const leave_module_1 = require("./leave/leave.module");
+const working_shifts_module_1 = require("./working-shifts/working-shifts.module");
+const deductions_module_1 = require("./deductions/deductions.module");
+const overtimes_module_1 = require("./overtimes/overtimes.module");
+const employee_evaluations_module_1 = require("./employee-evaluations/employee-evaluations.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -45,7 +49,7 @@ exports.AppModule = AppModule = __decorate([
                 database: process.env.DB_NAME || 'hotel_pms_v2',
                 entities: [__dirname + '/**/*.entity{.ts,.js}'],
                 autoLoadEntities: true,
-                synchronize: false,
+                synchronize: false
             }),
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
@@ -63,9 +67,13 @@ exports.AppModule = AppModule = __decorate([
             attendance_module_1.AttendanceModule,
             payroll_module_1.PayrollModule,
             leave_module_1.LeaveModule,
+            working_shifts_module_1.WorkingShiftsModule,
+            deductions_module_1.DeductionsModule,
+            overtimes_module_1.OvertimesModule,
+            employee_evaluations_module_1.EmployeeEvaluationsModule
         ],
         controllers: [app_controller_1.AppController, health_controller_1.HealthController],
-        providers: [app_service_1.AppService],
+        providers: [app_service_1.AppService]
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map
