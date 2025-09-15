@@ -33,8 +33,8 @@ export class ReportsService {
     }
 
     const reservations = await reservationQuery.getMany();
-    const totalRevenue = await this.getTotalRevenue(startDate, endDate, propertyId);
-    const occupancyRate = await this.getOccupancyRate(startDate, endDate, propertyId);
+    const totalRevenue = startDate && endDate ? await this.getTotalRevenue(startDate, endDate, propertyId) : 0;
+    const occupancyRate = startDate && endDate ? await this.getOccupancyRate(startDate, endDate, propertyId) : 0;
 
     return {
       period: { startDate, endDate },
@@ -49,7 +49,7 @@ export class ReportsService {
     };
   }
 
-  async getOccupancyReport(queryDto: OccupancyReportDto) {
+  async getOccupancyReport(queryDto: ReportQueryDto): Promise<any> {
     const { startDate, endDate, propertyId } = queryDto;
 
     const reservationQuery = this.reservationRepository
@@ -88,7 +88,7 @@ export class ReportsService {
     };
   }
 
-  async getRevenueReport(queryDto: RevenueReportDto) {
+  async getRevenueReport(queryDto: ReportQueryDto): Promise<any> {
     const { startDate, endDate, propertyId, roomTypeId } = queryDto;
 
     const paymentQuery = this.paymentRepository
@@ -112,7 +112,7 @@ export class ReportsService {
     const averageRevenue = payments.length > 0 ? totalRevenue / payments.length : 0;
 
     const revenueByMethod = payments.reduce((acc: { [key: string]: number }, payment: any) => {
-      acc[payment.paymentMethod] = (acc[payment.paymentMethod] || 0) + Number(payment.amount);
+      acc[payment.method] = (acc[payment.method] || 0) + Number(payment.amount);
       return acc;
     }, {});
 
@@ -126,7 +126,7 @@ export class ReportsService {
     };
   }
 
-  async getRestaurantReport(queryDto: RestaurantReportDto) {
+  async getRestaurantReport(queryDto: ReportQueryDto): Promise<any> {
     const { startDate, endDate, propertyId, restaurantId } = queryDto;
 
     const bookingQuery = this.tableBookingRepository

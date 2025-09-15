@@ -4,6 +4,10 @@ export class CreatePaymentDto {
   @IsUUID()
   reservationId: string;
 
+  @IsOptional()
+  @IsUUID()
+  parentPaymentId?: string;
+
   @IsNumber()
   @Min(0)
   amount: number;
@@ -11,14 +15,17 @@ export class CreatePaymentDto {
   @IsString()
   currency: string;
 
-  @IsIn(['credit_card', 'debit_card', 'cash', 'bank_transfer', 'online'])
-  paymentMethod: 'credit_card' | 'debit_card' | 'cash' | 'bank_transfer' | 'online';
+  @IsIn(['cash', 'card', 'bank', 'e_wallet', 'ota_virtual'])
+  method: 'cash' | 'card' | 'bank' | 'e_wallet' | 'ota_virtual';
 
   @IsOptional()
   @IsString()
   transactionId?: string;
 
+  @IsIn(['authorized', 'captured', 'refunded', 'voided'])
+  status: 'authorized' | 'captured' | 'refunded' | 'voided';
+
   @IsOptional()
   @IsString()
-  gatewayResponse?: string;
+  notes?: string;
 }

@@ -16,28 +16,26 @@ export class Payment {
   @Column({ name: 'reservation_id', type: 'uuid' })
   reservationId: string;
 
+  @Column({ name: 'parent_payment_id', type: 'uuid', nullable: true })
+  parentPaymentId: string;
+
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   amount: number;
 
   @Column({ length: 10 })
   currency: string;
 
-  @Column({ name: 'payment_method', length: 50 })
-  paymentMethod:
-    | 'credit_card'
-    | 'debit_card'
-    | 'cash'
-    | 'bank_transfer'
-    | 'online';
-
-  @Column({ name: 'payment_status', length: 20 })
-  paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
+  @Column({ name: 'method', length: 50 })
+  method: 'cash' | 'card' | 'bank' | 'e_wallet' | 'ota_virtual';
 
   @Column({ name: 'transaction_id', length: 100, nullable: true })
   transactionId: string;
 
-  @Column({ name: 'gateway_response', type: 'text', nullable: true })
-  gatewayResponse: string;
+  @Column({ name: 'status', length: 20 })
+  status: 'authorized' | 'captured' | 'refunded' | 'voided';
+
+  @Column({ name: 'notes', type: 'text', nullable: true })
+  notes: string;
 
   @CreateDateColumn({ name: 'paid_at' })
   paidAt: Date;

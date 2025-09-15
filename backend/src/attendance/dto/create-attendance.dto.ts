@@ -1,11 +1,10 @@
-import { IsUUID, IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsUUID, IsOptional, IsDateString, IsString, IsIn } from 'class-validator';
 
 export enum AttendanceStatus {
   PRESENT = 'present',
   ABSENT = 'absent',
   LATE = 'late',
   HALF_DAY = 'half_day',
-  OVERTIME = 'overtime',
 }
 
 export class CreateAttendanceDto {
@@ -18,11 +17,11 @@ export class CreateAttendanceDto {
 
   @IsOptional()
   @IsDateString()
-  checkInTime?: string; // Will be converted to timestamp
+  checkInTime?: string;
 
   @IsOptional()
   @IsDateString()
-  checkOutTime?: string; // Will be converted to timestamp
+  checkOutTime?: string;
 
   @IsOptional()
   @IsString()
@@ -48,12 +47,28 @@ export class UpdateAttendanceDto {
 }
 
 export class BulkAttendanceDto {
-  @IsDateString()
-  date: string;
+  @IsUUID('4', { each: true })
+  employeeIds: string[];
 
-  attendances: Array<{
+  @IsOptional()
+  @IsUUID()
+  workingShiftId?: string;
+
+  @IsOptional()
+  @IsIn(Object.values(AttendanceStatus))
+  status?: AttendanceStatus;
+
+  @IsOptional()
+  @IsDateString()
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  attendances?: Array<{
     employeeId: string;
-    status: AttendanceStatus;
     checkInTime?: string;
     checkOutTime?: string;
     notes?: string;

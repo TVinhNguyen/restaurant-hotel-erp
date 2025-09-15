@@ -1,13 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsUUID, IsEnum, IsDateString, IsPositive } from 'class-validator';
-
-export enum BookingStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  SEATED = 'seated',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
-  NO_SHOW = 'no_show',
-}
+import { IsString, IsUUID, IsInt, IsOptional, IsIn, IsDateString } from 'class-validator';
 
 export class CreateTableBookingDto {
   @IsUUID()
@@ -15,17 +6,11 @@ export class CreateTableBookingDto {
 
   @IsOptional()
   @IsUUID()
-  tableId?: string;
-
-  @IsString()
-  guestName: string;
-
-  @IsString()
-  guestPhone: string;
+  guestId?: string;
 
   @IsOptional()
-  @IsString()
-  guestEmail?: string;
+  @IsUUID()
+  reservationId?: string;
 
   @IsDateString()
   bookingDate: string;
@@ -33,35 +18,34 @@ export class CreateTableBookingDto {
   @IsString()
   bookingTime: string;
 
-  @IsNumber()
-  @IsPositive()
-  partySize: number;
+  @IsInt()
+  pax: number;
+
+  @IsOptional()
+  @IsIn(['pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show'])
+  status?: 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no_show';
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
+  contactPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  contactName?: string;
 
   @IsOptional()
   @IsString()
   specialRequests?: string;
-
-  @IsOptional()
-  @IsEnum(BookingStatus)
-  status?: BookingStatus;
 }
 
 export class UpdateTableBookingDto {
   @IsOptional()
   @IsUUID()
-  tableId?: string;
-
-  @IsOptional()
-  @IsString()
-  guestName?: string;
-
-  @IsOptional()
-  @IsString()
-  guestPhone?: string;
-
-  @IsOptional()
-  @IsString()
-  guestEmail?: string;
+  guestId?: string;
 
   @IsOptional()
   @IsDateString()
@@ -72,15 +56,26 @@ export class UpdateTableBookingDto {
   bookingTime?: string;
 
   @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  partySize?: number;
+  @IsInt()
+  pax?: number;
+
+  @IsOptional()
+  @IsIn(['pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show'])
+  status?: 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no_show';
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
+  contactPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  contactName?: string;
 
   @IsOptional()
   @IsString()
   specialRequests?: string;
-
-  @IsOptional()
-  @IsEnum(BookingStatus)
-  status?: BookingStatus;
 }

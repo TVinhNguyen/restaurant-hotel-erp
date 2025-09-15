@@ -13,8 +13,8 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ServicesService } from './services.service';
-import { CreatePropertyServiceDto } from './dto/create-property-service.dto';
-import { UpdatePropertyServiceDto } from './dto/update-property-service.dto';
+import { CreateServiceDto } from './dto/create-service.dto';
+import { UpdateServiceDto } from './dto/update-service.dto';
 
 @Controller('services')
 @UseGuards(AuthGuard('jwt'))
@@ -37,47 +37,29 @@ export class ServicesController {
     });
   }
 
-  @Get('property-services')
-  async findAllPropertyServices(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('propertyId') propertyId?: string,
-    @Query('isActive') isActive?: string,
-  ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
-    const isActiveBool = isActive !== undefined ? isActive === 'true' : undefined;
-
-    return await this.servicesService.findAllPropertyServices({
-      page: pageNum,
-      limit: limitNum,
-      propertyId,
-      isActive: isActiveBool,
-    });
+  @Get(':id')
+  async findOneService(@Param('id') id: string) {
+    return await this.servicesService.findOneService(id);
   }
 
-  @Get('property-services/:id')
-  async findOnePropertyService(@Param('id') id: string) {
-    return await this.servicesService.findOnePropertyService(id);
+  @Post()
+  async createService(@Body() createServiceDto: CreateServiceDto) {
+    return await this.servicesService.createService(createServiceDto);
   }
 
-  @Post('property-services')
-  async createPropertyService(@Body() createPropertyServiceDto: CreatePropertyServiceDto) {
-    return await this.servicesService.createPropertyService(createPropertyServiceDto);
-  }
-
-  @Put('property-services/:id')
-  async updatePropertyService(
+  @Put(':id')
+  async updateService(
     @Param('id') id: string,
-    @Body() updatePropertyServiceDto: UpdatePropertyServiceDto,
+    @Body() updateServiceDto: UpdateServiceDto,
   ) {
-    return await this.servicesService.updatePropertyService(id, updatePropertyServiceDto);
+    return await this.servicesService.updateService(id, updateServiceDto);
   }
 
-  @Delete('property-services/:id')
+  @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async removePropertyService(@Param('id') id: string) {
-    await this.servicesService.removePropertyService(id);
-    return { message: 'Property service deleted successfully' };
+  async removeService(@Param('id') id: string) {
+    await this.servicesService.removeService(id);
+    return { message: 'Service deleted successfully' };
   }
+
 }

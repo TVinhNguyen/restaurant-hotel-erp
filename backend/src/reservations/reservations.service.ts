@@ -44,15 +44,15 @@ export class ReservationsService {
     }
 
     if (checkInFrom) {
-      queryBuilder.andWhere('reservation.checkInDate >= :checkInFrom', { checkInFrom });
+      queryBuilder.andWhere('reservation.checkIn >= :checkInFrom', { checkInFrom });
     }
 
     if (checkInTo) {
-      queryBuilder.andWhere('reservation.checkInDate <= :checkInTo', { checkInTo });
+      queryBuilder.andWhere('reservation.checkIn <= :checkInTo', { checkInTo });
     }
 
     const [data, total] = await queryBuilder
-      .orderBy('reservation.checkInDate', 'DESC')
+      .orderBy('reservation.checkIn', 'DESC')
       .skip(skip)
       .take(limit)
       .getManyAndCount();
@@ -83,11 +83,11 @@ export class ReservationsService {
 
   async create(createReservationDto: CreateReservationDto): Promise<Reservation> {
     // Generate confirmation number
-    const confirmationNumber = this.generateConfirmationNumber();
+    const confirmationCode = this.generateConfirmationNumber();
     
     const reservation = this.reservationRepository.create({
       ...createReservationDto,
-      confirmationNumber,
+      confirmationCode,
       status: 'confirmed',
     });
 
@@ -110,7 +110,7 @@ export class ReservationsService {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const checkInDate = reservation.checkInDate.toISOString().split('T')[0];
+    const checkInDate = reservation.checkIn.toISOString().split('T')[0];
 
     if (checkInDate > today) {
       throw new BadRequestException('Cannot check in before check-in date');

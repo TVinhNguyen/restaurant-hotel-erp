@@ -1,39 +1,54 @@
-import { IsDateString, IsOptional, IsUUID, IsEnum, IsString } from 'class-validator';
-
-export enum ReportPeriod {
-  DAILY = 'daily',
-  WEEKLY = 'weekly',
-  MONTHLY = 'monthly',
-  YEARLY = 'yearly',
-  CUSTOM = 'custom',
-}
+import { IsOptional, IsDateString, IsString, IsNumber } from 'class-validator';
 
 export class ReportQueryDto {
   @IsOptional()
-  @IsUUID()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  groupBy?: string;
+
+  @IsOptional()
+  @IsString()
   propertyId?: string;
 
-  @IsString()
-  startDate: string;
-
-  @IsString()
-  endDate: string;
-
   @IsOptional()
-  @IsEnum(ReportPeriod)
-  period?: ReportPeriod;
-}
-
-export class OccupancyReportDto extends ReportQueryDto {}
-
-export class RevenueReportDto extends ReportQueryDto {
-  @IsOptional()
-  @IsUUID()
+  @IsString()
   roomTypeId?: string;
+
+  @IsOptional()
+  @IsString()
+  restaurantId?: string;
 }
 
-export class RestaurantReportDto extends ReportQueryDto {
-  @IsOptional()
-  @IsUUID()
-  restaurantId?: string;
+export class OccupancyReportDto {
+  date: string;
+  totalRooms: number;
+  occupiedRooms: number;
+  occupancyRate: number;
+  availableRooms: number;
+  revenue: number;
+}
+
+export class RevenueReportDto {
+  date: string;
+  roomRevenue: number;
+  serviceRevenue: number;
+  totalRevenue: number;
+  numberOfBookings: number;
+  averageRevenuePerBooking: number;
+}
+
+export class RestaurantReportDto {
+  date: string;
+  totalBookings: number;
+  totalRevenue: number;
+  averagePartySize: number;
+  popularTimeSlots: string[];
+  occupancyRate: number;
 }

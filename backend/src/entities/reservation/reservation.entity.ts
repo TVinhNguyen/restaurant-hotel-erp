@@ -14,6 +14,7 @@ import { RoomType } from '../inventory/room-type.entity';
 import { Room } from '../inventory/room.entity';
 import { RatePlan } from './rate-plan.entity';
 import { Payment } from './payment.entity';
+import { ReservationService } from './reservation-service.entity';
 
 @Entity({ schema: 'reservation', name: 'reservations' })
 export class Reservation {
@@ -35,20 +36,23 @@ export class Reservation {
   @Column({ name: 'rate_plan_id', type: 'uuid' })
   ratePlanId: string;
 
-  @Column({ name: 'confirmation_number', length: 50, unique: true })
-  confirmationNumber: string;
+  @Column({ name: 'booker_user_id', type: 'uuid', nullable: true })
+  bookerUserId: string;
 
-  @Column({ name: 'external_reference', length: 100, nullable: true })
-  externalReference: string;
+  @Column({ name: 'channel', length: 20, nullable: true })
+  channel: 'ota' | 'website' | 'walkin' | 'phone';
 
-  @Column({ name: 'booking_channel', length: 50 })
-  bookingChannel: 'OTA' | 'website' | 'walk-in' | 'phone';
+  @Column({ name: 'external_ref', length: 100, nullable: true })
+  externalRef: string;
 
-  @Column({ name: 'check_in_date', type: 'date' })
-  checkInDate: Date;
+  @Column({ name: 'promotion_id', type: 'uuid', nullable: true })
+  promotionId: string;
 
-  @Column({ name: 'check_out_date', type: 'date' })
-  checkOutDate: Date;
+  @Column({ name: 'check_in', type: 'date' })
+  checkIn: Date;
+
+  @Column({ name: 'check_out', type: 'date' })
+  checkOut: Date;
 
   @Column({ type: 'int' })
   adults: number;
@@ -56,38 +60,44 @@ export class Reservation {
   @Column({ type: 'int', default: 0 })
   children: number;
 
-  @Column({ name: 'room_rate', type: 'decimal', precision: 12, scale: 2 })
-  roomRate: number;
+  @Column({ name: 'contact_name', length: 100, nullable: true })
+  contactName: string;
 
-  @Column({ name: 'total_amount', type: 'decimal', precision: 12, scale: 2 })
+  @Column({ name: 'contact_email', length: 100, nullable: true })
+  contactEmail: string;
+
+  @Column({ name: 'contact_phone', length: 20, nullable: true })
+  contactPhone: string;
+
+  @Column({ name: 'guest_notes', type: 'text', nullable: true })
+  guestNotes: string;
+
+  @Column({ name: 'confirmation_code', length: 50, unique: true, nullable: true })
+  confirmationCode: string;
+
+  @Column({ name: 'total_amount', type: 'decimal', precision: 12, scale: 2, default: 0 })
   totalAmount: number;
 
-  @Column({
-    name: 'tax_amount',
-    type: 'decimal',
-    precision: 12,
-    scale: 2,
-    nullable: true,
-  })
+  @Column({ name: 'tax_amount', type: 'decimal', precision: 12, scale: 2, default: 0 })
   taxAmount: number;
 
-  @Column({
-    name: 'service_charge',
-    type: 'decimal',
-    precision: 12,
-    scale: 2,
-    nullable: true,
-  })
-  serviceCharge: number;
+  @Column({ name: 'discount_amount', type: 'decimal', precision: 12, scale: 2, default: 0 })
+  discountAmount: number;
+
+  @Column({ name: 'service_amount', type: 'decimal', precision: 12, scale: 2, default: 0 })
+  serviceAmount: number;
+
+  @Column({ name: 'amount_paid', type: 'decimal', precision: 12, scale: 2, default: 0 })
+  amountPaid: number;
 
   @Column({ length: 10 })
   currency: string;
 
-  @Column({ length: 20, default: 'confirmed' })
-  status: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
+  @Column({ name: 'payment_status', length: 20, default: 'unpaid' })
+  paymentStatus: 'unpaid' | 'partial' | 'paid' | 'refunded';
 
-  @Column({ name: 'special_requests', type: 'text', nullable: true })
-  specialRequests: string;
+  @Column({ length: 20, default: 'pending' })
+  status: 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -118,4 +128,7 @@ export class Reservation {
 
   @OneToMany(() => Payment, (payment) => payment.reservation)
   payments: Payment[];
+
+  @OneToMany(() => ReservationService, (reservationService) => reservationService.reservation)
+  reservationServices: ReservationService[];
 }

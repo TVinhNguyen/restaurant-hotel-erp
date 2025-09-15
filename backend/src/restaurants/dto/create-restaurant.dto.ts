@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsUUID, Matches } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsInt } from 'class-validator';
 
 export class CreateRestaurantDto {
   @IsUUID()
@@ -12,14 +12,14 @@ export class CreateRestaurantDto {
   cuisine?: string;
 
   @IsOptional()
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Open time must be in HH:MM format' })
+  @IsString()
   openTime?: string;
 
   @IsOptional()
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Close time must be in HH:MM format' })
+  @IsString()
   closeTime?: string;
 
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   maxCapacity?: number;
 }

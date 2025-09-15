@@ -31,11 +31,11 @@ export class PaymentsService {
     }
 
     if (status) {
-      queryBuilder.andWhere('payment.paymentStatus = :status', { status });
+      queryBuilder.andWhere('payment.status = :status', { status });
     }
 
     if (method) {
-      queryBuilder.andWhere('payment.paymentMethod = :method', { method });
+      queryBuilder.andWhere('payment.method = :method', { method });
     }
 
     const [data, total] = await queryBuilder
@@ -71,7 +71,7 @@ export class PaymentsService {
   async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
     const payment = this.paymentRepository.create({
       ...createPaymentDto,
-      paymentStatus: 'pending',
+      // status field is required in DTO, no need to set default
     });
 
     return await this.paymentRepository.save(payment);
@@ -88,16 +88,16 @@ export class PaymentsService {
   async processPayment(id: string): Promise<Payment> {
     const payment = await this.findOne(id);
 
-    if (payment.paymentStatus !== 'pending') {
-      throw new BadRequestException('Payment must be pending to process');
+    if (payment.status !== 'authorized') {
+      throw new BadRequestException('Payment must be authorized to process');
     }
 
     // Simulate payment processing
     const isSuccess = Math.random() > 0.1; // 90% success rate
 
-    payment.paymentStatus = isSuccess ? 'completed' : 'failed';
+    payment.status = isSuccess ? 'captured' : 'voided';
     payment.transactionId = this.generateTransactionId();
-    payment.gatewayResponse = isSuccess 
+    payment.notes = isSuccess 
       ? 'Payment processed successfully' 
       : 'Payment failed - insufficient funds';
 
@@ -107,8 +107,8 @@ export class PaymentsService {
   async refund(id: string, refundAmount?: number): Promise<Payment> {
     const payment = await this.findOne(id);
 
-    if (payment.paymentStatus !== 'completed') {
-      throw new BadRequestException('Only completed payments can be refunded');
+    if (payment.status !== 'captured') {
+      throw new BadRequestException('Only captured payments can be refunded');
     }
 
     const amount = refundAmount || payment.amount;
@@ -120,12 +120,13 @@ export class PaymentsService {
     // Create refund payment record
     const refundPayment = this.paymentRepository.create({
       reservationId: payment.reservationId,
+      parentPaymentId: payment.id,
       amount: -amount, // Negative amount for refund
       currency: payment.currency,
-      paymentMethod: payment.paymentMethod,
-      paymentStatus: 'refunded',
+      method: payment.method,
+      status: 'refunded',
       transactionId: this.generateTransactionId(),
-      gatewayResponse: `Refund for payment ${payment.id}`,
+      notes: `Refund for payment ${payment.id}`,
     });
 
     return await this.paymentRepository.save(refundPayment);
@@ -134,8 +135,8 @@ export class PaymentsService {
   async remove(id: string): Promise<void> {
     const payment = await this.findOne(id);
     
-    if (payment.paymentStatus === 'completed') {
-      throw new BadRequestException('Cannot delete completed payment');
+    if (payment.status === 'captured') {
+      throw new BadRequestException('Cannot delete captured payment');
     }
 
     await this.paymentRepository.remove(payment);

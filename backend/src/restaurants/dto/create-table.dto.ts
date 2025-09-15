@@ -1,10 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsUUID, IsEnum, IsPositive } from 'class-validator';
-
-export enum TableStatus {
-  AVAILABLE = 'available',
-  OCCUPIED = 'occupied',
-  RESERVED = 'reserved',
-}
+import { IsString, IsUUID, IsInt, IsOptional, IsIn } from 'class-validator';
 
 export class CreateTableDto {
   @IsUUID()
@@ -17,17 +11,12 @@ export class CreateTableDto {
   @IsString()
   tableNumber: string;
 
-  @IsNumber()
-  @IsPositive()
+  @IsInt()
   capacity: number;
 
   @IsOptional()
-  @IsString()
-  location?: string;
-
-  @IsOptional()
-  @IsEnum(TableStatus)
-  status?: TableStatus;
+  @IsIn(['available', 'occupied', 'reserved'])
+  status?: 'available' | 'occupied' | 'reserved';
 }
 
 export class UpdateTableDto {
@@ -40,15 +29,10 @@ export class UpdateTableDto {
   tableNumber?: string;
 
   @IsOptional()
-  @IsNumber()
-  @IsPositive()
+  @IsInt()
   capacity?: number;
 
   @IsOptional()
-  @IsString()
-  location?: string;
-
-  @IsOptional()
-  @IsEnum(TableStatus)
-  status?: TableStatus;
+  @IsIn(['available', 'occupied', 'reserved'])
+  status?: 'available' | 'occupied' | 'reserved';
 }
