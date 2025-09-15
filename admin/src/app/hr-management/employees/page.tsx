@@ -10,7 +10,7 @@ import type { BaseRecord } from "@refinedev/core";
 import { Space, Table, message, Button, Card, Row, Col, Input, Select, Typography, Tag } from "antd";
 import { useState } from "react";
 import { getMockEmployees, deleteMockEmployee, type Employee } from "../../../data/mockEmployees";
-import { PlusOutlined, SearchOutlined, UserOutlined } from "@ant-design/icons";
+import { PlusOutlined, SearchOutlined, UserOutlined, StarOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 
 const { Title } = Typography;
@@ -221,17 +221,28 @@ export default function EmployeesPage() {
                             title="Actions"
                             dataIndex="actions"
                             fixed="right"
-                            width={120}
+                            width={160}
                             render={(_, record: BaseRecord) => (
-                                <Space>
-                                    <ShowButton hideText size="small" recordItemId={record.id} />
-                                    <EditButton hideText size="small" recordItemId={record.id} />
-                                    <DeleteButton
-                                        hideText
+                                <Space direction="vertical" size="small">
+                                    <Space size="small">
+                                        <ShowButton hideText size="small" recordItemId={record.id} />
+                                        <EditButton hideText size="small" recordItemId={record.id} />
+                                        <DeleteButton
+                                            hideText
+                                            size="small"
+                                            recordItemId={record.id}
+                                            onSuccess={() => handleDelete(String(record.id))}
+                                        />
+                                    </Space>
+                                    <Button
                                         size="small"
-                                        recordItemId={record.id}
-                                        onSuccess={() => handleDelete(String(record.id))}
-                                    />
+                                        type="link"
+                                        icon={<StarOutlined />}
+                                        onClick={() => router.push(`/hr-management/evaluations?employee=${record.id}`)}
+                                        style={{ padding: '0', height: 'auto' }}
+                                    >
+                                        Evaluate
+                                    </Button>
                                 </Space>
                             )}
                         />

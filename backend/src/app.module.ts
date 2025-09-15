@@ -28,6 +28,10 @@ import { PropertyServicesModule } from './property-services/property-services.mo
 // import { AttendanceModule } from './attendance/attendance.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { LeaveModule } from './leave/leave.module';
+import { WorkingShiftsModule } from './working-shifts/working-shifts.module';
+import { DeductionsModule } from './deductions/deductions.module';
+import { OvertimesModule } from './overtimes/overtimes.module';
+import { EmployeeEvaluationsModule } from './employee-evaluations/employee-evaluations.module';
 
 @Module({
   imports: [
@@ -41,7 +45,7 @@ import { LeaveModule } from './leave/leave.module';
       database: process.env.DB_NAME || 'hotel_pms_v2',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: false
     }),
     AuthModule,
     UsersModule,
@@ -69,8 +73,12 @@ import { LeaveModule } from './leave/leave.module';
     // AttendanceModule, // Disabled due to compilation errors
     PayrollModule,
     LeaveModule,
+    WorkingShiftsModule,
+    DeductionsModule,
+    OvertimesModule,
+    EmployeeEvaluationsModule
   ],
   controllers: [AppController, HealthController],
-  providers: [AppService],
+  providers: [AppService]
 })
 export class AppModule {}

@@ -9,14 +9,10 @@ import { UpdateGuestDto } from './dto/update-guest.dto';
 export class GuestsService {
   constructor(
     @InjectRepository(Guest)
-    private guestRepository: Repository<Guest>,
+    private guestRepository: Repository<Guest>
   ) {}
 
-  async findAll(query: {
-    page?: number;
-    limit?: number;
-    search?: string;
-  }) {
+  async findAll(query: { page?: number; limit?: number; search?: string }) {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
@@ -42,14 +38,14 @@ export class GuestsService {
       limit,
       totalPages: Math.ceil(total / limit),
       hasNext: page * limit < total,
-      hasPrev: page > 1,
+      hasPrev: page > 1
     };
   }
 
   async findOne(id: string): Promise<Guest> {
     const guest = await this.guestRepository.findOne({
-      where: { id },
-      relations: ['reservations', 'tableBookings'],
+      where: { id }
+      //relations: ['reservations', 'tableBookings']
     });
 
     if (!guest) {
@@ -66,9 +62,9 @@ export class GuestsService {
 
   async update(id: string, updateGuestDto: UpdateGuestDto): Promise<Guest> {
     const guest = await this.findOne(id);
-    
+
     Object.assign(guest, updateGuestDto);
-    
+
     return await this.guestRepository.save(guest);
   }
 
