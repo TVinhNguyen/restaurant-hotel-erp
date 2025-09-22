@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, User, CreditCard, Shield, Settings, Bell, UserPlus, LogOut, Edit, ArrowRight } from "lucide-react"
+import Link from "next/link"
 
 export default function ProfilePage() {
   const sidebarItems = [
@@ -21,7 +22,9 @@ export default function ProfilePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-8">
-              <h1 className="text-2xl font-bold text-primary">Tripster</h1>
+              <Link href="/" className="text-2xl font-bold text-primary">
+                Tripster
+              </Link>
               <nav className="hidden md:flex space-x-6">
                 <a href="#" className="text-foreground hover:text-primary transition-colors">
                   Properties

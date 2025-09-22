@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Search, MapPin, Calendar, Users, Star, ArrowLeft, ChevronDown } from "lucide-react"
+import Link from "next/link"
 
 export default function SearchResultsPage() {
   const searchResults = [
@@ -73,7 +74,9 @@ export default function SearchResultsPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-8">
-              <h1 className="text-2xl font-bold text-primary">Tripster</h1>
+              <Link href="/" className="text-2xl font-bold text-primary">
+                Tripster
+              </Link>
               <nav className="hidden md:flex space-x-6">
                 <a href="#" className="text-foreground hover:text-primary transition-colors">
                   Properties

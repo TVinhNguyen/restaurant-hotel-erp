@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Star, Wifi, Car, AirVent, Bath, CreditCard, MapPin, Bed } from "lucide-react"
+import Link from "next/link"
 
 export default function PropertyDetailPage() {
   const hotelImages = [
@@ -89,7 +90,9 @@ export default function PropertyDetailPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-8">
-              <h1 className="text-2xl font-bold text-primary">Tripster</h1>
+              <Link href="/" className="text-2xl font-bold text-primary">
+                Tripster
+              </Link>
               <nav className="hidden md:flex space-x-6">
                 <a href="#" className="text-foreground hover:text-primary transition-colors">
                   Properties
