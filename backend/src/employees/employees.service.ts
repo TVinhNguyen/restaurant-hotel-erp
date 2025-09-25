@@ -9,7 +9,7 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 export class EmployeesService {
   constructor(
     @InjectRepository(Employee)
-    private employeeRepository: Repository<Employee>,
+    private employeeRepository: Repository<Employee>
   ) {}
 
   async findAll(query: {
@@ -22,12 +22,15 @@ export class EmployeesService {
     const { page = 1, limit = 10, department, status, search } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.employeeRepository.createQueryBuilder('employee')
+    const queryBuilder = this.employeeRepository
+      .createQueryBuilder('employee')
       .leftJoinAndSelect('employee.user', 'user')
       .leftJoinAndSelect('employee.employeeRoles', 'employeeRoles');
 
     if (department) {
-      queryBuilder.andWhere('employee.department = :department', { department });
+      queryBuilder.andWhere('employee.department = :department', {
+        department
+      });
     }
 
     if (status) {
@@ -54,7 +57,7 @@ export class EmployeesService {
       limit,
       totalPages: Math.ceil(total / limit),
       hasNext: page * limit < total,
-      hasPrev: page > 1,
+      hasPrev: page > 1
     };
   }
 
@@ -69,7 +72,7 @@ export class EmployeesService {
         'leaves',
         'evaluations',
         'payrolls'
-      ],
+      ]
     });
 
     if (!employee) {
@@ -81,23 +84,26 @@ export class EmployeesService {
 
   async create(createEmployeeDto: CreateEmployeeDto): Promise<Employee> {
     // Generate employee code if not provided
-    const employeeCode = createEmployeeDto.employeeCode || 
-      await this.generateEmployeeCode();
+    const employeeCode =
+      createEmployeeDto.employeeCode || (await this.generateEmployeeCode());
 
     const employee = this.employeeRepository.create({
       ...createEmployeeDto,
       employeeCode,
-      status: createEmployeeDto.status || 'active',
+      status: createEmployeeDto.status || 'active'
     });
 
     return await this.employeeRepository.save(employee);
   }
 
-  async update(id: string, updateEmployeeDto: UpdateEmployeeDto): Promise<Employee> {
+  async update(
+    id: string,
+    updateEmployeeDto: UpdateEmployeeDto
+  ): Promise<Employee> {
     const employee = await this.findOne(id);
-    
+
     Object.assign(employee, updateEmployeeDto);
-    
+
     return await this.employeeRepository.save(employee);
   }
 

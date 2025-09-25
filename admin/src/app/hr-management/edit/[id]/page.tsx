@@ -20,7 +20,7 @@ export default function CategoryEdit() {
       if (employee) {
         form.setFieldsValue({
           ...employee,
-          startDate: dayjs(employee.startDate),
+          startDate: dayjs(employee.hireDate),
         });
       }
     }

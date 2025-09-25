@@ -5,7 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   OneToOne,
-  JoinColumn,
+  JoinColumn
 } from 'typeorm';
 import { User } from '../auth/user.entity';
 import { EmployeeRole } from './employee-role.entity';
@@ -32,7 +32,15 @@ export class Employee {
   fullName: string;
 
   @Column({ length: 50, nullable: true })
-  department: 'Front Desk' | 'Housekeeping' | 'HR' | 'F&B';
+  department:
+    | 'IT Department'
+    | 'Human Resources'
+    | 'Marketing'
+    | 'Finances'
+    | 'Sales';
+
+  @Column({ length: 100, nullable: true })
+  position: string;
 
   @Column({ length: 20, default: 'active' })
   status: 'active' | 'on_leave' | 'terminated';
@@ -48,27 +56,27 @@ export class Employee {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @OneToMany(() => EmployeeRole, (employeeRole) => employeeRole.employee)
+  @OneToMany(() => EmployeeRole, employeeRole => employeeRole.employee)
   employeeRoles: EmployeeRole[];
 
-  @OneToMany(() => WorkingShift, (workingShift) => workingShift.employee)
+  @OneToMany(() => WorkingShift, workingShift => workingShift.employee)
   workingShifts: WorkingShift[];
 
-  @OneToMany(() => Attendance, (attendance) => attendance.employee)
+  @OneToMany(() => Attendance, attendance => attendance.employee)
   attendances: Attendance[];
 
-  @OneToMany(() => Leave, (leave) => leave.employee)
+  @OneToMany(() => Leave, leave => leave.employee)
   leaves: Leave[];
 
-  @OneToMany(() => EmployeeEvaluation, (evaluation) => evaluation.employee)
+  @OneToMany(() => EmployeeEvaluation, evaluation => evaluation.employee)
   evaluations: EmployeeEvaluation[];
 
-  @OneToMany(() => Payroll, (payroll) => payroll.employee)
+  @OneToMany(() => Payroll, payroll => payroll.employee)
   payrolls: Payroll[];
 
-  @OneToMany(() => Overtime, (overtime) => overtime.employee)
+  @OneToMany(() => Overtime, overtime => overtime.employee)
   overtimes: Overtime[];
 
-  @OneToMany(() => Deduction, (deduction) => deduction.employee)
+  @OneToMany(() => Deduction, deduction => deduction.employee)
   deductions: Deduction[];
 }
