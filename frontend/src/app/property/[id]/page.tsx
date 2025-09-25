@@ -250,7 +250,9 @@ export default function PropertyDetailPage() {
                           <div className="text-sm text-muted-foreground mb-1">
                             {room.nights} nights, {room.guests} guests
                           </div>
-                          <Button className="mb-2">Book now for ${room.price}</Button>
+                          <Link href="/booking/dates">
+                            <Button className="mb-2">Book now for ${room.price}</Button>
+                          </Link>
                         </div>
                       </div>
                     </div>

@@ -351,7 +351,9 @@ export default function SearchResultsPage() {
                           <div className="text-sm text-muted-foreground mb-4">
                             {hotel.nights} nights, {hotel.guests} guests
                           </div>
-                          <Button className="w-full">See booking options</Button>
+                          <Link href="/booking/dates">
+                            <Button className="w-full">See booking options</Button>
+                          </Link>
                         </div>
                       </div>
                     </div>

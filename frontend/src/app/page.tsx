@@ -347,8 +347,8 @@ export default function HomePage() {
               <div>
                 <a href="#" className="text-muted-foreground hover:text-foreground">
                   FAQ
-                </a>
-              </div>
+          </a>
+        </div>
               <div>
                 <a href="#" className="text-muted-foreground hover:text-foreground">
                   Customer service
