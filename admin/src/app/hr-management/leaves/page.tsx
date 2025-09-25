@@ -182,7 +182,7 @@ export default function LeavePage() {
         {
             title: 'Actions',
             key: 'actions',
-            render: (_, record: LeaveRequest) => {
+            render: (_: any, record: LeaveRequest) => {
                 if (record.status === 'pending') {
                     return (
                         <Space>

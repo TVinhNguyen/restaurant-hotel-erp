@@ -18,7 +18,6 @@ services:
       AMQP_URL: amqp://myuser:mypass@rabbitmq:5672/
     volumes:
       - .:/app
-      - /app/node_modules
 
 networks:
   devnet:

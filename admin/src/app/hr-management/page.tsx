@@ -12,12 +12,14 @@ import {
   PlusOutlined,
   BarChartOutlined,
   SettingOutlined,
-  BellOutlined
+  BellOutlined,
+  StarOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { getMockEmployees } from '../../data/mockEmployees';
 import { getMockLeaveRequests, getMockAttendance } from '../../data/mockAttendance';
 import { getMockPayrollRecords } from '../../data/mockPayroll';
+import { getMockEvaluations } from '../../data/mockEvaluations';
 import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
@@ -28,6 +30,7 @@ export default function HRManagementHub() {
   const leaveRequests = getMockLeaveRequests();
   const attendance = getMockAttendance();
   const payroll = getMockPayrollRecords();
+  const evaluations = getMockEvaluations();
 
   // Calculate quick stats
   const activeEmployees = employees.filter(emp => emp.status === 'active').length;
@@ -35,6 +38,7 @@ export default function HRManagementHub() {
   const todayAttendance = attendance.filter(att => att.date === dayjs().format('YYYY-MM-DD'));
   const presentToday = todayAttendance.filter(att => att.status === 'present' || att.status === 'late').length;
   const monthlyPayroll = payroll.filter(p => p.month === dayjs().format('MM') && p.year === dayjs().year());
+  const pendingEvaluations = evaluations.filter(evaluation => evaluation.status === 'draft').length;
 
   const quickActions = [
     {
@@ -44,6 +48,14 @@ export default function HRManagementHub() {
       path: '/hr-management/employees',
       color: '#1890ff',
       stats: `${employees.length} Total Employees`,
+    },
+    {
+      title: 'Employee Evaluations',
+      description: 'Conduct performance reviews, rate employees, track development',
+      icon: <StarOutlined style={{ fontSize: '24px', color: '#eb2f96' }} />,
+      path: '/hr-management/evaluations',
+      color: '#eb2f96',
+      stats: `${pendingEvaluations} Pending Reviews`,
     },
     {
       title: 'Attendance Tracking',
