@@ -15,17 +15,11 @@ export class TaxRule {
   @Column({ name: 'property_id', type: 'uuid' })
   propertyId: string;
 
-  @Column({ name: 'tax_name', length: 100 })
-  taxName: string;
+  @Column({ type: 'decimal', precision: 5, scale: 2 })
+  rate: number;
 
-  @Column({ name: 'tax_rate', type: 'decimal', precision: 5, scale: 2 })
-  taxRate: number;
-
-  @Column({ name: 'is_inclusive', default: false })
-  isInclusive: boolean;
-
-  @Column({ name: 'is_active', default: true })
-  isActive: boolean;
+  @Column({ length: 20 })
+  type: 'VAT' | 'service';
 
   // Relations
   @ManyToOne(() => Property, (property) => property.taxRules)

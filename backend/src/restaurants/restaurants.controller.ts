@@ -11,11 +11,14 @@ import {
   ParseIntPipe,
   UseGuards,
   BadRequestException,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
+import { CreateRestaurantAreaDto, UpdateRestaurantAreaDto } from './dto/create-restaurant-area.dto';
 import { CreateTableDto, UpdateTableDto } from './dto/create-table.dto';
 import { CreateTableBookingDto, UpdateTableBookingDto } from './dto/create-table-booking.dto';
 
@@ -35,9 +38,9 @@ export class RestaurantsController {
     @Query('page', ParseIntPipe) page: number = 1,
     @Query('limit', ParseIntPipe) limit: number = 10,
     @Query('propertyId') propertyId?: string,
-    @Query('cuisine') cuisine?: string,
+    @Query('cuisineType') cuisineType?: string,
   ) {
-    return this.restaurantsService.findAllRestaurants(page, limit, propertyId, cuisine);
+    return this.restaurantsService.findAllRestaurants(page, limit, propertyId, cuisineType);
   }
 
   @Get(':id')
@@ -54,9 +57,41 @@ export class RestaurantsController {
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.OK)
   async deleteRestaurant(@Param('id', ParseUUIDPipe) id: string) {
     await this.restaurantsService.deleteRestaurant(id);
     return { message: 'Restaurant deleted successfully' };
+  }
+
+  // Restaurant Area Management Endpoints
+  @Post('areas')
+  async createArea(@Body() createAreaDto: CreateRestaurantAreaDto) {
+    return this.restaurantsService.createArea(createAreaDto);
+  }
+
+  @Get(':restaurantId/areas')
+  async findAreasByRestaurant(@Param('restaurantId', ParseUUIDPipe) restaurantId: string) {
+    return this.restaurantsService.findAreasByRestaurant(restaurantId);
+  }
+
+  @Get('areas/:id')
+  async findAreaById(@Param('id', ParseUUIDPipe) id: string) {
+    return this.restaurantsService.findAreaById(id);
+  }
+
+  @Put('areas/:id')
+  async updateArea(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateAreaDto: UpdateRestaurantAreaDto,
+  ) {
+    return this.restaurantsService.updateArea(id, updateAreaDto);
+  }
+
+  @Delete('areas/:id')
+  @HttpCode(HttpStatus.OK)
+  async deleteArea(@Param('id', ParseUUIDPipe) id: string) {
+    await this.restaurantsService.deleteArea(id);
+    return { message: 'Restaurant area deleted successfully' };
   }
 
   // Table Management Endpoints

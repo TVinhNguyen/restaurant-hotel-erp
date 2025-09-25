@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Restaurant } from './restaurant.entity';
 import { Guest } from '../core/guest.entity';
@@ -35,13 +36,7 @@ export class TableBooking {
   pax: number;
 
   @Column({ length: 30, default: 'pending' })
-  status:
-    | 'pending'
-    | 'confirmed'
-    | 'seated'
-    | 'completed'
-    | 'no_show'
-    | 'cancelled';
+  status: 'pending' | 'confirmed' | 'seated' | 'completed' | 'no_show' | 'cancelled';
 
   @Column({ name: 'assigned_table_id', type: 'uuid', nullable: true })
   assignedTableId: string;
@@ -55,8 +50,11 @@ export class TableBooking {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
+
   // Relations
-  @ManyToOne(() => Restaurant)
+  @ManyToOne(() => Restaurant, (restaurant) => restaurant.bookings)
   @JoinColumn({ name: 'restaurant_id' })
   restaurant: Restaurant;
 
@@ -68,9 +66,7 @@ export class TableBooking {
   @JoinColumn({ name: 'reservation_id' })
   reservation: Reservation;
 
-  @ManyToOne(() => RestaurantTable, (table) => table.bookings, {
-    nullable: true,
-  })
+  @ManyToOne(() => RestaurantTable, (table) => table.bookings, { nullable: true })
   @JoinColumn({ name: 'assigned_table_id' })
   assignedTable: RestaurantTable;
 }

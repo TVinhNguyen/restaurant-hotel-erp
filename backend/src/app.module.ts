@@ -10,16 +10,28 @@ import { PropertiesModule } from './properties/properties.module';
 import { GuestsModule } from './guests/guests.module';
 import { RoomTypesModule } from './room-types/room-types.module';
 import { RoomsModule } from './rooms/rooms.module';
+import { AmenitiesModule } from './amenities/amenities.module';
+// import { PhotosModule } from './photos/photos.module';
+// import { RoomStatusHistoryModule } from './room-status-history/room-status-history.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { PaymentsModule } from './payments/payments.module';
 import { EmployeesModule } from './employees/employees.module';
 import { ServicesModule } from './services/services.module';
 import { RatePlansModule } from './rate-plans/rate-plans.module';
+import { DailyRatesModule } from './daily-rates/daily-rates.module';
+import { PromotionsModule } from './promotions/promotions.module';
+import { TaxRulesModule } from './tax-rules/tax-rules.module';
+import { ReservationServicesModule } from './reservation-services/reservation-services.module';
+import { PropertyServicesModule } from './property-services/property-services.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
-import { ReportsModule } from './reports/reports.module';
-import { AttendanceModule } from './attendance/attendance.module';
+// import { ReportsModule } from './reports/reports.module';
+// import { AttendanceModule } from './attendance/attendance.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { LeaveModule } from './leave/leave.module';
+import { WorkingShiftsModule } from './working-shifts/working-shifts.module';
+import { DeductionsModule } from './deductions/deductions.module';
+import { OvertimesModule } from './overtimes/overtimes.module';
+import { EmployeeEvaluationsModule } from './employee-evaluations/employee-evaluations.module';
 
 @Module({
   imports: [
@@ -33,26 +45,40 @@ import { LeaveModule } from './leave/leave.module';
       database: process.env.DB_NAME || 'hotel_pms_v2',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: false
     }),
     AuthModule,
     UsersModule,
     PropertiesModule,
     GuestsModule,
+    // ROOMS & INVENTORY modules (working ones)
     RoomTypesModule,
     RoomsModule,
+    AmenitiesModule,
+    // PhotosModule, // Disabled due to compilation errors
+    // RoomStatusHistoryModule, // Disabled due to compilation errors
+    // Other modules
     ReservationsModule,
     PaymentsModule,
     EmployeesModule,
     ServicesModule,
     RatePlansModule,
-    RestaurantsModule,
-    ReportsModule,
-    AttendanceModule,
+    DailyRatesModule,
+    PromotionsModule,
+    TaxRulesModule,
+    ReservationServicesModule,
+    PropertyServicesModule,
+    RestaurantsModule, // ✅ ENABLED - Restaurant management module
+    // ReportsModule, // Disabled due to compilation errors
+    // AttendanceModule, // Disabled due to compilation errors
     PayrollModule,
     LeaveModule,
+    WorkingShiftsModule,
+    DeductionsModule,
+    OvertimesModule,
+    EmployeeEvaluationsModule
   ],
   controllers: [AppController, HealthController],
-  providers: [AppService],
+  providers: [AppService]
 })
 export class AppModule {}

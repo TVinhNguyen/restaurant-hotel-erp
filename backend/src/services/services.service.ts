@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PropertyService } from '../entities/reservation/property-service.entity';
 import { Service } from '../entities/reservation/service.entity';
-import { CreatePropertyServiceDto } from './dto/create-property-service.dto';
-import { UpdatePropertyServiceDto } from './dto/update-property-service.dto';
+import { CreateServiceDto } from './dto/create-service.dto';
+import { UpdateServiceDto } from './dto/update-service.dto';
 
 @Injectable()
 export class ServicesService {
@@ -45,75 +45,33 @@ export class ServicesService {
     };
   }
 
-  async findAllPropertyServices(query: {
-    page?: number;
-    limit?: number;
-    propertyId?: string;
-    isActive?: boolean;
-  }) {
-    const { page = 1, limit = 10, propertyId, isActive } = query;
-    const skip = (page - 1) * limit;
+  async createService(createServiceDto: CreateServiceDto): Promise<Service> {
+    const service = this.serviceRepository.create(createServiceDto);
+    return await this.serviceRepository.save(service);
+  }
 
-    const queryBuilder = this.propertyServiceRepository.createQueryBuilder('propertyService')
-      .leftJoinAndSelect('propertyService.property', 'property')
-      .leftJoinAndSelect('propertyService.service', 'service');
-
-    if (propertyId) {
-      queryBuilder.where('propertyService.propertyId = :propertyId', { propertyId });
+  async findOneService(id: string): Promise<Service> {
+    const service = await this.serviceRepository.findOne({ where: { id } });
+    if (!service) {
+      throw new NotFoundException(`Service with ID ${id} not found`);
     }
+    return service;
+  }
 
-    if (isActive !== undefined) {
-      queryBuilder.andWhere('propertyService.isActive = :isActive', { isActive });
+  async updateService(id: string, updateServiceDto: UpdateServiceDto): Promise<Service> {
+    const service = await this.serviceRepository.findOne({ where: { id } });
+    if (!service) {
+      throw new NotFoundException(`Service with ID ${id} not found`);
     }
-
-    const [data, total] = await queryBuilder
-      .skip(skip)
-      .take(limit)
-      .getManyAndCount();
-
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-      hasNext: page * limit < total,
-      hasPrev: page > 1,
-    };
+    Object.assign(service, updateServiceDto);
+    return await this.serviceRepository.save(service);
   }
 
-  async findOnePropertyService(id: string): Promise<PropertyService> {
-    const propertyService = await this.propertyServiceRepository.findOne({
-      where: { id },
-      relations: ['property', 'service'],
-    });
-
-    if (!propertyService) {
-      throw new NotFoundException(`Property service with ID ${id} not found`);
+  async removeService(id: string): Promise<void> {
+    const service = await this.serviceRepository.findOne({ where: { id } });
+    if (!service) {
+      throw new NotFoundException(`Service with ID ${id} not found`);
     }
-
-    return propertyService;
-  }
-
-  async createPropertyService(createPropertyServiceDto: CreatePropertyServiceDto): Promise<PropertyService> {
-    const propertyService = this.propertyServiceRepository.create({
-      ...createPropertyServiceDto,
-      isActive: createPropertyServiceDto.isActive ?? true,
-    });
-
-    return await this.propertyServiceRepository.save(propertyService);
-  }
-
-  async updatePropertyService(id: string, updatePropertyServiceDto: UpdatePropertyServiceDto): Promise<PropertyService> {
-    const propertyService = await this.findOnePropertyService(id);
-    
-    Object.assign(propertyService, updatePropertyServiceDto);
-    
-    return await this.propertyServiceRepository.save(propertyService);
-  }
-
-  async removePropertyService(id: string): Promise<void> {
-    const propertyService = await this.findOnePropertyService(id);
-    await this.propertyServiceRepository.remove(propertyService);
+    await this.serviceRepository.remove(service);
   }
 }

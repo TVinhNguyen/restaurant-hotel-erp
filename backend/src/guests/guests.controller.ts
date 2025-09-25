@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
   HttpCode,
-  HttpStatus,
+  HttpStatus
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { GuestsService } from './guests.service';
@@ -25,7 +25,7 @@ export class GuestsController {
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-    @Query('search') search?: string,
+    @Query('search') search?: string
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -33,7 +33,7 @@ export class GuestsController {
     return await this.guestsService.findAll({
       page: pageNum,
       limit: limitNum,
-      search,
+      search
     });
   }
 
@@ -50,7 +50,7 @@ export class GuestsController {
   @Put(':id')
   async update(
     @Param('id') id: string,
-    @Body() updateGuestDto: UpdateGuestDto,
+    @Body() updateGuestDto: UpdateGuestDto
   ) {
     return await this.guestsService.update(id, updateGuestDto);
   }

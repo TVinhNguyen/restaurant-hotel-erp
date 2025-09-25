@@ -29,12 +29,12 @@ export class TaxRulesService {
     }
 
     if (type) {
-      queryBuilder.andWhere('taxRule.taxName = :type', { type });
+      queryBuilder.andWhere('taxRule.type = :type', { type });
     }
 
     const [data, total] = await queryBuilder
-      .orderBy('taxRule.taxName', 'ASC')
-      .addOrderBy('taxRule.taxRate', 'ASC')
+      .orderBy('taxRule.type', 'ASC')
+      .addOrderBy('taxRule.rate', 'ASC')
       .skip(skip)
       .take(limit)
       .getManyAndCount();
@@ -82,7 +82,7 @@ export class TaxRulesService {
   async findByProperty(propertyId: string): Promise<TaxRule[]> {
     return await this.taxRuleRepository.find({
       where: { propertyId },
-      order: { taxName: 'ASC', taxRate: 'ASC' },
+      order: { type: 'ASC', rate: 'ASC' },
     });
   }
 
@@ -99,19 +99,19 @@ export class TaxRulesService {
     const breakdown = [];
 
     for (const taxRule of taxRules) {
-      if (taxType && taxRule.taxName !== taxType) continue;
+      if (taxType && taxRule.type !== taxType) continue;
 
-      const taxAmount = (amount * taxRule.taxRate) / 100;
+      const taxAmount = (amount * taxRule.rate) / 100;
       
-      if (taxRule.taxName === 'VAT') {
+      if (taxRule.type === 'VAT') {
         vatAmount += taxAmount;
-      } else if (taxRule.taxName === 'service') {
+      } else if (taxRule.type === 'service') {
         serviceAmount += taxAmount;
       }
 
       breakdown.push({
-        type: taxRule.taxName,
-        rate: taxRule.taxRate,
+        type: taxRule.type,
+        rate: taxRule.rate,
         amount: taxAmount,
       });
     }

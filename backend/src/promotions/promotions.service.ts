@@ -61,7 +61,7 @@ export class PromotionsService {
   async findOne(id: string): Promise<Promotion> {
     const promotion = await this.promotionRepository.findOne({
       where: { id },
-      relations: ['property', 'reservations'],
+      relations: ['property'],
     });
 
     if (!promotion) {
@@ -98,12 +98,9 @@ export class PromotionsService {
     const entityData = {
       propertyId: createPromotionDto.propertyId,
       code: createPromotionDto.code,
-      name: createPromotionDto.name,
-      discountType: createPromotionDto.discountType,
-      discountValue: createPromotionDto.discountValue,
+      discountPercent: createPromotionDto.discountPercent,
       validFrom: createPromotionDto.validFrom ? new Date(createPromotionDto.validFrom) : undefined,
       validTo: createPromotionDto.validTo ? new Date(createPromotionDto.validTo) : undefined,
-      isActive: createPromotionDto.isActive ?? true,
     };
 
     const promotion = this.promotionRepository.create(entityData);
@@ -125,29 +122,17 @@ export class PromotionsService {
     }
 
     // Update fields individually to handle type conversion
-    if (updatePromotionDto.propertyId !== undefined) {
-      promotion.propertyId = updatePromotionDto.propertyId;
-    }
     if (updatePromotionDto.code !== undefined) {
       promotion.code = updatePromotionDto.code;
     }
-    if (updatePromotionDto.name !== undefined) {
-      promotion.name = updatePromotionDto.name;
-    }
-    if (updatePromotionDto.discountType !== undefined) {
-      promotion.discountType = updatePromotionDto.discountType;
-    }
-    if (updatePromotionDto.discountValue !== undefined) {
-      promotion.discountValue = updatePromotionDto.discountValue;
+    if (updatePromotionDto.discountPercent !== undefined) {
+      promotion.discountPercent = updatePromotionDto.discountPercent;
     }
     if (updatePromotionDto.validFrom !== undefined) {
       promotion.validFrom = new Date(updatePromotionDto.validFrom);
     }
     if (updatePromotionDto.validTo !== undefined) {
       promotion.validTo = new Date(updatePromotionDto.validTo);
-    }
-    if (updatePromotionDto.isActive !== undefined) {
-      promotion.isActive = updatePromotionDto.isActive;
     }
     
     return await this.promotionRepository.save(promotion);

@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from 'typeorm';
 import { Employee } from '../core/employee.entity';
 import { WorkingShift } from './working-shift.entity';
@@ -15,19 +15,25 @@ export class Overtime {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'employee_id', type: 'uuid' })
+  @Column({ name: 'employee_id', type: 'uuid', nullable: true })
   employeeId: string;
 
   @Column({ name: 'working_shift_id', type: 'uuid', nullable: true })
   workingShiftId: string;
 
-  @Column({ name: 'number_of_hours', type: 'decimal', precision: 6, scale: 2 })
+  @Column({
+    name: 'number_of_hours',
+    type: 'decimal',
+    precision: 6,
+    scale: 2,
+    nullable: true
+  })
   numberOfHours: number;
 
-  @Column({ type: 'decimal', precision: 8, scale: 2 })
+  @Column({ type: 'decimal', precision: 8, scale: 2, nullable: true })
   rate: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   amount: number;
 
   @Column({ name: 'approved_by', type: 'uuid', nullable: true })
@@ -40,7 +46,7 @@ export class Overtime {
   updatedAt: Date;
 
   // Relations
-  @ManyToOne(() => Employee, (employee) => employee.overtimes)
+  @ManyToOne(() => Employee, employee => employee.overtimes)
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 

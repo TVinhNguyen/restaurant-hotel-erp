@@ -6,7 +6,7 @@ import {
   OneToMany,
   JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from 'typeorm';
 import { Property } from '../core/property.entity';
 import { Employee } from '../core/employee.entity';
@@ -18,28 +18,28 @@ export class WorkingShift {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'property_id', type: 'uuid' })
+  @Column({ name: 'property_id', type: 'uuid', nullable: true })
   propertyId: string;
 
-  @Column({ name: 'employee_id', type: 'uuid' })
+  @Column({ name: 'employee_id', type: 'uuid', nullable: true })
   employeeId: string;
 
-  @Column({ name: 'working_date', type: 'date' })
+  @Column({ name: 'working_date', type: 'date', nullable: true })
   workingDate: Date;
 
-  @Column({ name: 'start_time', type: 'time' })
+  @Column({ name: 'start_time', type: 'time', nullable: true })
   startTime: string;
 
-  @Column({ name: 'end_time', type: 'time' })
+  @Column({ name: 'end_time', type: 'time', nullable: true })
   endTime: string;
 
   @Column({ name: 'shift_type', length: 20, nullable: true })
   shiftType: 'morning' | 'night' | 'other';
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'notes', type: 'text', nullable: true })
   notes: string;
 
-  @Column({ name: 'is_reassigned', default: false })
+  @Column({ name: 'is_reassigned', default: false, nullable: true })
   isReassigned: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
@@ -49,17 +49,17 @@ export class WorkingShift {
   updatedAt: Date;
 
   // Relations
-  @ManyToOne(() => Property, (property) => property.workingShifts)
+  @ManyToOne(() => Property, property => property.workingShifts)
   @JoinColumn({ name: 'property_id' })
   property: Property;
 
-  @ManyToOne(() => Employee, (employee) => employee.workingShifts)
+  @ManyToOne(() => Employee, employee => employee.workingShifts)
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 
-  @OneToMany(() => Attendance, (attendance) => attendance.workingShift)
+  @OneToMany(() => Attendance, attendance => attendance.workingShift)
   attendances: Attendance[];
 
-  @OneToMany(() => Overtime, (overtime) => overtime.workingShift)
+  @OneToMany(() => Overtime, overtime => overtime.workingShift)
   overtimes: Overtime[];
 }

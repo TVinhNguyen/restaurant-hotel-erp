@@ -1,22 +1,18 @@
-import { IsString, IsNumber, IsUUID, IsOptional, IsIn, Min } from 'class-validator';
+import { IsString, IsNumber, IsUUID, IsOptional, Min, Max, MaxLength } from 'class-validator';
 
 export class CreatePromotionDto {
+  @IsOptional()
   @IsUUID()
-  propertyId: string;
+  propertyId?: string;
 
   @IsString()
+  @MaxLength(50)
   code: string;
 
-  @IsString()
-  name: string;
-
-  @IsString()
-  @IsIn(['percentage', 'fixed_amount'])
-  discountType: 'percentage' | 'fixed_amount';
-
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  discountValue: number;
+  @Max(100)
+  discountPercent: number;
 
   @IsOptional()
   @IsString()
@@ -25,8 +21,4 @@ export class CreatePromotionDto {
   @IsOptional()
   @IsString()
   validTo?: string;
-
-  @IsOptional()
-  @IsString()
-  isActive?: boolean;
 }
