@@ -164,11 +164,11 @@ export default function EmployeesPage() {
                         />
                         <Table.Column
                             dataIndex="fullName"
-                            title="Full Name"
+                            title="Name"
                             sorter={(a: Employee, b: Employee) => a.fullName.localeCompare(b.fullName)}
-                            render={(name: string, record: Employee) => (
+                            render={(fullName: string, record: Employee) => (
                                 <div>
-                                    <div style={{ fontWeight: 'bold' }}>{name}</div>
+                                    <div style={{ fontWeight: 'bold' }}>{fullName}</div>
                                     <div style={{ fontSize: '12px', color: '#666' }}>{record.email}</div>
                                 </div>
                             )}
@@ -193,15 +193,15 @@ export default function EmployeesPage() {
                             dataIndex="startDate"
                             title="Start Date"
                             responsive={['lg']}
-                            sorter={(a: Employee, b: Employee) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()}
+                            sorter={(a: Employee, b: Employee) => new Date(a.hireDate).getTime() - new Date(b.hireDate).getTime()}
                             render={(date: string) => new Date(date).toLocaleDateString()}
                         />
                         <Table.Column
                             dataIndex="salary"
                             title="Salary"
                             responsive={['lg']}
-                            sorter={(a: Employee, b: Employee) => a.salary - b.salary}
-                            render={(salary: number) => `${salary.toLocaleString()} VNĐ`}
+                            sorter={(a: Employee, b: Employee) => (a.salary || 0) - (b.salary || 0)}
+                            render={(salary: number) => `${salary?.toLocaleString() || 0} VNĐ`}
                         />
                         <Table.Column
                             dataIndex="status"

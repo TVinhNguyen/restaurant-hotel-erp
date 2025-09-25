@@ -1,24 +1,31 @@
-import authOptions from "@app/api/auth/[...nextauth]/options";
-import { getServerSession } from "next-auth/next";
-import { redirect } from "next/navigation";
-import React from "react";
+"use client";
 
-export default async function LoginLayout({
+import { redirect } from "next/navigation";
+import React, { useEffect, useState } from "react";
+
+export default function LoginLayout({
   children,
 }: React.PropsWithChildren) {
-  const data = await getData();
+  const [isChecking, setIsChecking] = useState(true);
 
-  if (data.session?.user) {
-    return redirect("/");
+  useEffect(() => {
+    // Check if user is already logged in
+    const token = localStorage.getItem('token');
+    console.log("Login layout token:", token);
+
+    if (token) {
+      // User is logged in, redirect to main page
+      window.location.href = '/';
+      return;
+    }
+
+    setIsChecking(false);
+  }, []);
+
+  // Show loading while checking
+  if (isChecking) {
+    return <div>Checking authentication...</div>;
   }
 
   return <>{children}</>;
-}
-
-async function getData() {
-  const session = await getServerSession(authOptions);
-
-  return {
-    session,
-  };
 }
