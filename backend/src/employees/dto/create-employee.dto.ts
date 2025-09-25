@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsUUID, IsIn, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsUUID,
+  IsIn,
+  IsDateString
+} from 'class-validator';
 
 export class CreateEmployeeDto {
   @IsOptional()
@@ -9,12 +15,22 @@ export class CreateEmployeeDto {
   @IsString()
   employeeCode?: string;
 
+  @IsOptional()
+  @IsString()
+  position?: string;
+
+  @IsOptional()
   @IsString()
   fullName: string;
 
   @IsOptional()
-  @IsIn(['Front Desk', 'Housekeeping', 'HR', 'F&B'])
-  department?: 'Front Desk' | 'Housekeeping' | 'HR' | 'F&B';
+  @IsIn(['IT Department', 'Human Resources', 'Marketing', 'Finances', 'Sales'])
+  department?:
+    | 'IT Department'
+    | 'Human Resources'
+    | 'Marketing'
+    | 'Finances'
+    | 'Sales';
 
   @IsOptional()
   @IsIn(['active', 'on_leave', 'terminated'])

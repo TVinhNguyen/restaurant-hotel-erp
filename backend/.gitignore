@@ -6,6 +6,3 @@ node_modules
 dist/
 
 /generated/prisma
-
-# Ignore build output
-dist
