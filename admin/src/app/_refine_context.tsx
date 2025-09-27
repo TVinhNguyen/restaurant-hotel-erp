@@ -222,6 +222,80 @@ const App = (props: React.PropsWithChildren<AppProps>) => {
                     icon: "⭐",
                   },
                 },
+                {
+                  name: "inventory-management",
+                  list: "/inventory-management",
+                  meta: {
+                    label: "Inventory Management",
+                    icon: "🏠",
+                  },
+                },
+                {
+                  name: "room-types",
+                  list: "/inventory-management/room-types",
+                  create: "/inventory-management/room-types/create",
+                  edit: "/inventory-management/room-types/edit/:id",
+                  show: "/inventory-management/room-types/show/:id",
+                  meta: {
+                    label: "Room Types",
+                    parent: "inventory-management",
+                    icon: "🏨",
+                    canDelete: true,
+                  },
+                },
+                {
+                  name: "rooms",
+                  list: "/inventory-management/rooms",
+                  create: "/inventory-management/rooms/create",
+                  edit: "/inventory-management/rooms/edit/:id",
+                  show: "/inventory-management/rooms/show/:id",
+                  meta: {
+                    label: "Rooms",
+                    parent: "inventory-management",
+                    icon: "🛏️",
+                    canDelete: true,
+                  },
+                },
+                {
+                  name: "amenities",
+                  list: "/inventory-management/amenities",
+                  create: "/inventory-management/amenities/create",
+                  edit: "/inventory-management/amenities/edit/:id",
+                  show: "/inventory-management/amenities/show/:id",
+                  meta: {
+                    label: "Amenities",
+                    parent: "inventory-management",
+                    icon: "🛠️",
+                    canDelete: true,
+                  },
+                },
+                {
+                  name: "photos",
+                  list: "/inventory-management/photos",
+                  meta: {
+                    label: "Photos",
+                    parent: "inventory-management",
+                    icon: "📸",
+                  },
+                },
+                {
+                  name: "room-status-history",
+                  list: "/inventory-management/room-status-history",
+                  meta: {
+                    label: "Status History",
+                    parent: "inventory-management",
+                    icon: "📋",
+                  },
+                },
+                {
+                  name: "room-maintenance",
+                  list: "/inventory-management/room-maintenance",
+                  meta: {
+                    label: "Room Maintenance",
+                    parent: "inventory-management",
+                    icon: "🔧",
+                  },
+                },
               ]}
               options={{
                 syncWithLocation: true,

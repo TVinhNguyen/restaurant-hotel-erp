@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 services:
   postgres:
     image: postgres:16
@@ -6,15 +6,13 @@ services:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app
       POSTGRES_DB: erp
-    ports: ['5432:5432']
-    volumes:
-      - 'pg:/var/lib/postgresql/data'
-      - '../backend/update_db_xhuy.sql:/docker-entrypoint-initdb.d/01-init.sql:ro'
+    ports: ["5432:5432"]
+    volumes: ["pg:/var/lib/postgresql/data"]
     networks: [devnet]
 
   redis:
     image: redis:7
-    ports: ['6379:6379']
+    ports: ["6379:6379"]
     networks: [devnet]
 
   rabbitmq:
@@ -22,7 +20,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: myuser
       RABBITMQ_DEFAULT_PASS: mypass
-    ports: ['5672:5672', '15672:15672']
+    ports: ["5672:5672", "15672:15672"]
     networks: [devnet]
 
 volumes:
@@ -30,4 +28,4 @@ volumes:
 
 networks:
   devnet:
-    name: devnet # đặt tên cố định để stack khác join vào
+    name: devnet  # đặt tên cố định để stack khác join vào
