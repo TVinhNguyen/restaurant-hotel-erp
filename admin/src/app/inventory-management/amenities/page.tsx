@@ -8,7 +8,7 @@ import {
 } from "@refinedev/antd";
 import type { BaseRecord } from "@refinedev/core";
 import { Space, Table, message, Button, Card, Row, Col, Input, Select, Typography, Tag } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
     getMockAmenities, 
     deleteMockAmenity,
@@ -21,19 +21,86 @@ const { Title } = Typography;
 const { Search } = Input;
 
 export default function AmenitiesPage() {
-    const [amenities, setAmenities] = useState<Amenity[]>(getMockAmenities());
-    const [filteredAmenities, setFilteredAmenities] = useState<Amenity[]>(getMockAmenities());
+    const [amenities, setAmenities] = useState<Amenity[]>([]);
+    const [filteredAmenities, setFilteredAmenities] = useState<Amenity[]>([]);
     const [searchText, setSearchText] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    const handleDelete = (id: string) => {
-        if (deleteMockAmenity(id)) {
-            const updatedAmenities = getMockAmenities();
-            setAmenities(updatedAmenities);
-            setFilteredAmenities(updatedAmenities);
-            message.success('Amenity deleted successfully!');
-        } else {
+    useEffect(() => {
+        fetchAmenities();
+    }, []);
+
+    const fetchAmenities = async () => {
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        setLoading(true);
+        
+        try {
+            const response = await fetch(
+                `${API_ENDPOINT}/amenities?limit=1000`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                }
+            );
+
+            if (response.ok) {
+                const result = await response.json();
+                const amenitiesData = result.data.map((a: any) => ({
+                    id: a.id,
+                    name: a.name,
+                    category: a.category,
+                    description: a.description || '',
+                }));
+                setAmenities(amenitiesData);
+                setFilteredAmenities(amenitiesData);
+            } else {
+                message.error('Error loading amenities');
+                // Fallback to mock data
+                const mockData = getMockAmenities();
+                setAmenities(mockData);
+                setFilteredAmenities(mockData);
+            }
+        } catch (error) {
+            console.error('Error fetching amenities:', error);
+            message.error('Error loading amenities');
+            // Fallback to mock data
+            const mockData = getMockAmenities();
+            setAmenities(mockData);
+            setFilteredAmenities(mockData);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        
+        try {
+            const response = await fetch(`${API_ENDPOINT}/amenities/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                }
+            });
+
+            if (response.ok) {
+                message.success('Amenity deleted successfully!');
+                // Remove from local state
+                const updatedAmenities = amenities.filter(a => a.id !== id);
+                setAmenities(updatedAmenities);
+                setFilteredAmenities(updatedAmenities);
+                
+                // Also update mock data
+                deleteMockAmenity(id);
+            } else {
+                const errorData = await response.json();
+                message.error(errorData.message || 'Error deleting amenity!');
+            }
+        } catch (error) {
+            console.error('Error deleting amenity:', error);
             message.error('Error deleting amenity!');
         }
     };
@@ -75,6 +142,7 @@ export default function AmenitiesPage() {
 
     const tableProps = {
         dataSource: filteredAmenities,
+        loading,
         pagination: {
             pageSize: 10,
             total: filteredAmenities.length,
@@ -142,11 +210,7 @@ export default function AmenitiesPage() {
             <Card>
                 <List>
                     <Table {...tableProps} rowKey="id" scroll={{ x: 800 }}>
-                        <Table.Column
-                            dataIndex="id"
-                            title="ID"
-                            width={60}
-                        />
+                        
                         <Table.Column
                             dataIndex="name"
                             title="Name"
@@ -176,20 +240,7 @@ export default function AmenitiesPage() {
                             ]}
                             onFilter={(value: any, record: Amenity) => record.category === value}
                         />
-                        <Table.Column
-                            dataIndex="description"
-                            title="Description"
-                            responsive={['lg']}
-                            render={(description: string) => (
-                                <div style={{ maxWidth: '300px' }}>
-                                    {description ? (
-                                        <span style={{ fontSize: '14px' }}>
-                                            {description.length > 80 ? `${description.substring(0, 80)}...` : description}
-                                        </span>
-                                    ) : '-'}
-                                </div>
-                            )}
-                        />
+                        
                         <Table.Column
                             title="Actions"
                             dataIndex="actions"

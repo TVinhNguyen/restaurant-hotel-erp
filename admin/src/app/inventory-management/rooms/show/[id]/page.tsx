@@ -2,6 +2,7 @@
 
 import { Show, TextField } from "@refinedev/antd";
 import { Typography, Row, Col, Card, Tag, Descriptions, List } from "antd";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { 
     getMockRoom, 
@@ -16,30 +17,53 @@ export default function RoomShow() {
     const params = useParams();
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     
-    const room = getMockRoom(id || '');
-    const property = room ? getMockProperty(room.propertyId) : null;
-    const roomType = room ? getMockRoomType(room.roomTypeId) : null;
-    const allAmenities = getMockAmenities();
-    
-    // Get amenities for this room type
-    const roomAmenities = roomType ? allAmenities.filter(amenity => 
-        (roomType.amenityIds || roomType.amenities || []).includes(amenity.id)
-    ) : [];
+    const [room, setRoom] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    if (!room) {
+    useEffect(() => {
+        const fetchRoom = async () => {
+            const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            setLoading(true);
+            
+            try {
+                const response = await fetch(`${API_ENDPOINT}/rooms/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setRoom(data);
+                }
+            } catch (error) {
+                console.error('Error fetching room:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchRoom();
+        }
+    }, [id]);
+
+    if (loading || !room) {
         return (
-            <Show>
-                <Title level={3}>Room not found</Title>
+            <Show isLoading={loading}>
+                <Title level={3}>Loading room...</Title>
             </Show>
         );
     }
 
+    const property = room.property;
+    const roomType = room.roomType;
+    const roomAmenities = roomType?.roomTypeAmenities?.map((rta: any) => rta.amenity) || [];
+
     const getOperationalStatusColor = (status: string) => {
         switch (status) {
             case 'available': return 'green';
-            case 'occupied': return 'blue';
-            case 'out-of-order': return 'red';
-            case 'maintenance': return 'orange';
+            case 'out_of_service': return 'red';
             default: return 'default';
         }
     };
@@ -48,7 +72,6 @@ export default function RoomShow() {
         switch (status) {
             case 'clean': return 'green';
             case 'dirty': return 'red';
-            case 'cleaning': return 'orange';
             case 'inspected': return 'blue';
             default: return 'default';
         }
@@ -78,7 +101,10 @@ export default function RoomShow() {
                                 <TextField value={roomType?.name || 'Unknown'} />
                             </Descriptions.Item>
                             <Descriptions.Item label="Floor">
-                                <TextField value={`Floor ${room.floor}`} />
+                                <TextField value={room.floor} />
+                            </Descriptions.Item>
+                            <Descriptions.Item label="View Type">
+                                <TextField value={room.viewType || 'Not specified'} />
                             </Descriptions.Item>
                         </Descriptions>
                     </Card>
@@ -89,7 +115,7 @@ export default function RoomShow() {
                         <Descriptions column={1} size="small">
                             <Descriptions.Item label="Operational Status">
                                 <Tag color={getOperationalStatusColor(room.operationalStatus)}>
-                                    {room.operationalStatus.charAt(0).toUpperCase() + room.operationalStatus.slice(1).replace('-', ' ')}
+                                    {room.operationalStatus === 'out_of_service' ? 'Out of Service' : 'Available'}
                                 </Tag>
                             </Descriptions.Item>
                             <Descriptions.Item label="Housekeeping Status">
@@ -97,8 +123,8 @@ export default function RoomShow() {
                                     {room.housekeepingStatus.charAt(0).toUpperCase() + room.housekeepingStatus.slice(1)}
                                 </Tag>
                             </Descriptions.Item>
-                            <Descriptions.Item label="Notes">
-                                <TextField value={room.notes || 'No notes'} />
+                            <Descriptions.Item label="Housekeeper Notes">
+                                <TextField value={room.housekeeperNotes || 'No notes'} />
                             </Descriptions.Item>
                         </Descriptions>
                     </Card>
@@ -109,17 +135,18 @@ export default function RoomShow() {
                 <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                     <Col xs={24} md={12}>
                         <Card title="Room Type Details" size="small">
-                            <Descriptions column={1} size="small">                            <Descriptions.Item label="Base Price">
-                                <Text strong>{(roomType.basePrice || 0).toLocaleString()} VNĐ</Text>
-                            </Descriptions.Item>
-                                <Descriptions.Item label="Capacity">
-                                    <TextField value={`${roomType.capacity} guests`} />
+                            <Descriptions column={1} size="small">
+                                <Descriptions.Item label="Base Price">
+                                    <Text strong>{(roomType.base_price || roomType.basePrice || 0).toLocaleString()} VNĐ</Text>
                                 </Descriptions.Item>
-                                <Descriptions.Item label="Bed Configuration">
-                                    <TextField value={roomType.bedConfiguration} />
+                                <Descriptions.Item label="Max Adults">
+                                    <TextField value={roomType.max_adults || roomType.maxAdults || 0} />
                                 </Descriptions.Item>
-                                <Descriptions.Item label="Size">
-                                    <TextField value={roomType.size ? `${roomType.size} m²` : 'Not specified'} />
+                                <Descriptions.Item label="Max Children">
+                                    <TextField value={roomType.max_children || roomType.maxChildren || 0} />
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Bed Type">
+                                    <TextField value={roomType.bed_type || roomType.bedType || 'Not specified'} />
                                 </Descriptions.Item>
                                 <Descriptions.Item label="Description">
                                     <TextField value={roomType.description || 'No description'} />
@@ -134,7 +161,7 @@ export default function RoomShow() {
                                 <List
                                     size="small"
                                     dataSource={roomAmenities}
-                                    renderItem={(amenity) => (
+                                    renderItem={(amenity: any) => (
                                         <List.Item>
                                             <List.Item.Meta
                                                 title={
@@ -143,7 +170,6 @@ export default function RoomShow() {
                                                         <Tag 
                                                             color={getCategoryColor(amenity.category)}
                                                             style={{ marginLeft: 8 }}
-
                                                         >
                                                             {amenity.category === 'room' ? 'Room' : 'Facility'}
                                                         </Tag>

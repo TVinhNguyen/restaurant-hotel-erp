@@ -8,7 +8,7 @@ import {
 } from "@refinedev/antd";
 import type { BaseRecord } from "@refinedev/core";
 import { Space, Table, message, Button, Card, Row, Col, Input, Select, Typography, Tag } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
     getMockRoomTypes, 
     deleteMockRoomType, 
@@ -23,22 +23,104 @@ const { Title } = Typography;
 const { Search } = Input;
 
 export default function RoomTypesPage() {
-    const [roomTypes, setRoomTypes] = useState<RoomType[]>(getMockRoomTypes());
-    const [filteredRoomTypes, setFilteredRoomTypes] = useState<RoomType[]>(getMockRoomTypes());
+    const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+    const [filteredRoomTypes, setFilteredRoomTypes] = useState<RoomType[]>([]);
     const [searchText, setSearchText] = useState('');
     const [propertyFilter, setPropertyFilter] = useState('all');
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     const properties = getMockProperties();
     const amenities = getMockAmenities();
 
-    const handleDelete = (id: string) => {
-        if (deleteMockRoomType(id)) {
-            const updatedRoomTypes = getMockRoomTypes();
-            setRoomTypes(updatedRoomTypes);
-            setFilteredRoomTypes(updatedRoomTypes);
-            message.success('Room type deleted successfully!');
-        } else {
+    useEffect(() => {
+        fetchRoomTypes();
+    }, []);
+
+    const fetchRoomTypes = async () => {
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        const selectedPropertyId = localStorage.getItem('selectedPropertyId');
+        
+        if (!selectedPropertyId) {
+            message.warning('Please select a property first');
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        
+        try {
+            const response = await fetch(
+                `${API_ENDPOINT}/room-types?propertyId=${selectedPropertyId}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                }
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                const roomTypesData = data.data.map((rt: any) => ({
+                    id: rt.id,
+                    propertyId: rt.propertyId,
+                    propertyName: rt.property?.name || 'Unknown Property',
+                    name: rt.name,
+                    description: rt.description,
+                    maxAdults: rt.maxAdults,
+                    maxChildren: rt.maxChildren,
+                    basePrice: parseFloat(rt.basePrice),
+                    bedType: rt.bedType,
+                    amenities: rt.roomTypeAmenities?.map((rta: any) => rta.amenity?.id).filter(Boolean) || [],
+                    photos: rt.photos || [],
+                    totalRooms: rt.rooms?.length || 0,
+                }));
+
+                setRoomTypes(roomTypesData);
+                setFilteredRoomTypes(roomTypesData);
+            } else {
+                const errorData = await response.json();
+                console.error('Fetch room types API error:', errorData);
+                message.error(errorData.message || 'Error loading room types');
+            }
+        } catch (error) {
+            console.error('Error fetching room types:', error);
+            message.error('Error loading room types');
+            // Fallback to mock data
+            const mockData = getMockRoomTypes();
+            setRoomTypes(mockData);
+            setFilteredRoomTypes(mockData);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        
+        try {
+            const response = await fetch(`${API_ENDPOINT}/room-types/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                }
+            });
+
+            if (response.ok) {
+                message.success('Room type deleted successfully!');
+                // Remove from local state
+                const updatedRoomTypes = roomTypes.filter(rt => rt.id !== id);
+                setRoomTypes(updatedRoomTypes);
+                setFilteredRoomTypes(updatedRoomTypes);
+                
+                // Also update mock data
+                deleteMockRoomType(id);
+            } else {
+                const errorData = await response.json();
+                message.error(errorData.message || 'Error deleting room type!');
+            }
+        } catch (error) {
+            console.error('Error deleting room type:', error);
             message.error('Error deleting room type!');
         }
     };
@@ -81,6 +163,7 @@ export default function RoomTypesPage() {
 
     const tableProps = {
         dataSource: filteredRoomTypes,
+        loading,
         pagination: {
             pageSize: 10,
             total: filteredRoomTypes.length,

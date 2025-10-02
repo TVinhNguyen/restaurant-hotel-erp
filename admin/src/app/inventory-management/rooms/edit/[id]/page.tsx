@@ -19,10 +19,10 @@ export default function RoomEdit() {
     const router = useRouter();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
+    const [roomData, setRoomData] = useState<Room | null>(null);
     const [selectedProperty, setSelectedProperty] = useState<string>('');
     
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
-    const room = getMockRoom(id || '');
     const properties = getMockProperties();
     const allRoomTypes = getMockRoomTypes();
 
@@ -32,35 +32,85 @@ export default function RoomEdit() {
         : allRoomTypes;
 
     useEffect(() => {
-        if (room) {
-            form.setFieldsValue({
-                number: room.number,
-                propertyId: room.propertyId,
-                roomTypeId: room.roomTypeId,
-                floor: room.floor,
-                operationalStatus: room.operationalStatus,
-                housekeepingStatus: room.housekeepingStatus,
-                notes: room.notes || '',
-            });
-            setSelectedProperty(room.propertyId);
+        // Fetch room from API
+        const fetchRoom = async () => {
+            const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            try {
+                const response = await fetch(`${API_ENDPOINT}/rooms/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setRoomData(data);
+                    
+                    form.setFieldsValue({
+                        number: data.number,
+                        propertyId: data.propertyId,
+                        roomTypeId: data.roomTypeId,
+                        floor: data.floor,
+                        viewType: data.viewType,
+                        operationalStatus: data.operationalStatus,
+                        housekeepingStatus: data.housekeepingStatus,
+                        housekeeperNotes: data.housekeeperNotes || '',
+                    });
+                    setSelectedProperty(data.propertyId);
+                } else {
+                    message.error('Failed to fetch room data');
+                }
+            } catch (error) {
+                console.error('Error fetching room:', error);
+                message.error('Error loading room data');
+            }
+        };
+
+        if (id) {
+            fetchRoom();
         }
-    }, [room, form]);
+    }, [id, form]);
 
     const handleFinish = async (values: any) => {
         setLoading(true);
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        
         try {
-            const updatedRoom: Room = {
-                ...room!,
-                ...values,
+            const updateData = {
+                number: values.number,
+                roomTypeId: values.roomTypeId,
+                floor: values.floor,
+                viewType: values.viewType || null,
+                operationalStatus: values.operationalStatus,
+                housekeepingStatus: values.housekeepingStatus,
+                housekeeperNotes: values.housekeeperNotes || null,
             };
 
-            if (updateMockRoom(id!, updatedRoom)) {
+            const response = await fetch(`${API_ENDPOINT}/rooms/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            if (response.ok) {
+                const updatedRoom = await response.json();
+                console.log('Updated room from API:', updatedRoom);
+
+                // Update mock data
+                updateMockRoom(id!, updatedRoom);
+
                 message.success('Room updated successfully!');
                 router.push('/inventory-management/rooms');
             } else {
-                message.error('Error updating room!');
+                const errorData = await response.json();
+                console.error('Update room API error:', errorData);
+                message.error(errorData.message || 'Error updating room!');
             }
         } catch (error) {
+            console.error('Network or other error:', error);
             message.error('Error updating room!');
         } finally {
             setLoading(false);
@@ -72,10 +122,10 @@ export default function RoomEdit() {
         form.setFieldsValue({ roomTypeId: undefined });
     };
 
-    if (!room) {
+    if (!roomData) {
         return (
-            <Edit>
-                <div>Room not found</div>
+            <Edit isLoading={true}>
+                <div>Loading room data...</div>
             </Edit>
         );
     }
@@ -108,6 +158,7 @@ export default function RoomEdit() {
                                 <Select 
                                     placeholder="Select property"
                                     onChange={handlePropertyChange}
+                                    disabled
                                 >
                                     {properties.map(property => (
                                         <Select.Option key={property.id} value={property.id}>
@@ -140,12 +191,20 @@ export default function RoomEdit() {
                                 name="floor"
                                 rules={[{ required: true, message: 'Floor is required!' }]}
                             >
-                                <Select placeholder="Select floor">
-                                    {Array.from({ length: 20 }, (_, i) => i + 1).map(floor => (
-                                        <Select.Option key={floor} value={floor}>
-                                            Floor {floor}
-                                        </Select.Option>
-                                    ))}
+                                <Input placeholder="e.g., 1, 2, Ground" />
+                            </Form.Item>
+
+                            <Form.Item
+                                label="View Type"
+                                name="viewType"
+                            >
+                                <Select placeholder="Select view type" allowClear>
+                                    <Select.Option value="City View">City View</Select.Option>
+                                    <Select.Option value="Ocean View">Ocean View</Select.Option>
+                                    <Select.Option value="Garden View">Garden View</Select.Option>
+                                    <Select.Option value="Pool View">Pool View</Select.Option>
+                                    <Select.Option value="Mountain View">Mountain View</Select.Option>
+                                    <Select.Option value="No View">No View</Select.Option>
                                 </Select>
                             </Form.Item>
                         </Card>
@@ -160,9 +219,7 @@ export default function RoomEdit() {
                             >
                                 <Select placeholder="Select operational status">
                                     <Select.Option value="available">Available</Select.Option>
-                                    <Select.Option value="occupied">Occupied</Select.Option>
-                                    <Select.Option value="out-of-order">Out of Order</Select.Option>
-                                    <Select.Option value="maintenance">Under Maintenance</Select.Option>
+                                    <Select.Option value="out_of_service">Out of Service</Select.Option>
                                 </Select>
                             </Form.Item>
 
@@ -174,18 +231,17 @@ export default function RoomEdit() {
                                 <Select placeholder="Select housekeeping status">
                                     <Select.Option value="clean">Clean</Select.Option>
                                     <Select.Option value="dirty">Dirty</Select.Option>
-                                    <Select.Option value="cleaning">Being Cleaned</Select.Option>
                                     <Select.Option value="inspected">Inspected</Select.Option>
                                 </Select>
                             </Form.Item>
 
                             <Form.Item
-                                label="Notes"
-                                name="notes"
+                                label="Housekeeper Notes"
+                                name="housekeeperNotes"
                             >
                                 <TextArea 
                                     rows={4} 
-                                    placeholder="Any special notes about this room..." 
+                                    placeholder="Any special notes from housekeeping..." 
                                 />
                             </Form.Item>
                         </Card>

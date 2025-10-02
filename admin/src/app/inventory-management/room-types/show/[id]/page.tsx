@@ -3,10 +3,9 @@
 import { Show, TextField, TagField } from "@refinedev/antd";
 import { Typography, Row, Col, Card, Tag, List, Divider, Descriptions } from "antd";
 import { useParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { 
-    getMockRoomType, 
     getMockProperty,
-    getMockAmenities,
     getMockRooms
 } from "../../../../../data/mockInventory";
 
@@ -16,25 +15,61 @@ export default function RoomTypeShow() {
     const params = useParams();
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     
-    const roomType = getMockRoomType(id || '');
-    const property = roomType ? getMockProperty(roomType.propertyId) : null;
-    const allAmenities = getMockAmenities();
+    const [roomType, setRoomType] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    
     const allRooms = getMockRooms();
     
-    // Get amenities for this room type
-    const roomTypeAmenities = roomType ? allAmenities.filter(amenity => 
-        (roomType.amenityIds || roomType.amenities || []).includes(amenity.id)
-    ) : [];
-    
-    // Get rooms of this type
+    useEffect(() => {
+        const fetchRoomType = async () => {
+            const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            setLoading(true);
+            
+            try {
+                const response = await fetch(`${API_ENDPOINT}/room-types/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setRoomType({
+                        id: data.id,
+                        propertyId: data.property_id,
+                        name: data.name,
+                        description: data.description,
+                        maxAdults: data.max_adults,
+                        maxChildren: data.max_children,
+                        basePrice: data.base_price,
+                        bedType: data.bed_type,
+                        amenities: data.amenities || [],
+                        photos: data.photos || [],
+                        totalRooms: data.total_rooms || 0,
+                        rooms: data.rooms || [],
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching room type:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchRoomType();
+        }
+    }, [id]);
+
+    const property = roomType ? getMockProperty(roomType.propertyId) : null;
     const roomsOfThisType = roomType ? allRooms.filter(room => 
         room.roomTypeId === roomType.id
     ) : [];
 
-    if (!roomType) {
+    if (loading || !roomType) {
         return (
-            <Show>
-                <Title level={3}>Room type not found</Title>
+            <Show isLoading={loading}>
+                <Title level={3}>Loading room type...</Title>
             </Show>
         );
     }
@@ -71,11 +106,7 @@ export default function RoomTypeShow() {
                             <Descriptions.Item label="Property">
                                 <TextField value={property?.name || 'Unknown'} />
                             </Descriptions.Item>
-                            <Descriptions.Item label="Status">
-                                <Tag color={getStatusColor(roomType.status || 'active')}>
-                                    {(roomType.status || 'active').charAt(0).toUpperCase() + (roomType.status || 'active').slice(1)}
-                                </Tag>
-                            </Descriptions.Item>
+
                             <Descriptions.Item label="Description">
                                 <TextField value={roomType.description || 'No description'} />
                             </Descriptions.Item>
@@ -89,14 +120,17 @@ export default function RoomTypeShow() {
                             <Descriptions.Item label="Base Price">
                                 <Text strong>{(roomType.basePrice || 0).toLocaleString()} VNĐ</Text>
                             </Descriptions.Item>
-                            <Descriptions.Item label="Capacity">
-                                <TextField value={`${roomType.capacity} guests`} />
+                            <Descriptions.Item label="Max Adults">
+                                <TextField value={roomType.maxAdults} />
                             </Descriptions.Item>
-                            <Descriptions.Item label="Bed Configuration">
-                                <TextField value={roomType.bedConfiguration} />
+                            <Descriptions.Item label="Max Children">
+                                <TextField value={roomType.maxChildren} />
                             </Descriptions.Item>
-                            <Descriptions.Item label="Size">
-                                <TextField value={roomType.size ? `${roomType.size} m²` : 'Not specified'} />
+                            <Descriptions.Item label="Bed Type">
+                                <TextField value={roomType.bedType} />
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Total Rooms">
+                                <Tag color="blue">{roomType.totalRooms}</Tag>
                             </Descriptions.Item>
                         </Descriptions>
                     </Card>
@@ -105,12 +139,12 @@ export default function RoomTypeShow() {
 
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                 <Col xs={24} md={12}>
-                    <Card title={`Amenities (${roomTypeAmenities.length})`} size="small">
-                        {roomTypeAmenities.length > 0 ? (
+                    <Card title={`Amenities (${roomType.amenities.length})`} size="small">
+                        {roomType.amenities.length > 0 ? (
                             <List
                                 size="small"
-                                dataSource={roomTypeAmenities}
-                                renderItem={(amenity) => (
+                                dataSource={roomType.amenities}
+                                renderItem={(amenity: any) => (
                                     <List.Item>
                                         <List.Item.Meta
                                             title={

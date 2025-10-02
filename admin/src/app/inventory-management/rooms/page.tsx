@@ -8,7 +8,7 @@ import {
 } from "@refinedev/antd";
 import type { BaseRecord } from "@refinedev/core";
 import { Space, Table, message, Button, Card, Row, Col, Input, Select, Typography, Tag } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
     getMockRooms, 
     deleteMockRoom, 
@@ -23,25 +23,104 @@ const { Title } = Typography;
 const { Search } = Input;
 
 export default function RoomsPage() {
-    const [rooms, setRooms] = useState<Room[]>(getMockRooms());
-    const [filteredRooms, setFilteredRooms] = useState<Room[]>(getMockRooms());
+    const [rooms, setRooms] = useState<Room[]>([]);
+    const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
     const [searchText, setSearchText] = useState('');
-    const [propertyFilter, setPropertyFilter] = useState('all');
+    const [propertyFilter, setPropertyFilter] = useState('');
     const [roomTypeFilter, setRoomTypeFilter] = useState('all');
     const [operationalStatusFilter, setOperationalStatusFilter] = useState('all');
     const [housekeepingStatusFilter, setHousekeepingStatusFilter] = useState('all');
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     const properties = getMockProperties();
     const roomTypes = getMockRoomTypes();
 
-    const handleDelete = (id: string) => {
-        if (deleteMockRoom(id)) {
-            const updatedRooms = getMockRooms();
-            setRooms(updatedRooms);
-            setFilteredRooms(updatedRooms);
-            message.success('Room deleted successfully!');
-        } else {
+    useEffect(() => {
+        // Get selected property from localStorage
+        const selectedPropertyId = localStorage.getItem('selectedPropertyId');
+        if (selectedPropertyId) {
+            setPropertyFilter(selectedPropertyId);
+            fetchRooms(selectedPropertyId);
+        }
+    }, []);
+
+    const fetchRooms = async (propertyId: string) => {
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        setLoading(true);
+        
+        try {
+            const response = await fetch(
+                `${API_ENDPOINT}/rooms?propertyId=${propertyId}&limit=1000`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                }
+            );
+
+            if (response.ok) {
+                const result = await response.json();
+                const roomsData = result.data.map((r: any) => ({
+                    id: r.id,
+                    propertyId: r.propertyId,
+                    propertyName: r.property?.name || '',
+                    roomTypeId: r.roomTypeId,
+                    roomTypeName: r.roomType?.name || '',
+                    number: r.number,
+                    floor: r.floor,
+                    viewType: r.viewType,
+                    operationalStatus: r.operationalStatus,
+                    housekeepingStatus: r.housekeepingStatus,
+                    housekeeperNotes: r.housekeeperNotes,
+                }));
+                setRooms(roomsData);
+                setFilteredRooms(roomsData);
+            } else {
+                message.error('Error loading rooms');
+                // Fallback to mock data
+                const mockData = getMockRooms().filter(r => r.propertyId === propertyId);
+                setRooms(mockData);
+                setFilteredRooms(mockData);
+            }
+        } catch (error) {
+            console.error('Error fetching rooms:', error);
+            message.error('Error loading rooms');
+            // Fallback to mock data
+            const mockData = getMockRooms().filter(r => r.propertyId === propertyId);
+            setRooms(mockData);
+            setFilteredRooms(mockData);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        
+        try {
+            const response = await fetch(`${API_ENDPOINT}/rooms/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                }
+            });
+
+            if (response.ok) {
+                message.success('Room deleted successfully!');
+                // Remove from local state
+                const updatedRooms = rooms.filter(r => r.id !== id);
+                setRooms(updatedRooms);
+                setFilteredRooms(updatedRooms);
+                
+                // Also update mock data
+                deleteMockRoom(id);
+            } else {
+                const errorData = await response.json();
+                message.error(errorData.message || 'Error deleting room!');
+            }
+        } catch (error) {
+            console.error('Error deleting room:', error);
             message.error('Error deleting room!');
         }
     };
@@ -122,6 +201,7 @@ export default function RoomsPage() {
 
     const tableProps = {
         dataSource: filteredRooms,
+        loading,
         pagination: {
             pageSize: 10,
             total: filteredRooms.length,

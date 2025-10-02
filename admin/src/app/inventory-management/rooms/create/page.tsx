@@ -2,6 +2,7 @@
 
 import { Create } from "@refinedev/antd";
 import { Form, Input, Select, Card, Row, Col, message } from "antd";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
     getMockProperties,
@@ -13,34 +14,72 @@ const { TextArea } = Input;
 
 export default function CreateRoom() {
     const [form] = Form.useForm();
+    const [loading, setLoading] = useState(false);
+    const [propertyId, setPropertyId] = useState('');
     const router = useRouter();
 
     const properties = getMockProperties();
     const roomTypes = getMockRoomTypes();
 
-    const handleFinish = (values: any) => {
+    useEffect(() => {
+        // Get selected property from localStorage
+        const selectedPropertyId = localStorage.getItem('selectedPropertyId');
+        if (selectedPropertyId) {
+            setPropertyId(selectedPropertyId);
+            form.setFieldsValue({ propertyId: selectedPropertyId });
+        }
+    }, [form]);
+
+    const handleFinish = async (values: any) => {
+        setLoading(true);
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        
         try {
-            const property = properties.find(p => p.id === values.propertyId);
-            const roomType = roomTypes.find(rt => rt.id === values.roomTypeId);
-            
-            const newRoom = {
+            const roomData = {
                 propertyId: values.propertyId,
-                propertyName: property?.name || '',
                 roomTypeId: values.roomTypeId,
-                roomTypeName: roomType?.name || '',
                 number: values.number,
                 floor: values.floor,
-                viewType: values.viewType,
+                viewType: values.viewType || null,
                 operationalStatus: values.operationalStatus || 'available',
                 housekeepingStatus: values.housekeepingStatus || 'clean',
-                housekeeperNotes: values.housekeeperNotes || ''
+                housekeeperNotes: values.housekeeperNotes || null
             };
 
-            addMockRoom(newRoom);
-            message.success('Room created successfully!');
-            router.push('/inventory-management/rooms');
+            const response = await fetch(`${API_ENDPOINT}/rooms`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify(roomData)
+            });
+
+            if (response.ok) {
+                const createdRoom = await response.json();
+                console.log('Created room from API:', createdRoom);
+
+                // Update mock data for UI
+                const property = properties.find(p => p.id === values.propertyId);
+                const roomType = roomTypes.find(rt => rt.id === values.roomTypeId);
+                addMockRoom({
+                    ...createdRoom,
+                    propertyName: property?.name || '',
+                    roomTypeName: roomType?.name || '',
+                });
+
+                message.success('Room created successfully!');
+                router.push('/inventory-management/rooms');
+            } else {
+                const errorData = await response.json();
+                console.error('Create room API error:', errorData);
+                message.error(errorData.message || 'Error creating room!');
+            }
         } catch (error) {
+            console.error('Network or other error:', error);
             message.error('Error creating room!');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -52,6 +91,7 @@ export default function CreateRoom() {
         <Create 
             title="Create Room"
             saveButtonProps={{
+                loading,
                 onClick: () => form.submit()
             }}
         >
@@ -71,6 +111,7 @@ export default function CreateRoom() {
                                 <Select 
                                     placeholder="Select property"
                                     onChange={() => form.setFieldsValue({ roomTypeId: undefined })}
+                                    disabled
                                 >
                                     {properties.map(property => (
                                         <Select.Option key={property.id} value={property.id}>
