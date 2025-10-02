@@ -21,54 +21,164 @@ export default function RoomTypeEdit() {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+    const [roomTypeData, setRoomTypeData] = useState<RoomType | null>(null);
     
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
-    const roomType = getMockRoomType(id || '');
     const properties = getMockProperties();
     const amenities = getMockAmenities();
 
     useEffect(() => {
-        if (roomType) {
-            form.setFieldsValue({
-                name: roomType.name,
-                propertyId: roomType.propertyId,
-                description: roomType.description,
-                basePrice: roomType.basePrice,
-                capacity: roomType.capacity || 2,
-                bedConfiguration: roomType.bedConfiguration || roomType.bedType,
-                size: roomType.size || 25,
-                status: roomType.status || 'active',
-            });
-            setSelectedAmenities(roomType.amenityIds || roomType.amenities || []);
+        // Fetch room type from API
+        const fetchRoomType = async () => {
+            const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            try {
+                const response = await fetch(`${API_ENDPOINT}/room-types/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setRoomTypeData(data);
+                    
+                    form.setFieldsValue({
+                        name: data.name,
+                        propertyId: data.property_id,
+                        description: data.description,
+                        basePrice: data.base_price,
+                        maxAdults: data.max_adults,
+                        maxChildren: data.max_children,
+                        bedType: data.bed_type,
+                        capacity: data.max_adults + data.max_children,
+                        bedConfiguration: data.bed_type,
+                        size: data.size || 25,
+                        status: data.status || 'active',
+                    });
+
+                    // Set selected amenities
+                    const amenityIds = data.amenities?.map((a: any) => a.id) || [];
+                    setSelectedAmenities(amenityIds);
+                } else {
+                    message.error('Failed to fetch room type data');
+                }
+            } catch (error) {
+                console.error('Error fetching room type:', error);
+                message.error('Error loading room type data');
+            }
+        };
+
+        if (id) {
+            fetchRoomType();
         }
-    }, [roomType, form]);
+    }, [id, form]);
 
     const handleFinish = async (values: any) => {
         setLoading(true);
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        
         try {
-            const updatedRoomType: RoomType = {
-                ...roomType!,
-                ...values,
-                amenityIds: selectedAmenities,
+            // Step 1: Update room type basic info
+            const updateData = {
+                name: values.name,
+                description: values.description,
+                base_price: values.basePrice,
+                max_adults: values.maxAdults,
+                max_children: values.maxChildren,
+                bed_type: values.bedType || values.bedConfiguration,
             };
 
-            if (updateMockRoomType(id!, updatedRoomType)) {
+            const updateResponse = await fetch(`${API_ENDPOINT}/room-types/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            if (updateResponse.ok) {
+                const updatedRoomType = await updateResponse.json();
+                console.log('Updated room type from API:', updatedRoomType);
+
+                // Step 2: Update amenities
+                // Get current amenities from API
+                const currentAmenitiesResponse = await fetch(
+                    `${API_ENDPOINT}/room-types/${id}/amenities`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        }
+                    }
+                );
+
+                if (currentAmenitiesResponse.ok) {
+                    const currentAmenities = await currentAmenitiesResponse.json();
+                    const currentAmenityIds = currentAmenities.data?.map((a: any) => a.amenity_id) || [];
+
+                    // Add new amenities
+                    const amenitiesToAdd = selectedAmenities.filter(
+                        id => !currentAmenityIds.includes(id)
+                    );
+                    
+                    if (amenitiesToAdd.length > 0) {
+                        await fetch(
+                            `${API_ENDPOINT}/room-types/${id}/amenities/bulk`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                },
+                                body: JSON.stringify({ amenity_ids: amenitiesToAdd })
+                            }
+                        );
+                    }
+
+                    // Remove old amenities
+                    const amenitiesToRemove = currentAmenityIds.filter(
+                        (id: string) => !selectedAmenities.includes(id)
+                    );
+                    
+                    for (const amenityId of amenitiesToRemove) {
+                        await fetch(
+                            `${API_ENDPOINT}/room-types/${id}/amenities/${amenityId}`,
+                            {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                }
+                            }
+                        );
+                    }
+                }
+
+                // Update mock data
+                updateMockRoomType(id!, {
+                    ...roomTypeData!,
+                    ...values,
+                    amenityIds: selectedAmenities,
+                });
+
                 message.success('Room type updated successfully!');
                 router.push('/inventory-management/room-types');
             } else {
-                message.error('Error updating room type!');
+                const errorData = await updateResponse.json();
+                console.error('Update room type API error:', errorData);
+                message.error(errorData.message || 'Error updating room type!');
             }
         } catch (error) {
+            console.error('Network or other error:', error);
             message.error('Error updating room type!');
         } finally {
             setLoading(false);
         }
     };
 
-    if (!roomType) {
+    if (!roomTypeData) {
         return (
-            <Edit>
-                <div>Room type not found</div>
+            <Edit isLoading={true}>
+                <div>Loading room type data...</div>
             </Edit>
         );
     }
@@ -141,26 +251,25 @@ export default function RoomTypeEdit() {
 
                     <Col xs={24} md={12}>
                         <Card title="Room Details" size="small">
+                            <Form.Item
+                                label="Base Price (VNĐ)"
+                                name="basePrice"
+                                rules={[{ required: true, message: 'Base price is required!' }]}
+                            >
+                                <InputNumber
+                                    style={{ width: '100%' }}
+                                    min={0}
+                                    step={50000}
+                                    formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                />
+                            </Form.Item>
+
                             <Row gutter={16}>
                                 <Col span={12}>
                                     <Form.Item
-                                        label="Base Price (VNĐ)"
-                                        name="basePrice"
-                                        rules={[{ required: true, message: 'Base price is required!' }]}
-                                    >
-                                        <InputNumber
-                                            style={{ width: '100%' }}
-                                            min={0}
-                                            step={50000}
-                                            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                        />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={12}>
-                                    <Form.Item
-                                        label="Capacity (guests)"
-                                        name="capacity"
-                                        rules={[{ required: true, message: 'Capacity is required!' }]}
+                                        label="Max Adults"
+                                        name="maxAdults"
+                                        rules={[{ required: true, message: 'Max adults is required!' }]}
                                     >
                                         <InputNumber
                                             style={{ width: '100%' }}
@@ -169,32 +278,27 @@ export default function RoomTypeEdit() {
                                         />
                                     </Form.Item>
                                 </Col>
+                                <Col span={12}>
+                                    <Form.Item
+                                        label="Max Children"
+                                        name="maxChildren"
+                                        rules={[{ required: true, message: 'Max children is required!' }]}
+                                    >
+                                        <InputNumber
+                                            style={{ width: '100%' }}
+                                            min={0}
+                                            max={10}
+                                        />
+                                    </Form.Item>
+                                </Col>
                             </Row>
 
                             <Form.Item
-                                label="Bed Configuration"
-                                name="bedConfiguration"
-                                rules={[{ required: true, message: 'Bed configuration is required!' }]}
+                                label="Bed Type"
+                                name="bedType"
+                                rules={[{ required: true, message: 'Bed type is required!' }]}
                             >
-                                <Select placeholder="Select bed configuration">
-                                    <Select.Option value="1 King">1 King Bed</Select.Option>
-                                    <Select.Option value="2 Singles">2 Single Beds</Select.Option>
-                                    <Select.Option value="1 Queen">1 Queen Bed</Select.Option>
-                                    <Select.Option value="2 Queens">2 Queen Beds</Select.Option>
-                                    <Select.Option value="1 King + 1 Sofa">1 King + 1 Sofa Bed</Select.Option>
-                                </Select>
-                            </Form.Item>
-
-                            <Form.Item
-                                label="Size (m²)"
-                                name="size"
-                            >
-                                <InputNumber
-                                    style={{ width: '100%' }}
-                                    min={10}
-                                    max={200}
-                                    placeholder="Room size in square meters"
-                                />
+                                <Input placeholder="e.g., King Bed" />
                             </Form.Item>
                         </Card>
                     </Col>

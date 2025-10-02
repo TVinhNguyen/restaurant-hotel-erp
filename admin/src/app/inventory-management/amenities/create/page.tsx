@@ -2,6 +2,7 @@
 
 import { Create } from "@refinedev/antd";
 import { Form, Input, Select, Card, message } from "antd";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { addMockAmenity } from "../../../../data/mockInventory";
 
@@ -9,21 +10,47 @@ const { TextArea } = Input;
 
 export default function CreateAmenity() {
     const [form] = Form.useForm();
+    const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const handleFinish = (values: any) => {
+    const handleFinish = async (values: any) => {
+        setLoading(true);
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        
         try {
-            const newAmenity = {
+            const amenityData = {
                 name: values.name,
                 category: values.category,
-                description: values.description || ''
             };
 
-            addMockAmenity(newAmenity);
-            message.success('Amenity created successfully!');
-            router.push('/inventory-management/amenities');
+            const response = await fetch(`${API_ENDPOINT}/amenities`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify(amenityData)
+            });
+
+            if (response.ok) {
+                const createdAmenity = await response.json();
+                console.log('Created amenity from API:', createdAmenity);
+
+                // Update mock data for UI
+                addMockAmenity(createdAmenity);
+
+                message.success('Amenity created successfully!');
+                router.push('/inventory-management/amenities');
+            } else {
+                const errorData = await response.json();
+                console.error('Create amenity API error:', errorData);
+                message.error(errorData.message || 'Error creating amenity!');
+            }
         } catch (error) {
+            console.error('Network or other error:', error);
             message.error('Error creating amenity!');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -31,6 +58,7 @@ export default function CreateAmenity() {
         <Create 
             title="Create Amenity"
             saveButtonProps={{
+                loading,
                 onClick: () => form.submit()
             }}
         >
@@ -60,13 +88,7 @@ export default function CreateAmenity() {
                         </Select>
                     </Form.Item>
 
-                    <Form.Item
-                        label="Description"
-                        name="description"
-                        rules={[{ required: true, message: 'Please enter description!' }]}
-                    >
-                        <TextArea rows={4} placeholder="Describe the amenity..." />
-                    </Form.Item>
+                    
                 </Form>
             </Card>
         </Create>

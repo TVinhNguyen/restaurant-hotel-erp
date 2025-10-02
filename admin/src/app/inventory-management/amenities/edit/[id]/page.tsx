@@ -17,45 +17,90 @@ export default function AmenityEdit() {
     const router = useRouter();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
+    const [amenityData, setAmenityData] = useState<Amenity | null>(null);
     
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
-    const amenity = getMockAmenity(id || '');
 
     useEffect(() => {
-        if (amenity) {
-            form.setFieldsValue({
-                name: amenity.name,
-                category: amenity.category,
-                description: amenity.description,
-            });
+        // Fetch amenity from API
+        const fetchAmenity = async () => {
+            const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            try {
+                const response = await fetch(`${API_ENDPOINT}/amenities/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setAmenityData(data);
+                    
+                    form.setFieldsValue({
+                        name: data.name,
+                        category: data.category,
+                        description: data.description,
+                    });
+                } else {
+                    message.error('Failed to fetch amenity data');
+                }
+            } catch (error) {
+                console.error('Error fetching amenity:', error);
+                message.error('Error loading amenity data');
+            }
+        };
+
+        if (id) {
+            fetchAmenity();
         }
-    }, [amenity, form]);
+    }, [id, form]);
 
     const handleFinish = async (values: any) => {
         setLoading(true);
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        
         try {
-            const updatedAmenity: Amenity = {
-                ...amenity!,
-                ...values,
+            const updateData = {
+                name: values.name,
+                category: values.category,
+                description: values.description,
             };
 
-            if (updateMockAmenity(id!, updatedAmenity)) {
+            const response = await fetch(`${API_ENDPOINT}/amenities/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            if (response.ok) {
+                const updatedAmenity = await response.json();
+                console.log('Updated amenity from API:', updatedAmenity);
+
+                // Update mock data
+                updateMockAmenity(id!, updatedAmenity);
+
                 message.success('Amenity updated successfully!');
                 router.push('/inventory-management/amenities');
             } else {
-                message.error('Error updating amenity!');
+                const errorData = await response.json();
+                console.error('Update amenity API error:', errorData);
+                message.error(errorData.message || 'Error updating amenity!');
             }
         } catch (error) {
+            console.error('Network or other error:', error);
             message.error('Error updating amenity!');
         } finally {
             setLoading(false);
         }
     };
 
-    if (!amenity) {
+    if (!amenityData) {
         return (
-            <Edit>
-                <div>Amenity not found</div>
+            <Edit isLoading={true}>
+                <div>Loading amenity data...</div>
             </Edit>
         );
     }
