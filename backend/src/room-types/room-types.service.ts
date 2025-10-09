@@ -38,10 +38,42 @@ export class RoomTypesService {
         { search: `%${search}%` });
     }
 
-    const [data, total] = await queryBuilder
+    const [roomTypes, total] = await queryBuilder
       .skip(skip)
       .take(limit)
       .getManyAndCount();
+
+    // Transform data for frontend
+    const data = roomTypes.map((roomType: any) => {
+      const amenities = roomType.roomTypeAmenities?.map((rta: any) => ({
+        id: rta.amenity.id,
+        name: rta.amenity.name,
+        description: rta.amenity.description,
+        category: rta.amenity.category,
+      })) || [];
+
+      const totalRooms = roomType.rooms?.length || 0;
+      const availableRooms = roomType.rooms?.filter((room: any) => 
+        room.operationalStatus === 'available'
+      ).length || 0;
+
+      return {
+        id: roomType.id,
+        property_id: roomType.propertyId,
+        name: roomType.name,
+        description: roomType.description,
+        max_adults: roomType.maxAdults,
+        max_children: roomType.maxChildren,
+        base_price: roomType.basePrice,
+        bed_type: roomType.bedType,
+        amenities,
+        photos: roomType.photos || [],
+        total_rooms: totalRooms,
+        available_rooms: availableRooms,
+        created_at: roomType.createdAt,
+        updated_at: roomType.updatedAt,
+      };
+    });
 
     return {
       data,
@@ -54,7 +86,7 @@ export class RoomTypesService {
     };
   }
 
-  async findOne(id: string): Promise<RoomType> {
+  async findOne(id: string): Promise<any> {
     const roomType = await this.roomTypeRepository.findOne({
       where: { id },
       relations: ['property', 'rooms', 'roomTypeAmenities', 'roomTypeAmenities.amenity', 'photos'],
@@ -64,7 +96,42 @@ export class RoomTypesService {
       throw new NotFoundException(`Room type with ID ${id} not found`);
     }
 
-    return roomType;
+    // Transform amenities for easier frontend consumption
+    const amenities = roomType.roomTypeAmenities?.map((rta: any) => ({
+      id: rta.amenity.id,
+      name: rta.amenity.name,
+      description: rta.amenity.description,
+      category: rta.amenity.category,
+    })) || [];
+
+    // Calculate total and available rooms
+    const totalRooms = roomType.rooms?.length || 0;
+    const availableRooms = roomType.rooms?.filter((room: any) => 
+      room.operationalStatus === 'available'
+    ).length || 0;
+
+    return {
+      id: roomType.id,
+      property_id: roomType.propertyId,
+      name: roomType.name,
+      description: roomType.description,
+      max_adults: roomType.maxAdults,
+      max_children: roomType.maxChildren,
+      base_price: roomType.basePrice,
+      bed_type: roomType.bedType,
+      amenities,
+      photos: roomType.photos || [],
+      rooms: roomType.rooms?.map((room: any) => ({
+        id: room.id,
+        number: room.number,
+        floor: room.floor,
+        operational_status: room.operationalStatus,
+        housekeeping_status: room.housekeepingStatus,
+      })) || [],
+      total_rooms: totalRooms,
+      available_rooms: availableRooms,
+      
+    };
   }
 
   async create(createRoomTypeDto: CreateRoomTypeDto): Promise<RoomType> {
@@ -158,7 +225,7 @@ export class RoomTypesService {
     const existingAssociations = await this.roomTypeAmenityRepository.find({
       where: { roomTypeId },
     });
-    const existingAmenityIds = existingAssociations.map(assoc => assoc.amenityId);
+    const existingAmenityIds = existingAssociations.map((assoc: any) => assoc.amenityId);
 
     // Filter out already associated amenities
     const newAmenityIds = amenityIds.filter(id => !existingAmenityIds.includes(id));
@@ -180,8 +247,8 @@ export class RoomTypesService {
     await this.roomTypeAmenityRepository.save(newAssociations);
 
     const addedAmenities = amenities
-      .filter(amenity => newAmenityIds.includes(amenity.id))
-      .map(amenity => ({
+      .filter((amenity: any) => newAmenityIds.includes(amenity.id))
+      .map((amenity: any) => ({
         amenityId: amenity.id,
         name: amenity.name,
       }));
@@ -190,6 +257,31 @@ export class RoomTypesService {
       roomTypeId,
       addedAmenities,
       createdCount: newAmenityIds.length,
+    };
+  }
+
+  async getAmenities(roomTypeId: string) {
+    await this.findOne(roomTypeId); // Validate room type exists
+
+    const associations = await this.roomTypeAmenityRepository.find({
+      where: { roomTypeId },
+      relations: ['amenity'],
+    });
+
+    return {
+      data: associations.map((assoc: any) => ({
+        id: assoc.id,
+        roomTypeId: assoc.roomTypeId,
+        amenityId: assoc.amenityId,
+        amenity: {
+          id: assoc.amenity.id,
+          name: assoc.amenity.name,
+          description: assoc.amenity.description,
+          category: assoc.amenity.category,
+        },
+        createdAt: assoc.createdAt,
+      })),
+      total: associations.length,
     };
   }
 }

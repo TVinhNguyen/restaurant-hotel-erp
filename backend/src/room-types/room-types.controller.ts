@@ -77,4 +77,9 @@ export class RoomTypesController {
   ) {
     return await this.roomTypesService.addMultipleAmenities(roomTypeId, bulkAddDto.amenityIds);
   }
+
+  @Get(':id/amenities')
+  async getAmenities(@Param('id') roomTypeId: string) {
+    return await this.roomTypesService.getAmenities(roomTypeId);
+  }
 }

@@ -43,7 +43,7 @@ export class AddAmenityToRoomTypeDto {
 
 export class BulkAddAmenitiesToRoomTypeDto {
   @IsArray()
-  @IsUUID('4', { each: true })
+  @IsString({ each: true })
   amenityIds: string[];
 }
 
