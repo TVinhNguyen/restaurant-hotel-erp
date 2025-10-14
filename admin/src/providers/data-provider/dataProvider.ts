@@ -1,7 +1,7 @@
 import dataProviderSimpleRest from '@refinedev/simple-rest';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:4000/api'; // Sửa port
+const API_URL = process.env.NEXT_PUBLIC_API_ENDPOINT || 'http://localhost:4000/api';
 
 const httpClient = axios.create();
 

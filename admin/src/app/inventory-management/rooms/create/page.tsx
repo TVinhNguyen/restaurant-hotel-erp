@@ -6,20 +6,77 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
     getMockProperties,
-    getMockRoomTypes,
     addMockRoom 
 } from "../../../../data/mockInventory";
 
 const { TextArea } = Input;
 
+interface RoomType {
+    id: string;
+    name: string;
+    propertyId: string;
+    description?: string;
+    maxAdults?: number;
+    maxChildren?: number;
+    basePrice?: number;
+    bedType?: string;
+}
+
 export default function CreateRoom() {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [propertyId, setPropertyId] = useState('');
+    const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+    const [roomTypesLoading, setRoomTypesLoading] = useState(true);
     const router = useRouter();
 
     const properties = getMockProperties();
-    const roomTypes = getMockRoomTypes();
+
+    // Fetch room types from API
+    useEffect(() => {
+        const fetchRoomTypes = async () => {
+            const selectedPropertyId = localStorage.getItem('selectedPropertyId');
+            if (!selectedPropertyId) return;
+
+            const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            setRoomTypesLoading(true);
+            
+            try {
+                const response = await fetch(
+                    `${API_ENDPOINT}/room-types?propertyId=${selectedPropertyId}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const roomTypesData = result.data.map((rt: any) => ({
+                        id: rt.id,
+                        name: rt.name,
+                        propertyId: rt.propertyId,
+                        description: rt.description || '',
+                        maxAdults: rt.maxAdults,
+                        maxChildren: rt.maxChildren,
+                        basePrice: rt.basePrice,
+                        bedType: rt.bedType,
+                    }));
+                    setRoomTypes(roomTypesData);
+                } else {
+                    message.error('Error loading room types');
+                }
+            } catch (error) {
+                console.error('Error fetching room types:', error);
+                message.error('Error loading room types');
+            } finally {
+                setRoomTypesLoading(false);
+            }
+        };
+
+        fetchRoomTypes();
+    }, []);
 
     useEffect(() => {
         // Get selected property from localStorage
@@ -59,15 +116,6 @@ export default function CreateRoom() {
                 const createdRoom = await response.json();
                 console.log('Created room from API:', createdRoom);
 
-                // Update mock data for UI
-                const property = properties.find(p => p.id === values.propertyId);
-                const roomType = roomTypes.find(rt => rt.id === values.roomTypeId);
-                addMockRoom({
-                    ...createdRoom,
-                    propertyName: property?.name || '',
-                    roomTypeName: roomType?.name || '',
-                });
-
                 message.success('Room created successfully!');
                 router.push('/inventory-management/rooms');
             } else {
@@ -81,10 +129,6 @@ export default function CreateRoom() {
         } finally {
             setLoading(false);
         }
-    };
-
-    const getFilteredRoomTypes = (propertyId: string) => {
-        return roomTypes.filter(rt => rt.propertyId === propertyId);
     };
 
     return (
@@ -127,14 +171,16 @@ export default function CreateRoom() {
                                 dependencies={['propertyId']}
                                 rules={[{ required: true, message: 'Please select a room type!' }]}
                             >
-                                <Select placeholder="Select room type">
-                                    {form.getFieldValue('propertyId') && 
-                                        getFilteredRoomTypes(form.getFieldValue('propertyId')).map(roomType => (
-                                            <Select.Option key={roomType.id} value={roomType.id}>
-                                                {roomType.name}
-                                            </Select.Option>
-                                        ))
-                                    }
+                                <Select 
+                                    placeholder="Select room type" 
+                                    loading={roomTypesLoading}
+                                    disabled={roomTypesLoading || roomTypes.length === 0}
+                                >
+                                    {roomTypes.map(roomType => (
+                                        <Select.Option key={roomType.id} value={roomType.id}>
+                                            {roomType.name} - {roomType.bedType || 'N/A'}
+                                        </Select.Option>
+                                    ))}
                                 </Select>
                             </Form.Item>
 

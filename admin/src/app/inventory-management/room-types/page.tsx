@@ -234,11 +234,7 @@ export default function RoomTypesPage() {
             <Card>
                 <List>
                     <Table {...tableProps} rowKey="id" scroll={{ x: 1000 }}>
-                        <Table.Column
-                            dataIndex="id"
-                            title="ID"
-                            width={60}
-                        />
+                        
                         <Table.Column
                             dataIndex="name"
                             title="Room Type"

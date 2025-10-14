@@ -17,6 +17,7 @@ export default function AmenityEdit() {
     const router = useRouter();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
+    const [fetchLoading, setFetchLoading] = useState(true);
     const [amenityData, setAmenityData] = useState<Amenity | null>(null);
     
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -25,6 +26,8 @@ export default function AmenityEdit() {
         // Fetch amenity from API
         const fetchAmenity = async () => {
             const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            setFetchLoading(true);
+            
             try {
                 const response = await fetch(`${API_ENDPOINT}/amenities/${id}`, {
                     headers: {
@@ -47,6 +50,8 @@ export default function AmenityEdit() {
             } catch (error) {
                 console.error('Error fetching amenity:', error);
                 message.error('Error loading amenity data');
+            } finally {
+                setFetchLoading(false);
             }
         };
 
@@ -97,23 +102,25 @@ export default function AmenityEdit() {
         }
     };
 
-    if (!amenityData) {
-        return (
-            <Edit isLoading={true}>
-                <div>Loading amenity data...</div>
-            </Edit>
-        );
-    }
-
     return (
         <Edit
-            isLoading={loading}
+            isLoading={fetchLoading || loading}
             saveButtonProps={{
                 loading,
                 onClick: () => form.submit(),
+                disabled: fetchLoading || !amenityData,
             }}
         >
-            <Form form={form} layout="vertical" onFinish={handleFinish}>
+            {fetchLoading ? (
+                <div style={{ padding: '24px', textAlign: 'center' }}>
+                    Loading amenity data...
+                </div>
+            ) : !amenityData ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#ff4d4f' }}>
+                    Failed to load amenity data
+                </div>
+            ) : (
+                <Form form={form} layout="vertical" onFinish={handleFinish}>
                 <Form.Item
                     label="Amenity Name"
                     name="name"
@@ -143,6 +150,7 @@ export default function AmenityEdit() {
                     />
                 </Form.Item>
             </Form>
+            )}
         </Edit>
     );
 }

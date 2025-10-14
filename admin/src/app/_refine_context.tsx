@@ -9,8 +9,8 @@ import routerProvider from "@refinedev/nextjs-router";
 
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { ColorModeContextProvider } from "@contexts/color-mode";
-// import { dataProvider } from "@providers/data-provider";
-import { mockDataProvider } from "@providers/data-provider/mockDataProvider";
+import { dataProvider } from "@providers/data-provider";
+// import { mockDataProvider } from "@providers/data-provider/mockDataProvider";
 import "@refinedev/antd/dist/reset.css";
 import { authProvider } from "@providers/auth-provider/authProvider";
 
@@ -39,7 +39,7 @@ const App = (props: React.PropsWithChildren<AppProps>) => {
           <ColorModeContextProvider defaultMode={defaultMode}>
             <Refine
               routerProvider={routerProvider}
-              dataProvider={mockDataProvider}
+              dataProvider={dataProvider}
               notificationProvider={useNotificationProvider}
               authProvider={authProvider}
               resources={[
@@ -72,74 +72,38 @@ const App = (props: React.PropsWithChildren<AppProps>) => {
                   },
                 },
                 {
-                  name: "new-booking",
-                  list: "/reservations/new",
-                  meta: {
-                    label: "New Booking Wizard",
-                    parent: "reservations",
-                    icon: "✨",
-                  },
-                },
-                {
                   name: "reservations-dashboard",
                   list: "/reservations/dashboard",
                   meta: {
-                    label: "Booking Dashboard",
+                    label: "Dashboard",
                     parent: "reservations",
                     icon: "📊",
                   },
                 },
                 {
-                  name: "booking-pipeline",
-                  list: "/reservations/booking-pipeline",
-                  create: "/reservations/new",
-                  edit: "/reservations/edit/:id",
-                  show: "/reservations/show/:id",
+                  name: "reservations-list",
+                  list: "/reservations",
+                  create: "/reservations/create",
+                  edit: "/reservations/:id/edit",
+                  show: "/reservations/:id",
                   meta: {
-                    label: "Booking Pipeline",
+                    label: "All Reservations",
                     parent: "reservations",
                     icon: "📋",
                     canDelete: true,
                   },
                 },
                 {
-                  name: "availability-pricing",
-                  list: "/reservations/availability-pricing",
+                  name: "payments",
+                  list: "/reservations/payments",
                   meta: {
-                    label: "Availability & Pricing",
-                    parent: "reservations",
-                    icon: "💰",
-                  },
-                },
-                {
-                  name: "room-assignment",
-                  list: "/reservations/room-assignment",
-                  meta: {
-                    label: "Room Assignment",
-                    parent: "reservations",
-                    icon: "🛏️",
-                  },
-                },
-                {
-                  name: "stay-operations",
-                  list: "/reservations/stay-operations",
-                  meta: {
-                    label: "Stay Operations",
-                    parent: "reservations",
-                    icon: "🚪",
-                  },
-                },
-                {
-                  name: "payments-folio",
-                  list: "/reservations/payments-folio",
-                  meta: {
-                    label: "Payments & Folio",
+                    label: "Payments",
                     parent: "reservations",
                     icon: "💳",
                   },
                 },
                 {
-                  name: "reservation-services",
+                  name: "services",
                   list: "/reservations/services",
                   meta: {
                     label: "Services",
@@ -148,12 +112,12 @@ const App = (props: React.PropsWithChildren<AppProps>) => {
                   },
                 },
                 {
-                  name: "reservation-reports",
-                  list: "/reservations/reports",
+                  name: "rate-plans",
+                  list: "/reservations/rate-plans",
                   meta: {
-                    label: "Reports & Analytics",
+                    label: "Rate Plans",
                     parent: "reservations",
-                    icon: "📈",
+                    icon: "💰",
                   },
                 },
                 {

@@ -1,0 +1,223 @@
+ized +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] AppController {/api}: +9ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api, GET} route +4ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] HealthController {/api/health}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/health, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] AuthController {/api/auth}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/auth/register, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/auth/login, POST} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/auth/logout, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/auth/refresh, POST} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/auth/me, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] UsersController {/api/users}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/users, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/users/:id, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/users/:id, PUT} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/users/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] PropertiesController {/api/properties}: +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/properties, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/properties/:id/rooms, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/properties/:id/restaurants, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/properties/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/properties, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/properties/:id, PUT} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/properties/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] GuestsController {/api/guests}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/guests, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/guests/:id, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/guests, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/guests/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/guests/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] RoomTypesController {/api/room-types}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/room-types, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/room-types/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/room-types, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/room-types/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/room-types/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/room-types/:id/amenities, POST} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/room-types/:roomTypeId/amenities/:amenityId, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/room-types/:id/amenities/bulk, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/room-types/:id/amenities, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] RoomsController {/api/rooms}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms/status-history, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms/maintenance, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms, POST} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms/maintenance, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms/:id/status, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms/maintenance/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms/:id, DELETE} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rooms/maintenance/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] AmenitiesController {/api/amenities}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/amenities, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/amenities, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/amenities/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/amenities/:id, PATCH} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/amenities/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] ReservationsController {/api/reservations}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservations, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservations/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservations, POST} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservations/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservations/:id/checkin, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservations/:id/checkout, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservations/:id/room, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservations/:id/cancel, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservations/:id, DELETE} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] PaymentsController {/api/payments}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payments, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payments/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payments, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payments/:id, PUT} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payments/:id/process, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payments/:id/refund, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payments/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] EmployeesController {/api/employees}: +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employees, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employees/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employees, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employees/:id, PUT} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employees/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] ServicesController {/api/services}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/services, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/services/:id, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/services, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/services/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/services/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] RatePlansController {/api/rate-plans}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rate-plans, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rate-plans/:id, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rate-plans, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rate-plans/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rate-plans/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rate-plans/:id/daily-rates, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/rate-plans/:id/daily-rates, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] DailyRatesController {/api/daily-rates}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/daily-rates, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/daily-rates/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/daily-rates, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/daily-rates/:id, PUT} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/daily-rates/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/daily-rates/rate-plan/:ratePlanId, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] PromotionsController {/api/promotions}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/promotions, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/promotions/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/promotions/code/:code, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/promotions, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/promotions/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/promotions/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/promotions/validate, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] TaxRulesController {/api/tax-rules}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/tax-rules, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/tax-rules/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/tax-rules, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/tax-rules/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/tax-rules/:id, DELETE} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/tax-rules/property/:propertyId, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/tax-rules/calculate, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] ReservationServicesController {/api/reservation-services}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservation-services, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservation-services/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservation-services, POST} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservation-services/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservation-services/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservation-services/reservation/:reservationId, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservation-services/reservation/:reservationId/total, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/reservation-services/statistics/services, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] PropertyServicesController {/api/property-services}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/property-services, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/property-services/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/property-services, POST} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/property-services/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/property-services/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] RestaurantsController {/api/restaurants}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/:id, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/areas, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/:restaurantId/areas, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/areas/:id, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/areas/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/areas/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/tables, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/tables/available, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/tables, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/tables/:id, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/tables/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/tables/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/bookings, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/bookings, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/bookings/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/bookings/:id, PUT} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/bookings/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/bookings/:id/confirm, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/bookings/:id/cancel, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/bookings/:id/seat, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/restaurants/bookings/:id/complete, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] PayrollController {/api/payroll}: +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payroll, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payroll/bulk, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payroll/generate/:period, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payroll, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payroll/summary/:period, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payroll/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payroll/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/payroll/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] LeaveController {/api/leaves}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/leaves, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/leaves, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/leaves/pending, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/leaves/summary, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/leaves/balance/:employeeId, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/leaves/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/leaves/:id, PUT} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/leaves/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/leaves/:id/approve-reject, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] WorkingShiftsController {/api/working-shifts}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/working-shifts, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/working-shifts, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/working-shifts/employee/:employeeId, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/working-shifts/property/:propertyId, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/working-shifts/date-range, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/working-shifts/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/working-shifts/:id, PUT} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/working-shifts/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] DeductionsController {/api/deductions}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/deductions, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/deductions, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/deductions/employee/:employeeId, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/deductions/type/:type, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/deductions/date-range, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/deductions/employee/:employeeId/total, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/deductions/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/deductions/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/deductions/:id, DELETE} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] OvertimesController {/api/overtimes}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/overtimes, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/overtimes, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/overtimes/employee/:employeeId, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/overtimes/working-shift/:workingShiftId, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/overtimes/approver/:approvedBy, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/overtimes/employee/:employeeId/total, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/overtimes/calculate, POST} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/overtimes/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/overtimes/:id, PUT} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/overtimes/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RoutesResolver] EmployeeEvaluationsController {/api/employee-evaluations}: +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations, POST} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations/employee/:employeeId, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations/evaluator/:evaluatedBy, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations/period/:period, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations/rate-range, GET} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations/employee/:employeeId/average, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations/stats/period/:period, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations/:id, GET} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations/:id, PUT} route +1ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [RouterExplorer] Mapped {/api/employee-evaluations/:id, DELETE} route +0ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [NestApplication] Nest application successfully started +11ms
+backend-1  | [Nest] 31  - 10/11/2025, 7:35:10 AM     LOG [Bootstrap] 🚀 Application is running on: http://localhost:4000/api

@@ -8,33 +8,81 @@ import {
     getMockRoom, 
     updateMockRoom, 
     getMockProperties,
-    getMockRoomTypes,
     type Room
 } from "../../../../../data/mockInventory";
 
 const { TextArea } = Input;
+
+interface RoomType {
+    id: string;
+    name: string;
+    propertyId: string;
+    description?: string;
+    bedType?: string;
+}
 
 export default function RoomEdit() {
     const params = useParams();
     const router = useRouter();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
-    const [roomData, setRoomData] = useState<Room | null>(null);
+    const [fetchLoading, setFetchLoading] = useState(true);
+    const [roomData, setRoomData] = useState<any>(null);
     const [selectedProperty, setSelectedProperty] = useState<string>('');
+    const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+    const [roomTypesLoading, setRoomTypesLoading] = useState(false);
     
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     const properties = getMockProperties();
-    const allRoomTypes = getMockRoomTypes();
 
-    // Filter room types by selected property
-    const availableRoomTypes = selectedProperty 
-        ? allRoomTypes.filter(rt => rt.propertyId === selectedProperty)
-        : allRoomTypes;
+    // Fetch room types when property is selected
+    useEffect(() => {
+        const fetchRoomTypes = async () => {
+            if (!selectedProperty) return;
+
+            const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            setRoomTypesLoading(true);
+            
+            try {
+                const response = await fetch(
+                    `${API_ENDPOINT}/room-types?propertyId=${selectedProperty}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const roomTypesData = result.data.map((rt: any) => ({
+                        id: rt.id,
+                        name: rt.name,
+                        propertyId: rt.propertyId,
+                        description: rt.description || '',
+                        bedType: rt.bedType,
+                    }));
+                    setRoomTypes(roomTypesData);
+                } else {
+                    message.error('Error loading room types');
+                }
+            } catch (error) {
+                console.error('Error fetching room types:', error);
+                message.error('Error loading room types');
+            } finally {
+                setRoomTypesLoading(false);
+            }
+        };
+
+        fetchRoomTypes();
+    }, [selectedProperty]);
 
     useEffect(() => {
         // Fetch room from API
         const fetchRoom = async () => {
             const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            setFetchLoading(true);
+            
             try {
                 const response = await fetch(`${API_ENDPOINT}/rooms/${id}`, {
                     headers: {
@@ -63,6 +111,8 @@ export default function RoomEdit() {
             } catch (error) {
                 console.error('Error fetching room:', error);
                 message.error('Error loading room data');
+            } finally {
+                setFetchLoading(false);
             }
         };
 
@@ -122,23 +172,25 @@ export default function RoomEdit() {
         form.setFieldsValue({ roomTypeId: undefined });
     };
 
-    if (!roomData) {
-        return (
-            <Edit isLoading={true}>
-                <div>Loading room data...</div>
-            </Edit>
-        );
-    }
-
     return (
         <Edit
-            isLoading={loading}
+            isLoading={fetchLoading || loading}
             saveButtonProps={{
                 loading,
                 onClick: () => form.submit(),
+                disabled: fetchLoading || !roomData,
             }}
         >
-            <Form form={form} layout="vertical" onFinish={handleFinish}>
+            {fetchLoading ? (
+                <div style={{ padding: '24px', textAlign: 'center' }}>
+                    Loading room data...
+                </div>
+            ) : !roomData ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#ff4d4f' }}>
+                    Failed to load room data
+                </div>
+            ) : (
+                <Form form={form} layout="vertical" onFinish={handleFinish}>
                 <Row gutter={[16, 16]}>
                     <Col xs={24} md={12}>
                         <Card title="Basic Information" size="small">
@@ -175,12 +227,13 @@ export default function RoomEdit() {
                             >
                                 <Select 
                                     placeholder="Select room type"
-                                    disabled={!selectedProperty}
+                                    loading={roomTypesLoading}
+                                    disabled={!selectedProperty || roomTypesLoading}
                                     notFoundContent={!selectedProperty ? "Please select a property first" : "No room types available"}
                                 >
-                                    {availableRoomTypes.map(roomType => (
+                                    {roomTypes.map((roomType: RoomType) => (
                                         <Select.Option key={roomType.id} value={roomType.id}>
-                                            {roomType.name} - {(roomType.basePrice || 0).toLocaleString()} VNĐ
+                                            {roomType.name} - {roomType.bedType || 'N/A'}
                                         </Select.Option>
                                     ))}
                                 </Select>
@@ -248,6 +301,7 @@ export default function RoomEdit() {
                     </Col>
                 </Row>
             </Form>
+            )}
         </Edit>
     );
 }

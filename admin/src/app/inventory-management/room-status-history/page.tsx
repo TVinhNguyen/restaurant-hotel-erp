@@ -1,37 +1,111 @@
 "use client";
 
-import { List, Table, Card, Row, Col, Tag, Typography, Select, DatePicker, Space, Button } from "antd";
+import { List, Table, Card, Row, Col, Tag, Typography, Select, DatePicker, Space, Button, message, Spin } from "antd";
 import { HistoryOutlined, UserOutlined, ClockCircleOutlined, FileTextOutlined } from "@ant-design/icons";
-import { useState } from "react";
-import { 
-    getMockRoomStatusHistory,
-    getMockRooms,
-    getMockProperties 
-} from "../../../data/mockInventory";
+import { useState, useEffect } from "react";
+import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
+
+interface RoomStatusHistoryRecord {
+    id: string;
+    roomId: string;
+    statusType: 'operational' | 'housekeeping';
+    status: string;
+    changedAt: string;
+    changedBy: string | null;
+    notes: string | null;
+    room?: {
+        id: string;
+        number: string;
+        property?: {
+            name: string;
+        };
+    };
+    changedByEmployee?: {
+        fullName: string;
+    };
+}
+
+interface Room {
+    id: string;
+    number: string;
+    propertyId: string;
+    property?: {
+        id: string;
+        name: string;
+    };
+}
+
+interface Property {
+    id: string;
+    name: string;
+}
 
 export default function RoomStatusHistoryPage() {
     const [selectedRoom, setSelectedRoom] = useState<string>('');
     const [selectedProperty, setSelectedProperty] = useState<string>('');
     const [dateRange, setDateRange] = useState<any>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [history, setHistory] = useState<RoomStatusHistoryRecord[]>([]);
+    const [rooms, setRooms] = useState<Room[]>([]);
+    const [properties, setProperties] = useState<Property[]>([]);
 
-    const history = getMockRoomStatusHistory();
-    const rooms = getMockRooms();
-    const properties = getMockProperties();
+    const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+
+    // Fetch data from API
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+            };
+
+            // Fetch room status history
+            const historyResponse = await fetch(`${API_ENDPOINT}/rooms/status-history?limit=1000`, { headers });
+            if (historyResponse.ok) {
+                const historyData = await historyResponse.json();
+                setHistory(historyData.data || []);
+            }
+
+            // Fetch rooms
+            const roomsResponse = await fetch(`${API_ENDPOINT}/rooms?limit=1000`, { headers });
+            if (roomsResponse.ok) {
+                const roomsData = await roomsResponse.json();
+                setRooms(roomsData.data || []);
+            }
+
+            // Fetch properties
+            const propertiesResponse = await fetch(`${API_ENDPOINT}/properties`, { headers });
+            if (propertiesResponse.ok) {
+                const propertiesData = await propertiesResponse.json();
+                setProperties(propertiesData.data || []);
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            message.error('Failed to load status history');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Filter history based on selections
     const filteredHistory = history.filter(record => {
         if (selectedRoom && record.roomId !== selectedRoom) return false;
         if (selectedProperty) {
             const room = rooms.find(r => r.id === record.roomId);
-            if (!room || room.propertyId !== selectedProperty) return false;
+            if (!room || room.property?.id !== selectedProperty) return false;
         }
         if (dateRange && dateRange.length === 2) {
-            const recordDate = record.changedAt;
+            const recordDate = dayjs(record.changedAt);
             const [start, end] = dateRange;
-            if (recordDate < start || recordDate > end) return false;
+            if (recordDate.isBefore(start) || recordDate.isAfter(end)) return false;
         }
         return true;
     });
@@ -54,9 +128,10 @@ export default function RoomStatusHistoryPage() {
             title: 'Room',
             dataIndex: 'roomId',
             key: 'roomId',
-            render: (roomId: string) => {
-                const room = rooms.find(r => r.id === roomId);
-                return room ? `${room.propertyName} - Room ${room.number}` : roomId;
+            render: (roomId: string, record: RoomStatusHistoryRecord) => {
+                const propertyName = record.room?.property?.name || 'Unknown Property';
+                const roomNumber = record.room?.number || 'Unknown Room';
+                return `${propertyName} - Room ${roomNumber}`;
             },
         },
         {
@@ -83,23 +158,26 @@ export default function RoomStatusHistoryPage() {
             title: 'Changed At',
             dataIndex: 'changedAt',
             key: 'changedAt',
-            render: (date: Date) => (
+            render: (date: string) => (
                 <Space>
                     <ClockCircleOutlined />
-                    {new Date(date).toLocaleString()}
+                    {dayjs(date).format('DD/MM/YYYY HH:mm:ss')}
                 </Space>
             ),
         },
         {
             title: 'Changed By',
-            dataIndex: 'changedByName',
-            key: 'changedByName',
-            render: (name: string) => name ? (
-                <Space>
-                    <UserOutlined />
-                    {name}
-                </Space>
-            ) : <Text type="secondary">System</Text>,
+            dataIndex: 'changedBy',
+            key: 'changedBy',
+            render: (changedBy: string | null, record: RoomStatusHistoryRecord) => {
+                const name = record.changedByEmployee?.fullName;
+                return name ? (
+                    <Space>
+                        <UserOutlined />
+                        {name}
+                    </Space>
+                ) : <Text type="secondary">System</Text>;
+            },
         },
         {
             title: 'Notes',
@@ -123,6 +201,11 @@ export default function RoomStatusHistoryPage() {
                         Room Status History
                     </Title>
                     <Text type="secondary">Track room status changes and maintenance history</Text>
+                </Col>
+                <Col>
+                    <Button onClick={fetchData} loading={loading}>
+                        Refresh
+                    </Button>
                 </Col>
             </Row>
 
@@ -153,10 +236,10 @@ export default function RoomStatusHistoryPage() {
                             onChange={setSelectedRoom}
                         >
                             {rooms
-                                .filter(room => !selectedProperty || room.propertyId === selectedProperty)
+                                .filter(room => !selectedProperty || room.property?.id === selectedProperty)
                                 .map(room => (
                                     <Select.Option key={room.id} value={room.id}>
-                                        Room {room.number} ({room.propertyName})
+                                        Room {room.number} ({room.property?.name || 'N/A'})
                                     </Select.Option>
                                 ))
                             }
@@ -240,19 +323,21 @@ export default function RoomStatusHistoryPage() {
 
             {/* History Table */}
             <Card title="Status Change History">
-                <Table
-                    columns={columns}
-                    dataSource={filteredHistory}
-                    rowKey="id"
-                    pagination={{
-                        pageSize: 10,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total, range) => 
-                            `${range[0]}-${range[1]} of ${total} records`,
-                    }}
-                    scroll={{ x: 1000 }}
-                />
+                <Spin spinning={loading}>
+                    <Table
+                        columns={columns}
+                        dataSource={filteredHistory}
+                        rowKey="id"
+                        pagination={{
+                            pageSize: 10,
+                            showSizeChanger: true,
+                            showQuickJumper: true,
+                            showTotal: (total, range) => 
+                                `${range[0]}-${range[1]} of ${total} records`,
+                        }}
+                        scroll={{ x: 1000 }}
+                    />
+                </Spin>
             </Card>
         </div>
     );

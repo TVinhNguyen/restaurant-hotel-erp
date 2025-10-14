@@ -1,265 +1,339 @@
 "use client";
 
-import React from 'react';
-import { Card, Row, Col, Statistic, Progress, List, Tag, Typography, Calendar, Badge } from 'antd';
-import {
-    HomeOutlined,
-    CalendarOutlined,
+import { Card, Row, Col, Statistic, Typography, Table, Tag, DatePicker, Space, message } from "antd";
+import { useState, useEffect } from "react";
+import { 
+    CalendarOutlined, 
     DollarOutlined,
     UserOutlined,
-    ClockCircleOutlined,
-    BellOutlined,
     CheckCircleOutlined,
-    ExclamationCircleOutlined
-} from '@ant-design/icons';
+    ClockCircleOutlined,
+    RiseOutlined,
+    FallOutlined
+} from "@ant-design/icons";
 import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
+const { RangePicker } = DatePicker;
 
-export default function ReservationDashboard() {
-    // Mock data - replace with actual API calls
-    const reservationStats = {
-        totalReservations: 156,
-        checkedIn: 42,
-        checkingInToday: 18,
-        checkingOutToday: 15,
-        pendingConfirmation: 8,
-        occupancyRate: 78,
-        adr: 1250000, // Average Daily Rate
-        revpar: 975000, // Revenue per Available Room
-    };
+interface DashboardStats {
+    totalReservations: number;
+    activeReservations: number;
+    todayCheckIns: number;
+    todayCheckOuts: number;
+    totalRevenue: number;
+    averageRate: number;
+    occupancyRate: number;
+    pendingPayments: number;
+}
 
-    const bookingChannels = [
-        { channel: 'Booking.com', count: 45, percentage: 28.8 },
-        { channel: 'Direct Website', count: 38, percentage: 24.4 },
-        { channel: 'Walk-in', count: 35, percentage: 22.4 },
-        { channel: 'Agoda', count: 25, percentage: 16.0 },
-        { channel: 'Phone', count: 13, percentage: 8.3 },
-    ];
+interface RecentReservation {
+    id: string;
+    guestName: string;
+    roomTypeName: string;
+    checkIn: string;
+    checkOut: string;
+    status: string;
+    totalAmount: number;
+}
 
-    const recentActivities = [
-        {
-            id: '1',
-            type: 'check-in',
-            message: 'Room 101 - Nguyen Van A checked in',
-            time: '10 minutes ago',
-            status: 'success',
-        },
-        {
-            id: '2',
-            type: 'booking',
-            message: 'New booking from Booking.com - Room Superior',
-            time: '30 minutes ago',
-            status: 'info',
-        },
-        {
-            id: '3',
-            type: 'payment',
-            message: 'Payment received for Res #BK001234',
-            time: '1 hour ago',
-            status: 'success',
-        },
-        {
-            id: '4',
-            type: 'cancellation',
-            message: 'Booking cancelled - Room Deluxe (2 nights)',
-            time: '2 hours ago',
-            status: 'warning',
-        },
-    ];
+const statusColors: Record<string, string> = {
+    pending: 'orange',
+    confirmed: 'blue',
+    checked_in: 'green',
+    checked_out: 'default',
+    cancelled: 'red',
+    no_show: 'red',
+};
 
-    const upcomingCheckIns = [
-        { guestName: 'Tran Thi B', roomType: 'Superior', time: '14:00', confirmationCode: 'BK001235' },
-        { guestName: 'Le Van C', roomType: 'Deluxe', time: '15:30', confirmationCode: 'BK001236' },
-        { guestName: 'Pham Minh D', roomType: 'Suite', time: '16:00', confirmationCode: 'BK001237' },
-    ];
+export default function ReservationsDashboard() {
+    const [stats, setStats] = useState<DashboardStats>({
+        totalReservations: 0,
+        activeReservations: 0,
+        todayCheckIns: 0,
+        todayCheckOuts: 0,
+        totalRevenue: 0,
+        averageRate: 0,
+        occupancyRate: 0,
+        pendingPayments: 0,
+    });
+    const [recentReservations, setRecentReservations] = useState<RecentReservation[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>(() => [
+        dayjs().startOf('month'),
+        dayjs().endOf('month')
+    ]);
 
-    const upcomingCheckOuts = [
-        { guestName: 'Hoang Thi E', roomNumber: '205', time: '11:00', folio: 2850000 },
-        { guestName: 'Vu Van F', roomNumber: '301', time: '12:00', folio: 1950000 },
-    ];
+    useEffect(() => {
+        fetchDashboardData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dateRange[0]?.format(), dateRange[1]?.format()]);
 
-    const getActivityIcon = (type: string) => {
-        switch (type) {
-            case 'check-in': return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
-            case 'booking': return <CalendarOutlined style={{ color: '#1890ff' }} />;
-            case 'payment': return <DollarOutlined style={{ color: '#faad14' }} />;
-            case 'cancellation': return <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />;
-            default: return <BellOutlined />;
+    const fetchDashboardData = async () => {
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        const selectedPropertyId = localStorage.getItem('selectedPropertyId');
+        
+        if (!selectedPropertyId) {
+            message.warning('Please select a property first');
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        
+        try {
+            // Fetch reservations
+            const response = await fetch(
+                `${API_ENDPOINT}/reservations?propertyId=${selectedPropertyId}&limit=1000`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                }
+            );
+
+            if (response.ok) {
+                const result = await response.json();
+                const reservations = result.data;
+
+                // Calculate stats
+                const today = dayjs().format('YYYY-MM-DD');
+                const startDate = dateRange[0].format('YYYY-MM-DD');
+                const endDate = dateRange[1].format('YYYY-MM-DD');
+
+                const filteredReservations = reservations.filter((r: any) => {
+                    const checkIn = dayjs(r.checkIn).format('YYYY-MM-DD');
+                    return checkIn >= startDate && checkIn <= endDate;
+                });
+
+                const activeReservations = reservations.filter((r: any) => 
+                    ['confirmed', 'checked_in'].includes(r.status)
+                );
+
+                const todayCheckIns = reservations.filter((r: any) => 
+                    dayjs(r.checkIn).format('YYYY-MM-DD') === today
+                );
+
+                const todayCheckOuts = reservations.filter((r: any) => 
+                    dayjs(r.checkOut).format('YYYY-MM-DD') === today
+                );
+
+                const totalRevenue = filteredReservations.reduce((sum: number, r: any) => 
+                    sum + parseFloat(r.totalAmount || 0), 0
+                );
+
+                const averageRate = filteredReservations.length > 0 
+                    ? totalRevenue / filteredReservations.length 
+                    : 0;
+
+                const pendingPayments = reservations.filter((r: any) => 
+                    r.paymentStatus === 'unpaid' || r.paymentStatus === 'partial'
+                ).reduce((sum: number, r: any) => 
+                    sum + (parseFloat(r.totalAmount || 0) - parseFloat(r.amountPaid || 0)), 0
+                );
+
+                setStats({
+                    totalReservations: filteredReservations.length,
+                    activeReservations: activeReservations.length,
+                    todayCheckIns: todayCheckIns.length,
+                    todayCheckOuts: todayCheckOuts.length,
+                    totalRevenue,
+                    averageRate,
+                    occupancyRate: 0, // Would need room count to calculate
+                    pendingPayments,
+                });
+
+                // Set recent reservations
+                const recent = reservations
+                    .sort((a: any, b: any) => 
+                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                    )
+                    .slice(0, 10)
+                    .map((r: any) => ({
+                        id: r.id,
+                        guestName: r.guest?.name || '',
+                        roomTypeName: r.roomType?.name || '',
+                        checkIn: r.checkIn,
+                        checkOut: r.checkOut,
+                        status: r.status,
+                        totalAmount: parseFloat(r.totalAmount || 0),
+                    }));
+
+                setRecentReservations(recent);
+            } else {
+                const errorData = await response.json();
+                message.error(errorData.message || 'Error loading dashboard data');
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            message.error('Error loading dashboard data');
+        } finally {
+            setLoading(false);
         }
     };
 
+    const columns = [
+        {
+            title: 'Guest Name',
+            dataIndex: 'guestName',
+            key: 'guestName',
+        },
+        {
+            title: 'Room Type',
+            dataIndex: 'roomTypeName',
+            key: 'roomTypeName',
+        },
+        {
+            title: 'Check-In',
+            dataIndex: 'checkIn',
+            key: 'checkIn',
+            render: (date: string) => dayjs(date).format('MMM DD, YYYY'),
+        },
+        {
+            title: 'Check-Out',
+            dataIndex: 'checkOut',
+            key: 'checkOut',
+            render: (date: string) => dayjs(date).format('MMM DD, YYYY'),
+        },
+        {
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+            render: (status: string) => (
+                <Tag color={statusColors[status]}>
+                    {status.toUpperCase().replace('_', ' ')}
+                </Tag>
+            ),
+        },
+        {
+            title: 'Total Amount',
+            dataIndex: 'totalAmount',
+            key: 'totalAmount',
+            render: (amount: number) => `$${amount.toFixed(2)}`,
+        },
+    ];
+
     return (
-        <div style={{ padding: '24px' }}>
-            <Title level={2}>Reservation Dashboard</Title>
-            
-            {/* Key Metrics */}
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-                <Col xs={24} sm={12} md={6}>
+        <div>
+            <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Title level={2} style={{ margin: 0 }}>Reservations Dashboard</Title>
+                <Space>
+                    <RangePicker
+                        value={dateRange}
+                        onChange={(dates) => dates && setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
+                        format="MMM DD, YYYY"
+                    />
+                </Space>
+            </div>
+
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                <Col xs={24} sm={12} lg={6}>
                     <Card>
                         <Statistic
                             title="Total Reservations"
-                            value={reservationStats.totalReservations}
+                            value={stats.totalReservations}
                             prefix={<CalendarOutlined />}
-                            valueStyle={{ color: '#1890ff' }}
+                            valueStyle={{ color: '#3f8600' }}
+                            loading={loading}
                         />
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} md={6}>
+                <Col xs={24} sm={12} lg={6}>
                     <Card>
                         <Statistic
-                            title="Currently Checked In"
-                            value={reservationStats.checkedIn}
-                            prefix={<HomeOutlined />}
-                            valueStyle={{ color: '#52c41a' }}
+                            title="Active Reservations"
+                            value={stats.activeReservations}
+                            prefix={<CheckCircleOutlined />}
+                            valueStyle={{ color: '#1890ff' }}
+                            loading={loading}
                         />
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} md={6}>
+                <Col xs={24} sm={12} lg={6}>
+                    <Card>
+                        <Statistic
+                            title="Today Check-Ins"
+                            value={stats.todayCheckIns}
+                            prefix={<RiseOutlined />}
+                            valueStyle={{ color: '#52c41a' }}
+                            loading={loading}
+                        />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                    <Card>
+                        <Statistic
+                            title="Today Check-Outs"
+                            value={stats.todayCheckOuts}
+                            prefix={<FallOutlined />}
+                            valueStyle={{ color: '#faad14' }}
+                            loading={loading}
+                        />
+                    </Card>
+                </Col>
+            </Row>
+
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                <Col xs={24} sm={12} lg={6}>
+                    <Card>
+                        <Statistic
+                            title="Total Revenue"
+                            value={stats.totalRevenue}
+                            prefix={<DollarOutlined />}
+                            precision={2}
+                            valueStyle={{ color: '#3f8600' }}
+                            loading={loading}
+                        />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                    <Card>
+                        <Statistic
+                            title="Average Rate"
+                            value={stats.averageRate}
+                            prefix={<DollarOutlined />}
+                            precision={2}
+                            valueStyle={{ color: '#1890ff' }}
+                            loading={loading}
+                        />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                    <Card>
+                        <Statistic
+                            title="Pending Payments"
+                            value={stats.pendingPayments}
+                            prefix={<ClockCircleOutlined />}
+                            precision={2}
+                            valueStyle={{ color: '#ff4d4f' }}
+                            loading={loading}
+                        />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
                     <Card>
                         <Statistic
                             title="Occupancy Rate"
-                            value={reservationStats.occupancyRate}
+                            value={stats.occupancyRate}
                             suffix="%"
                             prefix={<UserOutlined />}
+                            precision={1}
                             valueStyle={{ color: '#722ed1' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="Average Daily Rate"
-                            value={reservationStats.adr}
-                            prefix={<DollarOutlined />}
-                            formatter={value => `${Number(value).toLocaleString()} VNĐ`}
-                            valueStyle={{ color: '#faad14' }}
+                            loading={loading}
                         />
                     </Card>
                 </Col>
             </Row>
 
-            {/* Today's Operations */}
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="Checking In Today"
-                            value={reservationStats.checkingInToday}
-                            prefix={<ClockCircleOutlined />}
-                            valueStyle={{ color: '#13c2c2' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="Checking Out Today"
-                            value={reservationStats.checkingOutToday}
-                            prefix={<ClockCircleOutlined />}
-                            valueStyle={{ color: '#eb2f96' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="Pending Confirmation"
-                            value={reservationStats.pendingConfirmation}
-                            prefix={<ExclamationCircleOutlined />}
-                            valueStyle={{ color: '#fa8c16' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="RevPAR"
-                            value={reservationStats.revpar}
-                            prefix={<DollarOutlined />}
-                            formatter={value => `${Number(value).toLocaleString()} VNĐ`}
-                            valueStyle={{ color: '#f759ab' }}
-                        />
-                    </Card>
-                </Col>
-            </Row>
-
-            <Row gutter={[16, 16]}>
-                {/* Booking Channels */}
-                <Col xs={24} md={12}>
-                    <Card title="Booking Channels" style={{ height: '400px' }}>
-                        {bookingChannels.map((channel, index) => (
-                            <div key={index} style={{ marginBottom: '16px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <Text>{channel.channel}</Text>
-                                    <Text strong>{channel.count} bookings</Text>
-                                </div>
-                                <Progress
-                                    percent={channel.percentage}
-                                    strokeColor={`hsl(${index * 60}, 70%, 50%)`}
-                                    format={() => `${channel.percentage}%`}
-                                />
-                            </div>
-                        ))}
-                    </Card>
-                </Col>
-
-                {/* Recent Activities */}
-                <Col xs={24} md={12}>
-                    <Card title="Recent Activities" style={{ height: '400px' }}>
-                        <List
-                            dataSource={recentActivities}
-                            renderItem={(item) => (
-                                <List.Item>
-                                    <List.Item.Meta
-                                        avatar={getActivityIcon(item.type)}
-                                        title={item.message}
-                                        description={item.time}
-                                    />
-                                    <Tag color={item.status}>{item.status}</Tag>
-                                </List.Item>
-                            )}
-                        />
-                    </Card>
-                </Col>
-            </Row>
-
-            {/* Today's Check-ins & Check-outs */}
-            <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
-                <Col xs={24} md={12}>
-                    <Card title="Today's Check-ins" style={{ height: '300px' }}>
-                        <List
-                            size="small"
-                            dataSource={upcomingCheckIns}
-                            renderItem={(item) => (
-                                <List.Item>
-                                    <List.Item.Meta
-                                        title={item.guestName}
-                                        description={`${item.roomType} - ${item.time} - ${item.confirmationCode}`}
-                                    />
-                                </List.Item>
-                            )}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} md={12}>
-                    <Card title="Today's Check-outs" style={{ height: '300px' }}>
-                        <List
-                            size="small"
-                            dataSource={upcomingCheckOuts}
-                            renderItem={(item) => (
-                                <List.Item>
-                                    <List.Item.Meta
-                                        title={item.guestName}
-                                        description={`Room ${item.roomNumber} - ${item.time}`}
-                                    />
-                                    <Text strong>{item.folio.toLocaleString()} VNĐ</Text>
-                                </List.Item>
-                            )}
-                        />
-                    </Card>
-                </Col>
-            </Row>
+            <Card title="Recent Reservations" bordered={false}>
+                <Table
+                    columns={columns}
+                    dataSource={recentReservations}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={{ pageSize: 10 }}
+                />
+            </Card>
         </div>
     );
 }

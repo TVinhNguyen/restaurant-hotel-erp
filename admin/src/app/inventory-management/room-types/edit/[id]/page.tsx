@@ -8,29 +8,77 @@ import {
     getMockRoomType, 
     updateMockRoomType, 
     getMockProperties,
-    getMockAmenities,
-    type RoomType,
-    type Amenity
+    type RoomType
 } from "../../../../../data/mockInventory";
 
 const { TextArea } = Input;
+
+interface Amenity {
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+}
 
 export default function RoomTypeEdit() {
     const params = useParams();
     const router = useRouter();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
+    const [fetchLoading, setFetchLoading] = useState(true);
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-    const [roomTypeData, setRoomTypeData] = useState<RoomType | null>(null);
+    const [roomTypeData, setRoomTypeData] = useState<any>(null); // Use any to handle API response
+    const [amenities, setAmenities] = useState<Amenity[]>([]);
+    const [amenitiesLoading, setAmenitiesLoading] = useState(true);
     
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     const properties = getMockProperties();
-    const amenities = getMockAmenities();
+
+    // Fetch amenities from API
+    useEffect(() => {
+        const fetchAmenities = async () => {
+            const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            setAmenitiesLoading(true);
+            
+            try {
+                const response = await fetch(
+                    `${API_ENDPOINT}/amenities?limit=1000`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const amenitiesData = result.data.map((a: any) => ({
+                        id: a.id,
+                        name: a.name,
+                        category: a.category,
+                        description: a.description || '',
+                    }));
+                    setAmenities(amenitiesData);
+                } else {
+                    message.error('Error loading amenities');
+                }
+            } catch (error) {
+                console.error('Error fetching amenities:', error);
+                message.error('Error loading amenities');
+            } finally {
+                setAmenitiesLoading(false);
+            }
+        };
+
+        fetchAmenities();
+    }, []);
 
     useEffect(() => {
         // Fetch room type from API
         const fetchRoomType = async () => {
             const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+            setFetchLoading(true);
+            
             try {
                 const response = await fetch(`${API_ENDPOINT}/room-types/${id}`, {
                     headers: {
@@ -40,24 +88,28 @@ export default function RoomTypeEdit() {
 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Fetched room type data:', data);
                     setRoomTypeData(data);
+                    
+                    // Parse basePrice if it's a string
+                    const basePrice = typeof data.basePrice === 'string' 
+                        ? parseFloat(data.basePrice) 
+                        : data.basePrice;
                     
                     form.setFieldsValue({
                         name: data.name,
-                        propertyId: data.property_id,
-                        description: data.description,
-                        basePrice: data.base_price,
-                        maxAdults: data.max_adults,
-                        maxChildren: data.max_children,
-                        bedType: data.bed_type,
-                        capacity: data.max_adults + data.max_children,
-                        bedConfiguration: data.bed_type,
-                        size: data.size || 25,
-                        status: data.status || 'active',
+                        propertyId: data.propertyId,
+                        description: data.description || '',
+                        basePrice: basePrice,
+                        maxAdults: data.maxAdults,
+                        maxChildren: data.maxChildren,
+                        bedType: data.bedType,
+                        status: 'active',
                     });
 
-                    // Set selected amenities
-                    const amenityIds = data.amenities?.map((a: any) => a.id) || [];
+                    // Set selected amenities from roomTypeAmenities
+                    const amenityIds = data.roomTypeAmenities?.map((rta: any) => rta.amenity?.id || rta.amenityId).filter(Boolean) || [];
+                    console.log('Selected amenity IDs:', amenityIds);
                     setSelectedAmenities(amenityIds);
                 } else {
                     message.error('Failed to fetch room type data');
@@ -65,6 +117,8 @@ export default function RoomTypeEdit() {
             } catch (error) {
                 console.error('Error fetching room type:', error);
                 message.error('Error loading room type data');
+            } finally {
+                setFetchLoading(false);
             }
         };
 
@@ -81,12 +135,14 @@ export default function RoomTypeEdit() {
             // Step 1: Update room type basic info
             const updateData = {
                 name: values.name,
-                description: values.description,
-                base_price: values.basePrice,
-                max_adults: values.maxAdults,
-                max_children: values.maxChildren,
-                bed_type: values.bedType || values.bedConfiguration,
+                description: values.description || '',
+                basePrice: values.basePrice,
+                maxAdults: values.maxAdults,
+                maxChildren: values.maxChildren,
+                bedType: values.bedType,
             };
+
+            console.log('Updating room type with data:', updateData);
 
             const updateResponse = await fetch(`${API_ENDPOINT}/room-types/${id}`, {
                 method: 'PUT',
@@ -102,46 +158,50 @@ export default function RoomTypeEdit() {
                 console.log('Updated room type from API:', updatedRoomType);
 
                 // Step 2: Update amenities
-                // Get current amenities from API
-                const currentAmenitiesResponse = await fetch(
-                    `${API_ENDPOINT}/room-types/${id}/amenities`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        }
-                    }
+                // Get current amenities from roomTypeData
+                const currentAmenityIds = roomTypeData?.roomTypeAmenities?.map((rta: any) => 
+                    rta.amenity?.id || rta.amenityId
+                ).filter(Boolean) || [];
+
+                console.log('Current amenities:', currentAmenityIds);
+                console.log('Selected amenities:', selectedAmenities);
+
+                // Add new amenities
+                const amenitiesToAdd = selectedAmenities.filter(
+                    id => !currentAmenityIds.includes(id)
                 );
-
-                if (currentAmenitiesResponse.ok) {
-                    const currentAmenities = await currentAmenitiesResponse.json();
-                    const currentAmenityIds = currentAmenities.data?.map((a: any) => a.amenity_id) || [];
-
-                    // Add new amenities
-                    const amenitiesToAdd = selectedAmenities.filter(
-                        id => !currentAmenityIds.includes(id)
+                
+                if (amenitiesToAdd.length > 0) {
+                    console.log('Adding amenities:', amenitiesToAdd);
+                    const addResponse = await fetch(
+                        `${API_ENDPOINT}/room-types/${id}/amenities/bulk`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                            body: JSON.stringify({ amenityIds: amenitiesToAdd })
+                        }
                     );
                     
-                    if (amenitiesToAdd.length > 0) {
-                        await fetch(
-                            `${API_ENDPOINT}/room-types/${id}/amenities/bulk`,
-                            {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                },
-                                body: JSON.stringify({ amenity_ids: amenitiesToAdd })
-                            }
-                        );
+                    if (!addResponse.ok) {
+                        const errorData = await addResponse.json();
+                        console.error('Failed to add amenities:', errorData);
+                    } else {
+                        console.log('Amenities added successfully');
                     }
+                }
 
-                    // Remove old amenities
-                    const amenitiesToRemove = currentAmenityIds.filter(
-                        (id: string) => !selectedAmenities.includes(id)
-                    );
-                    
+                // Remove old amenities
+                const amenitiesToRemove = currentAmenityIds.filter(
+                    (amenityId: string) => !selectedAmenities.includes(amenityId)
+                );
+                
+                if (amenitiesToRemove.length > 0) {
+                    console.log('Removing amenities:', amenitiesToRemove);
                     for (const amenityId of amenitiesToRemove) {
-                        await fetch(
+                        const removeResponse = await fetch(
                             `${API_ENDPOINT}/room-types/${id}/amenities/${amenityId}`,
                             {
                                 method: 'DELETE',
@@ -150,6 +210,10 @@ export default function RoomTypeEdit() {
                                 }
                             }
                         );
+                        
+                        if (!removeResponse.ok) {
+                            console.error('Failed to remove amenity:', amenityId);
+                        }
                     }
                 }
 
@@ -175,14 +239,6 @@ export default function RoomTypeEdit() {
         }
     };
 
-    if (!roomTypeData) {
-        return (
-            <Edit isLoading={true}>
-                <div>Loading room type data...</div>
-            </Edit>
-        );
-    }
-
     // Transform amenities for Transfer component
     const amenityOptions = amenities.map(amenity => ({
         key: amenity.id,
@@ -193,13 +249,23 @@ export default function RoomTypeEdit() {
 
     return (
         <Edit
-            isLoading={loading}
+            isLoading={fetchLoading || loading}
             saveButtonProps={{
                 loading,
                 onClick: () => form.submit(),
+                disabled: fetchLoading || !roomTypeData,
             }}
         >
-            <Form form={form} layout="vertical" onFinish={handleFinish}>
+            {fetchLoading ? (
+                <div style={{ padding: '24px', textAlign: 'center' }}>
+                    Loading room type data...
+                </div>
+            ) : !roomTypeData ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#ff4d4f' }}>
+                    Failed to load room type data
+                </div>
+            ) : (
+                <Form form={form} layout="vertical" onFinish={handleFinish}>
                 <Row gutter={[16, 16]}>
                     <Col xs={24} md={12}>
                         <Card title="Basic Information" size="small">
@@ -215,8 +281,9 @@ export default function RoomTypeEdit() {
                                 label="Property"
                                 name="propertyId"
                                 rules={[{ required: true, message: 'Property is required!' }]}
+                                tooltip="Property cannot be changed after creation"
                             >
-                                <Select placeholder="Select property">
+                                <Select placeholder="Select property" disabled>
                                     {properties.map(property => (
                                         <Select.Option key={property.id} value={property.id}>
                                             {property.name}
@@ -304,7 +371,7 @@ export default function RoomTypeEdit() {
                     </Col>
                 </Row>
 
-                <Card title="Amenities" size="small" style={{ marginTop: 16 }}>
+                <Card title="Amenities" size="small" style={{ marginTop: 16 }} loading={amenitiesLoading}>
                     <Transfer
                         dataSource={amenityOptions}
                         showSearch
@@ -328,10 +395,15 @@ export default function RoomTypeEdit() {
                             </div>
                         )}
                         titles={['Available Amenities', 'Selected Amenities']}
+                        listStyle={{
+                            width: '45%',
+                            height: 300,
+                        }}
                         style={{ marginBottom: 16 }}
                     />
                 </Card>
             </Form>
+            )}
         </Edit>
     );
 }

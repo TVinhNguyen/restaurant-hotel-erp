@@ -1,90 +1,52 @@
 "use client";
 
-import { Table, Card, Row, Col, Tag, Typography, Select, Button, Space, Modal, Form, Input, DatePicker, message, Progress } from "antd";
+import { Table, Card, Row, Col, Tag, Typography, Select, Button, Space, Modal, Form, Input, DatePicker, message, Progress, Spin } from "antd";
 import { ToolOutlined, PlusOutlined, EditOutlined, CheckOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dayjs from 'dayjs';
-import { 
-    getMockRooms,
-    getMockProperties,
-    getMockRoomStatusHistory,
-    updateRoomStatus,
-    addMockRoomStatusHistory 
-} from "../../../data/mockInventory";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-// Mock maintenance data
 interface MaintenanceRequest {
     id: string;
     roomId: string;
-    roomNumber: string;
-    propertyName: string;
     issueType: 'ac' | 'plumbing' | 'electrical' | 'furniture' | 'cleaning' | 'other';
     priority: 'low' | 'medium' | 'high' | 'urgent';
     status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
     description: string;
     reportedBy: string;
-    reportedAt: Date;
+    reportedAt: string;
     assignedTo?: string;
-    startedAt?: Date;
-    completedAt?: Date;
+    startedAt?: string;
+    completedAt?: string;
     estimatedHours?: number;
     actualHours?: number;
     cost?: number;
     notes?: string;
+    room?: {
+        id: string;
+        number: string;
+        property?: {
+            name: string;
+        };
+    };
 }
 
-const mockMaintenanceRequests: MaintenanceRequest[] = [
-    {
-        id: 'm1',
-        roomId: '103',
-        roomNumber: '103',
-        propertyName: 'Grand Hotel Saigon',
-        issueType: 'ac',
-        priority: 'high',
-        status: 'in_progress',
-        description: 'Air conditioning not cooling properly',
-        reportedBy: 'Housekeeping Staff',
-        reportedAt: new Date('2024-01-14T14:20:00'),
-        assignedTo: 'John Technician',
-        startedAt: new Date('2024-01-15T08:00:00'),
-        estimatedHours: 4,
-        actualHours: 2,
-        cost: 500000
-    },
-    {
-        id: 'm2',
-        roomId: 'V02',
-        roomNumber: 'V02',
-        propertyName: 'Ocean Resort Da Nang',
-        issueType: 'plumbing',
-        priority: 'urgent',
-        status: 'in_progress',
-        description: 'Pool maintenance and cleaning required',
-        reportedBy: 'Maintenance Manager',
-        reportedAt: new Date('2024-01-13T16:00:00'),
-        assignedTo: 'Pool Maintenance Team',
-        startedAt: new Date('2024-01-14T09:00:00'),
-        estimatedHours: 8,
-        actualHours: 6,
-        cost: 1200000
-    },
-    {
-        id: 'm3',
-        roomId: '201',
-        roomNumber: '201',
-        propertyName: 'Grand Hotel Saigon',
-        issueType: 'furniture',
-        priority: 'medium',
-        status: 'pending',
-        description: 'Bed frame needs tightening',
-        reportedBy: 'Guest Services',
-        reportedAt: new Date('2024-01-15T10:30:00'),
-        estimatedHours: 2
-    }
-];
+interface Room {
+    id: string;
+    number: string;
+    propertyId: string;
+    property?: {
+        id: string;
+        name: string;
+    };
+}
+
+interface Property {
+    id: string;
+    name: string;
+}
 
 export default function RoomMaintenancePage() {
     const [selectedProperty, setSelectedProperty] = useState<string>('');
@@ -93,10 +55,52 @@ export default function RoomMaintenancePage() {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingRequest, setEditingRequest] = useState<MaintenanceRequest | null>(null);
     const [form] = Form.useForm();
+    const [loading, setLoading] = useState<boolean>(false);
+    const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([]);
+    const [rooms, setRooms] = useState<Room[]>([]);
+    const [properties, setProperties] = useState<Property[]>([]);
 
-    const rooms = getMockRooms();
-    const properties = getMockProperties();
-    const [maintenanceRequests, setMaintenanceRequests] = useState(mockMaintenanceRequests);
+    const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+            };
+
+            // Fetch maintenance requests
+            const maintenanceResponse = await fetch(`${API_ENDPOINT}/rooms/maintenance?limit=1000`, { headers });
+            if (maintenanceResponse.ok) {
+                const maintenanceData = await maintenanceResponse.json();
+                setMaintenanceRequests(maintenanceData.data || []);
+            }
+
+            // Fetch rooms
+            const roomsResponse = await fetch(`${API_ENDPOINT}/rooms?limit=1000`, { headers });
+            if (roomsResponse.ok) {
+                const roomsData = await roomsResponse.json();
+                setRooms(roomsData.data || []);
+            }
+
+            // Fetch properties
+            const propertiesResponse = await fetch(`${API_ENDPOINT}/properties`, { headers });
+            if (propertiesResponse.ok) {
+                const propertiesData = await propertiesResponse.json();
+                setProperties(propertiesData.data || []);
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            message.error('Failed to load maintenance data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Filter requests
     const filteredRequests = maintenanceRequests.filter(request => {
@@ -157,85 +161,109 @@ export default function RoomMaintenancePage() {
         setIsModalVisible(true);
     };
 
-    const handleCompleteRequest = (requestId: string) => {
+    const handleCompleteRequest = async (requestId: string) => {
         Modal.confirm({
             title: 'Complete Maintenance Request',
             content: 'Mark this maintenance request as completed?',
-            onOk: () => {
-                setMaintenanceRequests(prev => 
-                    prev.map(req => 
-                        req.id === requestId 
-                            ? { ...req, status: 'completed', completedAt: new Date() }
-                            : req
-                    )
-                );
-                
-                // Update room status back to available if it was out of service
-                const request = maintenanceRequests.find(r => r.id === requestId);
-                if (request) {
-                    updateRoomStatus(
-                        request.roomId,
-                        'operational',
-                        'available',
-                        'maintenance-system',
-                        'Maintenance System',
-                        'Maintenance completed, room back to service'
-                    );
+            onOk: async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`${API_ENDPOINT}/rooms/maintenance/${requestId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                            status: 'completed',
+                            completedAt: new Date().toISOString(),
+                        })
+                    });
+
+                    if (response.ok) {
+                        message.success('Maintenance request completed');
+                        fetchData();
+                    } else {
+                        message.error('Failed to complete maintenance request');
+                    }
+                } catch (error) {
+                    message.error('Failed to complete maintenance request');
                 }
-                
-                message.success('Maintenance request completed');
             }
         });
     };
 
-    const handleSubmit = (values: any) => {
+    const handleSubmit = async (values: any) => {
         try {
-            const newRequest: MaintenanceRequest = {
-                id: editingRequest ? editingRequest.id : `m${maintenanceRequests.length + 1}`,
+            const token = localStorage.getItem('token');
+            const requestData = {
                 roomId: values.roomId,
-                roomNumber: rooms.find(r => r.id === values.roomId)?.number || '',
-                propertyName: rooms.find(r => r.id === values.roomId)?.propertyName || '',
                 issueType: values.issueType,
                 priority: values.priority,
                 status: values.status || 'pending',
                 description: values.description,
                 reportedBy: values.reportedBy,
-                reportedAt: values.reportedAt.toDate(),
                 assignedTo: values.assignedTo,
-                startedAt: values.startedAt?.toDate(),
-                completedAt: values.completedAt?.toDate(),
                 estimatedHours: values.estimatedHours,
                 actualHours: values.actualHours,
                 cost: values.cost,
-                notes: values.notes
+                notes: values.notes,
+                startedAt: values.startedAt ? dayjs(values.startedAt).toISOString() : undefined,
+                completedAt: values.completedAt ? dayjs(values.completedAt).toISOString() : undefined,
             };
 
             if (editingRequest) {
-                setMaintenanceRequests(prev => 
-                    prev.map(req => req.id === editingRequest.id ? newRequest : req)
-                );
-                message.success('Maintenance request updated');
-            } else {
-                setMaintenanceRequests(prev => [...prev, newRequest]);
-                
-                // Set room to out of service if high priority
-                if (values.priority === 'high' || values.priority === 'urgent') {
-                    updateRoomStatus(
-                        values.roomId,
-                        'operational',
-                        'out_of_service',
-                        'maintenance-system',
-                        'Maintenance System',
-                        `Room taken out of service for ${values.issueType} maintenance`
-                    );
+                const response = await fetch(`${API_ENDPOINT}/rooms/maintenance/${editingRequest.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    message.success('Maintenance request updated');
+                    fetchData();
+                } else {
+                    message.error('Failed to update maintenance request');
                 }
-                
-                message.success('Maintenance request created');
+            } else {
+                const response = await fetch(`${API_ENDPOINT}/rooms/maintenance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    message.success('Maintenance request created');
+                    fetchData();
+
+                    // Set room to out of service if high priority
+                    if (values.priority === 'high' || values.priority === 'urgent') {
+                        await fetch(`${API_ENDPOINT}/rooms/${values.roomId}/status`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({
+                                operationalStatus: 'out_of_service',
+                            })
+                        });
+                    }
+                } else {
+                    message.error('Failed to create maintenance request');
+                }
             }
             
             setIsModalVisible(false);
             form.resetFields();
         } catch (error) {
+            console.error('Error saving maintenance request:', error);
             message.error('Failed to save maintenance request');
         }
     };
@@ -243,14 +271,18 @@ export default function RoomMaintenancePage() {
     const columns = [
         {
             title: 'Room',
-            dataIndex: 'roomNumber',
-            key: 'roomNumber',
-            render: (roomNumber: string, record: MaintenanceRequest) => (
-                <Space>
-                    <Tag color="blue">Room {roomNumber}</Tag>
-                    <Text type="secondary">{record.propertyName}</Text>
-                </Space>
-            ),
+            dataIndex: 'roomId',
+            key: 'roomId',
+            render: (roomId: string, record: MaintenanceRequest) => {
+                const roomNumber = record.room?.number || 'Unknown';
+                const propertyName = record.room?.property?.name || 'Unknown Property';
+                return (
+                    <Space>
+                        <Tag color="blue">Room {roomNumber}</Tag>
+                        <Text type="secondary">{propertyName}</Text>
+                    </Space>
+                );
+            },
         },
         {
             title: 'Issue',
@@ -362,9 +394,14 @@ export default function RoomMaintenancePage() {
                     <Text type="secondary">Manage room maintenance requests and track progress</Text>
                 </Col>
                 <Col>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAddRequest}>
-                        New Request
-                    </Button>
+                    <Space>
+                        <Button onClick={fetchData} loading={loading}>
+                            Refresh
+                        </Button>
+                        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddRequest}>
+                            New Request
+                        </Button>
+                    </Space>
                 </Col>
             </Row>
 
@@ -478,19 +515,21 @@ export default function RoomMaintenancePage() {
 
             {/* Maintenance Requests Table */}
             <Card title="Maintenance Requests">
-                <Table
-                    columns={columns}
-                    dataSource={filteredRequests}
-                    rowKey="id"
-                    pagination={{
-                        pageSize: 10,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total, range) => 
-                            `${range[0]}-${range[1]} of ${total} requests`,
-                    }}
-                    scroll={{ x: 1200 }}
-                />
+                <Spin spinning={loading}>
+                    <Table
+                        columns={columns}
+                        dataSource={filteredRequests}
+                        rowKey="id"
+                        pagination={{
+                            pageSize: 10,
+                            showSizeChanger: true,
+                            showQuickJumper: true,
+                            showTotal: (total, range) => 
+                                `${range[0]}-${range[1]} of ${total} requests`,
+                        }}
+                        scroll={{ x: 1200 }}
+                    />
+                </Spin>
             </Card>
 
             {/* Add/Edit Maintenance Request Modal */}
@@ -516,7 +555,7 @@ export default function RoomMaintenancePage() {
                                 <Select placeholder="Select room">
                                     {rooms.map(room => (
                                         <Select.Option key={room.id} value={room.id}>
-                                            Room {room.number} - {room.propertyName}
+                                            Room {room.number} - {room.property?.name || 'N/A'}
                                         </Select.Option>
                                     ))}
                                 </Select>

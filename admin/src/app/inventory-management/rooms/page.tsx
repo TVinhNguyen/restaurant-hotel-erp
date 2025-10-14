@@ -7,43 +7,71 @@ import {
     ShowButton,
 } from "@refinedev/antd";
 import type { BaseRecord } from "@refinedev/core";
+import { useOne, useList } from "@refinedev/core";
 import { Space, Table, message, Button, Card, Row, Col, Input, Select, Typography, Tag } from "antd";
 import { useState, useEffect } from "react";
 import { 
     getMockRooms, 
     deleteMockRoom, 
-    getMockProperties,
     getMockRoomTypes,
     type Room 
 } from "../../../data/mockInventory";
 import { PlusOutlined, SearchOutlined, HomeOutlined, ToolOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Search } = Input;
 
 export default function RoomsPage() {
     const [rooms, setRooms] = useState<Room[]>([]);
     const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
     const [searchText, setSearchText] = useState('');
-    const [propertyFilter, setPropertyFilter] = useState('');
+    const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
     const [roomTypeFilter, setRoomTypeFilter] = useState('all');
     const [operationalStatusFilter, setOperationalStatusFilter] = useState('all');
     const [housekeepingStatusFilter, setHousekeepingStatusFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    const properties = getMockProperties();
-    const roomTypes = getMockRoomTypes();
+    // Get property details using useOne
+    const { data: propertyData } = useOne({
+        resource: "properties",
+        id: selectedPropertyId || "",
+        queryOptions: {
+            enabled: !!selectedPropertyId,
+        },
+    });
+
+    // Get room types filtered by property
+    const { data: roomTypesData } = useList({
+        resource: "room-types",
+        filters: [
+            {
+                field: "propertyId",
+                operator: "eq",
+                value: selectedPropertyId,
+            },
+        ],
+        pagination: { pageSize: 100 },
+        queryOptions: {
+            enabled: !!selectedPropertyId,
+        },
+    });
+
+    const property = propertyData?.data;
+    const roomTypes = roomTypesData?.data || [];
 
     useEffect(() => {
         // Get selected property from localStorage
-        const selectedPropertyId = localStorage.getItem('selectedPropertyId');
-        if (selectedPropertyId) {
-            setPropertyFilter(selectedPropertyId);
-            fetchRooms(selectedPropertyId);
+        const propertyId = localStorage.getItem('selectedPropertyId');
+        if (!propertyId) {
+            message.error('Vui lòng chọn khách sạn trước!');
+            router.push('/');
+            return;
         }
-    }, []);
+        setSelectedPropertyId(propertyId);
+        fetchRooms(propertyId);
+    }, [router]);
 
     const fetchRooms = async (propertyId: string) => {
         const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
@@ -127,30 +155,25 @@ export default function RoomsPage() {
 
     const handleSearch = (value: string) => {
         setSearchText(value);
-        filterRooms(value, propertyFilter, roomTypeFilter, operationalStatusFilter, housekeepingStatusFilter);
-    };
-
-    const handlePropertyFilter = (value: string) => {
-        setPropertyFilter(value);
-        filterRooms(searchText, value, roomTypeFilter, operationalStatusFilter, housekeepingStatusFilter);
+        filterRooms(value, roomTypeFilter, operationalStatusFilter, housekeepingStatusFilter);
     };
 
     const handleRoomTypeFilter = (value: string) => {
         setRoomTypeFilter(value);
-        filterRooms(searchText, propertyFilter, value, operationalStatusFilter, housekeepingStatusFilter);
+        filterRooms(searchText, value, operationalStatusFilter, housekeepingStatusFilter);
     };
 
     const handleOperationalStatusFilter = (value: string) => {
         setOperationalStatusFilter(value);
-        filterRooms(searchText, propertyFilter, roomTypeFilter, value, housekeepingStatusFilter);
+        filterRooms(searchText, roomTypeFilter, value, housekeepingStatusFilter);
     };
 
     const handleHousekeepingStatusFilter = (value: string) => {
         setHousekeepingStatusFilter(value);
-        filterRooms(searchText, propertyFilter, roomTypeFilter, operationalStatusFilter, value);
+        filterRooms(searchText, roomTypeFilter, operationalStatusFilter, value);
     };
 
-    const filterRooms = (search: string, property: string, roomType: string, operationalStatus: string, housekeepingStatus: string) => {
+    const filterRooms = (search: string, roomType: string, operationalStatus: string, housekeepingStatus: string) => {
         let filtered = rooms;
 
         if (search) {
@@ -161,10 +184,6 @@ export default function RoomsPage() {
                 (room.propertyName || '').toLowerCase().includes(search.toLowerCase()) ||
                 (room.roomTypeName || '').toLowerCase().includes(search.toLowerCase())
             );
-        }
-
-        if (property !== 'all') {
-            filtered = filtered.filter(room => room.propertyId === property);
         }
 
         if (roomType !== 'all') {
@@ -216,8 +235,13 @@ export default function RoomsPage() {
                 <Col>
                     <Title level={2} style={{ margin: 0 }}>
                         <HomeOutlined style={{ marginRight: '8px' }} />
-                        Rooms Management
+                        Quản lý phòng
                     </Title>
+                    {property && (
+                        <Text type="secondary" style={{ fontSize: '14px' }}>
+                            Khách sạn: {property.name}
+                        </Text>
+                    )}
                 </Col>
                 <Col>
                     <Button
@@ -225,7 +249,7 @@ export default function RoomsPage() {
                         icon={<PlusOutlined />}
                         onClick={() => router.push('/inventory-management/rooms/create')}
                     >
-                        Add Room
+                        Thêm phòng
                     </Button>
                 </Col>
             </Row>
@@ -233,9 +257,9 @@ export default function RoomsPage() {
             {/* Filters */}
             <Card style={{ marginBottom: '24px' }}>
                 <Row gutter={[16, 16]} align="middle">
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={8}>
                         <Search
-                            placeholder="Search rooms..."
+                            placeholder="Tìm kiếm phòng..."
                             allowClear
                             enterButton={<SearchOutlined />}
                             size="middle"
@@ -243,30 +267,15 @@ export default function RoomsPage() {
                             onChange={(e) => handleSearch(e.target.value)}
                         />
                     </Col>
-                    <Col xs={24} sm={6} md={4}>
+                    <Col xs={24} sm={6} md={5}>
                         <Select
-                            placeholder="Property"
-                            style={{ width: '100%' }}
-                            value={propertyFilter}
-                            onChange={handlePropertyFilter}
-                        >
-                            <Select.Option value="all">All Properties</Select.Option>
-                            {properties.map(property => (
-                                <Select.Option key={property.id} value={property.id}>
-                                    {property.name}
-                                </Select.Option>
-                            ))}
-                        </Select>
-                    </Col>
-                    <Col xs={24} sm={6} md={4}>
-                        <Select
-                            placeholder="Room Type"
+                            placeholder="Loại phòng"
                             style={{ width: '100%' }}
                             value={roomTypeFilter}
                             onChange={handleRoomTypeFilter}
                         >
-                            <Select.Option value="all">All Room Types</Select.Option>
-                            {roomTypes.map(roomType => (
+                            <Select.Option value="all">Tất cả loại phòng</Select.Option>
+                            {roomTypes.map((roomType: any) => (
                                 <Select.Option key={roomType.id} value={roomType.id}>
                                     {roomType.name}
                                 </Select.Option>
@@ -275,33 +284,33 @@ export default function RoomsPage() {
                     </Col>
                     <Col xs={24} sm={6} md={4}>
                         <Select
-                            placeholder="Operational"
+                            placeholder="Trạng thái hoạt động"
                             style={{ width: '100%' }}
                             value={operationalStatusFilter}
                             onChange={handleOperationalStatusFilter}
                         >
-                            <Select.Option value="all">All Status</Select.Option>
-                            <Select.Option value="available">Available</Select.Option>
-                            <Select.Option value="out_of_service">Out of Service</Select.Option>
+                            <Select.Option value="all">Tất cả</Select.Option>
+                            <Select.Option value="available">Có sẵn</Select.Option>
+                            <Select.Option value="out_of_service">Ngừng hoạt động</Select.Option>
                         </Select>
                     </Col>
                     <Col xs={24} sm={6} md={4}>
                         <Select
-                            placeholder="Housekeeping"
+                            placeholder="Trạng thái dọn phòng"
                             style={{ width: '100%' }}
                             value={housekeepingStatusFilter}
                             onChange={handleHousekeepingStatusFilter}
                         >
-                            <Select.Option value="all">All Status</Select.Option>
-                            <Select.Option value="clean">Clean</Select.Option>
-                            <Select.Option value="dirty">Dirty</Select.Option>
-                            <Select.Option value="inspected">Inspected</Select.Option>
+                            <Select.Option value="all">Tất cả</Select.Option>
+                            <Select.Option value="clean">Sạch</Select.Option>
+                            <Select.Option value="dirty">Bẩn</Select.Option>
+                            <Select.Option value="inspected">Đã kiểm tra</Select.Option>
                         </Select>
                     </Col>
-                    <Col xs={24} sm={24} md={2}>
+                    <Col xs={24} sm={24} md={3}>
                         <div style={{ textAlign: 'right' }}>
                             <span style={{ color: '#666' }}>
-                                {filteredRooms.length}/{rooms.length}
+                                {filteredRooms.length}/{rooms.length} phòng
                             </span>
                         </div>
                     </Col>
