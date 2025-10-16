@@ -60,6 +60,7 @@ export default function CreateReservationPage() {
     const [filteredRatePlans, setFilteredRatePlans] = useState<RatePlan[]>([]);
     const [selectedRoomType, setSelectedRoomType] = useState<RoomType | null>(null);
     const [calculatedPrice, setCalculatedPrice] = useState(0);
+    const [guestMode, setGuestMode] = useState<'existing' | 'new'>('existing');
 
     useEffect(() => {
         fetchGuests();
@@ -152,6 +153,40 @@ export default function CreateReservationPage() {
         }
     };
 
+    const createGuest = async (guestData: any): Promise<string | null> => {
+        const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        
+        try {
+            const response = await fetch(`${API_ENDPOINT}/guests`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: guestData.guestName,
+                    email: guestData.guestEmail,
+                    phone: guestData.guestPhone,
+                    passportId: guestData.guestPassportId || null,
+                }),
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                message.success('Guest created successfully!');
+                return result.data.id;
+            } else {
+                const errorData = await response.json();
+                message.error(errorData.message || 'Error creating guest');
+                return null;
+            }
+        } catch (error) {
+            console.error('Error creating guest:', error);
+            message.error('Error creating guest');
+            return null;
+        }
+    };
+
     const onFinish = async (values: any) => {
         const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
         const propertyId = localStorage.getItem('selectedPropertyId');
@@ -159,9 +194,26 @@ export default function CreateReservationPage() {
         setLoading(true);
 
         try {
+            let guestId = values.guestId;
+
+            // Step 1: If creating new guest, create guest first
+            if (guestMode === 'new') {
+                guestId = await createGuest(values);
+                if (!guestId) {
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Step 2: Calculate total amount
+            const nights = values.dateRange[1].diff(values.dateRange[0], 'days');
+            const roomType = roomTypes.find(rt => rt.id === values.roomTypeId);
+            const totalAmount = roomType ? roomType.basePrice * nights : 0;
+
+            // Step 3: Create reservation with guestId and ALL required fields
             const payload = {
                 propertyId,
-                guestId: values.guestId,
+                guestId,
                 roomTypeId: values.roomTypeId,
                 ratePlanId: values.ratePlanId,
                 checkIn: values.dateRange[0].format('YYYY-MM-DD'),
@@ -173,10 +225,14 @@ export default function CreateReservationPage() {
                 contactPhone: values.contactPhone,
                 channel: values.channel,
                 guestNotes: values.guestNotes || '',
-                currency: values.currency || 'USD',
-            };
-
-            const response = await fetch(`${API_ENDPOINT}/reservations`, {
+                currency: values.currency || 'VND',
+                totalAmount: totalAmount,
+                taxAmount: 0,
+                discountAmount: 0,
+                serviceAmount: 0,
+                amountPaid: 0,
+                paymentStatus: 'unpaid',
+            };            const response = await fetch(`${API_ENDPOINT}/reservations`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -187,8 +243,8 @@ export default function CreateReservationPage() {
 
             if (response.ok) {
                 const result = await response.json();
-                message.success('Reservation created successfully!');
-                router.push(`/reservations/${result.data.id}`);
+                message.success(`Reservation created successfully! Confirmation: ${result.data?.confirmationCode || result.confirmationCode || 'N/A'}`);
+                router.push(`/reservations/${result.data?.id || result.id}`);
             } else {
                 const errorData = await response.json();
                 message.error(errorData.message || 'Error creating reservation');
@@ -246,34 +302,119 @@ export default function CreateReservationPage() {
                             adults: 1,
                             children: 0,
                             channel: 'website',
-                            currency: 'USD',
+                            currency: 'VND',
                         }}
                     >
                         {/* Step 1: Guest Information */}
                         {currentStep === 0 && (
                             <>
                                 <Divider>Guest Information</Divider>
-                                <Row gutter={16}>
-                                    <Col xs={24} md={12}>
-                                        <Form.Item
-                                            label="Select Guest"
-                                            name="guestId"
-                                            rules={[{ required: true, message: 'Please select a guest!' }]}
-                                        >
-                                            <Select
-                                                showSearch
-                                                placeholder="Search and select guest"
-                                                optionFilterProp="children"
-                                                filterOption={(input, option) =>
-                                                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                                }
-                                                options={guests.map(guest => ({
-                                                    value: guest.id,
-                                                    label: `${guest.name} - ${guest.email}`,
-                                                }))}
-                                            />
+                                
+                                {/* Guest Mode Selection */}
+                                <Row gutter={16} style={{ marginBottom: 16 }}>
+                                    <Col xs={24}>
+                                        <Form.Item label="Guest Type">
+                                            <Radio.Group 
+                                                value={guestMode} 
+                                                onChange={(e) => {
+                                                    setGuestMode(e.target.value);
+                                                    // Clear guest-related fields when switching
+                                                    if (e.target.value === 'new') {
+                                                        form.setFieldsValue({ guestId: undefined });
+                                                    } else {
+                                                        form.setFieldsValue({ 
+                                                            guestName: undefined,
+                                                            guestEmail: undefined,
+                                                            guestPhone: undefined,
+                                                            guestPassportId: undefined,
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                <Radio.Button value="existing">Select Existing Guest</Radio.Button>
+                                                <Radio.Button value="new">Create New Guest</Radio.Button>
+                                            </Radio.Group>
                                         </Form.Item>
                                     </Col>
+                                </Row>
+
+                                {/* Existing Guest Selection */}
+                                {guestMode === 'existing' && (
+                                    <Row gutter={16}>
+                                        <Col xs={24} md={12}>
+                                            <Form.Item
+                                                label="Select Guest"
+                                                name="guestId"
+                                                rules={[{ required: true, message: 'Please select a guest!' }]}
+                                            >
+                                                <Select
+                                                    showSearch
+                                                    placeholder="Search and select guest"
+                                                    optionFilterProp="children"
+                                                    filterOption={(input, option) =>
+                                                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                                    }
+                                                    options={guests.map(guest => ({
+                                                        value: guest.id,
+                                                        label: `${guest.name} - ${guest.email}`,
+                                                    }))}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                )}
+
+                                {/* New Guest Form */}
+                                {guestMode === 'new' && (
+                                    <>
+                                        <Row gutter={16}>
+                                            <Col xs={24} md={12}>
+                                                <Form.Item
+                                                    label="Guest Name"
+                                                    name="guestName"
+                                                    rules={[{ required: true, message: 'Please enter guest name!' }]}
+                                                >
+                                                    <Input placeholder="Full name" />
+                                                </Form.Item>
+                                            </Col>
+                                            <Col xs={24} md={12}>
+                                                <Form.Item
+                                                    label="Guest Email"
+                                                    name="guestEmail"
+                                                    rules={[
+                                                        { required: true, message: 'Please enter guest email!' },
+                                                        { type: 'email', message: 'Invalid email format!' }
+                                                    ]}
+                                                >
+                                                    <Input placeholder="email@example.com" />
+                                                </Form.Item>
+                                            </Col>
+                                        </Row>
+                                        <Row gutter={16}>
+                                            <Col xs={24} md={12}>
+                                                <Form.Item
+                                                    label="Guest Phone"
+                                                    name="guestPhone"
+                                                    rules={[{ required: true, message: 'Please enter guest phone!' }]}
+                                                >
+                                                    <Input placeholder="+84 123 456 789" />
+                                                </Form.Item>
+                                            </Col>
+                                            <Col xs={24} md={12}>
+                                                <Form.Item
+                                                    label="Passport ID (Optional)"
+                                                    name="guestPassportId"
+                                                >
+                                                    <Input placeholder="Passport number" />
+                                                </Form.Item>
+                                            </Col>
+                                        </Row>
+                                    </>
+                                )}
+
+                                <Divider />
+
+                                <Row gutter={16}>
                                     <Col xs={24} md={12}>
                                         <Form.Item
                                             label="Channel"

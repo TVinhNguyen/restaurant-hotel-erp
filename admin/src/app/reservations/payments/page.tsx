@@ -96,19 +96,21 @@ export default function PaymentsPage() {
 
             if (response.ok) {
                 const result = await response.json();
-                const paymentsData = result.data.map((p: any) => ({
-                    id: p.id,
-                    reservationId: p.reservationId,
-                    reservationCode: p.reservation?.confirmationCode || '',
-                    guestName: p.reservation?.guest?.name || '',
-                    amount: parseFloat(p.amount),
-                    currency: p.currency,
-                    method: p.method,
-                    status: p.status,
-                    transactionId: p.transactionId,
-                    paidAt: p.paidAt,
-                    notes: p.notes,
-                }));
+                const paymentsData = result.data
+                    .filter((p: any) => p.reservation?.propertyId === selectedPropertyId)
+                    .map((p: any) => ({
+                        id: p.id,
+                        reservationId: p.reservationId,
+                        reservationCode: p.reservation?.confirmationCode || '',
+                        guestName: p.reservation?.guest?.name || '',
+                        amount: parseFloat(p.amount),
+                        currency: p.currency,
+                        method: p.method,
+                        status: p.status,
+                        transactionId: p.transactionId,
+                        paidAt: p.paidAt,
+                        notes: p.notes,
+                    }));
 
                 setPayments(paymentsData);
                 setFilteredPayments(paymentsData);
