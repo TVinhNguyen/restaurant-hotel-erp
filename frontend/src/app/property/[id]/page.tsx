@@ -169,9 +169,10 @@ export default function PropertyDetailPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="rooms">Rooms</TabsTrigger>
+            <TabsTrigger value="restaurant">Restaurant</TabsTrigger>
             <TabsTrigger value="amenities">Amenities</TabsTrigger>
             <TabsTrigger value="policies">Policies</TabsTrigger>
           </TabsList>
@@ -259,6 +260,155 @@ export default function PropertyDetailPage() {
                   </div>
                 </Card>
               ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="restaurant" className="mt-8">
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-xl font-semibold">Norrebro Restaurant</h3>
+                      <p className="text-sm text-muted-foreground">Fine dining experience at the hotel</p>
+                    </div>
+                    <Badge className="bg-accent text-accent-foreground">4.8★</Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="relative">
+                      <img
+                        src="/modern-hotel-room-with-city-view-london.jpg"
+                        alt="Restaurant interior"
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium mb-2">Cuisine</h4>
+                        <p className="text-sm text-muted-foreground">Modern European, Nordic specialties</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Opening Hours</h4>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>Breakfast: 7:00 AM - 10:30 AM</p>
+                          <p>Lunch: 12:00 PM - 3:00 PM</p>
+                          <p>Dinner: 6:00 PM - 10:00 PM</p>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Dress Code</h4>
+                        <p className="text-sm text-muted-foreground">Smart casual</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <h4 className="text-lg font-semibold mb-2">Popular Dishes</h4>
+                      <div className="w-16 h-0.5 bg-accent mx-auto"></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300">
+                        <div className="relative h-40 overflow-hidden">
+                          <img
+                            src="/dark-modern-hotel-room-with-ambient-lighting.jpg"
+                            alt="Nordic Salmon"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-3 right-3">
+                            <Badge className="bg-white/90 text-foreground font-semibold">
+                              $28
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-4 space-y-2">
+                          <h5 className="font-semibold text-foreground">Nordic Salmon</h5>
+                          <p className="text-xs text-muted-foreground">Grilled salmon with seasonal vegetables</p>
+                          <div className="flex items-center justify-between pt-1">
+                            <div className="flex text-yellow-400">
+                              {[...Array(5)].map((_, i) => (
+                                <Star key={i} className="h-2.5 w-2.5 fill-current" />
+                              ))}
+                            </div>
+                            <span className="text-xs text-muted-foreground">Popular</span>
+                          </div>
+                        </div>
+                      </Card>
+                      
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300">
+                        <div className="relative h-40 overflow-hidden">
+                          <img
+                            src="/luxury-hotel-suite-with-marble-bathroom.jpg"
+                            alt="Danish Beef"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-3 right-3">
+                            <Badge className="bg-white/90 text-foreground font-semibold">
+                              $35
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-4 space-y-2">
+                          <h5 className="font-semibold text-foreground">Danish Beef</h5>
+                          <p className="text-xs text-muted-foreground">Tender beef with potato gratin</p>
+                          <div className="flex items-center justify-between pt-1">
+                            <div className="flex text-yellow-400">
+                              {[...Array(5)].map((_, i) => (
+                                <Star key={i} className="h-2.5 w-2.5 fill-current" />
+                              ))}
+                            </div>
+                            <Badge variant="secondary" className="text-xs">Chef&apos;s Choice</Badge>
+                          </div>
+                        </div>
+                      </Card>
+                      
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300">
+                        <div className="relative h-40 overflow-hidden">
+                          <img
+                            src="/london-england-red-double-decker-bus-and-big-ben.jpg"
+                            alt="Copenhagen Tart"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-3 right-3">
+                            <Badge className="bg-white/90 text-foreground font-semibold">
+                              $12
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-4 space-y-2">
+                          <h5 className="font-semibold text-foreground">Copenhagen Tart</h5>
+                          <p className="text-xs text-muted-foreground">Traditional dessert with berries</p>
+                          <div className="flex items-center justify-between pt-1">
+                            <div className="flex text-yellow-400">
+                              {[...Array(4)].map((_, i) => (
+                                <Star key={i} className="h-2.5 w-2.5 fill-current" />
+                              ))}
+                              <Star className="h-2.5 w-2.5 text-gray-300" />
+                            </div>
+                            <span className="text-xs text-muted-foreground">Signature</span>
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-border">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <Link href="/restaurant/booking" className="flex-1">
+                        <Button className="w-full" size="lg">
+                          Reserve a table
+                        </Button>
+                      </Link>
+                      <Link href="/restaurant/norrebro" className="flex-1">
+                        <Button variant="outline" className="w-full" size="lg">
+                          View menu
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
