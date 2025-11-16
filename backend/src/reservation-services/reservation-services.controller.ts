@@ -19,7 +19,9 @@ import { UpdateReservationServiceDto } from './dto/update-reservation-service.dt
 @Controller('reservation-services')
 @UseGuards(AuthGuard('jwt'))
 export class ReservationServicesController {
-  constructor(private readonly reservationServicesService: ReservationServicesService) {}
+  constructor(
+    private readonly reservationServicesService: ReservationServicesService,
+  ) {}
 
   @Get()
   async findAll(
@@ -45,8 +47,12 @@ export class ReservationServicesController {
   }
 
   @Post()
-  async create(@Body() createReservationServiceDto: CreateReservationServiceDto) {
-    return await this.reservationServicesService.create(createReservationServiceDto);
+  async create(
+    @Body() createReservationServiceDto: CreateReservationServiceDto,
+  ) {
+    return await this.reservationServicesService.create(
+      createReservationServiceDto,
+    );
   }
 
   @Put(':id')
@@ -54,7 +60,10 @@ export class ReservationServicesController {
     @Param('id') id: string,
     @Body() updateReservationServiceDto: UpdateReservationServiceDto,
   ) {
-    return await this.reservationServicesService.update(id, updateReservationServiceDto);
+    return await this.reservationServicesService.update(
+      id,
+      updateReservationServiceDto,
+    );
   }
 
   @Delete(':id')
@@ -66,12 +75,17 @@ export class ReservationServicesController {
 
   @Get('reservation/:reservationId')
   async findByReservation(@Param('reservationId') reservationId: string) {
-    return await this.reservationServicesService.findByReservation(reservationId);
+    return await this.reservationServicesService.findByReservation(
+      reservationId,
+    );
   }
 
   @Get('reservation/:reservationId/total')
   async getTotalServiceAmount(@Param('reservationId') reservationId: string) {
-    const total = await this.reservationServicesService.getTotalServiceAmount(reservationId);
+    const total =
+      await this.reservationServicesService.getTotalServiceAmount(
+        reservationId,
+      );
     return { reservationId, totalServiceAmount: total };
   }
 

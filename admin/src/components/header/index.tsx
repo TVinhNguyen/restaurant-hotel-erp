@@ -48,10 +48,22 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
 
   useEffect(() => {
     const fetchProperties = async () => {
+      // Skip fetch during SSR
+      if (typeof window === 'undefined') {
+        setLoading(false);
+        return;
+      }
+
       try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/properties`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
           },
         });
         if (response.ok) {
@@ -107,11 +119,13 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
           onChange={(value) => {
             const prop = properties.find((p: Property) => p.id === value);
             setSelectedProperty(prop || null);
-            // Lưu ID vào localStorage khi chọn
-            if (prop) {
-              localStorage.setItem('selectedPropertyId', prop.id.toString());
-            } else {
-              localStorage.removeItem('selectedPropertyId');
+            // SSR-safe: only access localStorage in browser
+            if (typeof window !== 'undefined') {
+              if (prop) {
+                localStorage.setItem('selectedPropertyId', prop.id.toString());
+              } else {
+                localStorage.removeItem('selectedPropertyId');
+              }
             }
           }}
           style={{ width: 300 }}

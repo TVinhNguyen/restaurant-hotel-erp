@@ -67,10 +67,7 @@ export class PaymentsController {
 
   @Post(':id/refund')
   @HttpCode(HttpStatus.OK)
-  async refund(
-    @Param('id') id: string,
-    @Body() body: { amount?: number },
-  ) {
+  async refund(@Param('id') id: string, @Body() body: { amount?: number }) {
     return await this.paymentsService.refund(id, body.amount);
   }
 

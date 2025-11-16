@@ -13,10 +13,10 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RoomsService } from './rooms.service';
-import { 
-  CreateRoomDto, 
-  UpdateRoomStatusDto, 
-  RoomQueryDto, 
+import {
+  CreateRoomDto,
+  UpdateRoomStatusDto,
+  RoomQueryDto,
   // AvailableRoomsQueryDto,
   // BulkUpdateRoomsStatusDto,
   // ScheduleMaintenanceDto,
@@ -95,10 +95,7 @@ export class RoomsController {
   // }
 
   @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateRoomDto: UpdateRoomDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
     return await this.roomsService.update(id, updateRoomDto);
   }
 

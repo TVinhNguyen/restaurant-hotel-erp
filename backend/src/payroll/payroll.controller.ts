@@ -13,7 +13,11 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PayrollService } from './payroll.service';
-import { CreatePayrollDto, UpdatePayrollDto, BulkPayrollDto } from './dto/create-payroll.dto';
+import {
+  CreatePayrollDto,
+  UpdatePayrollDto,
+  BulkPayrollDto,
+} from './dto/create-payroll.dto';
 
 @Controller('payroll')
 @UseGuards(AuthGuard('jwt'))
@@ -35,7 +39,10 @@ export class PayrollController {
     @Param('period') period: string,
     @Query('employeeId') employeeId?: string,
   ) {
-    return this.payrollService.generatePayrollWithCalculations(period, employeeId);
+    return this.payrollService.generatePayrollWithCalculations(
+      period,
+      employeeId,
+    );
   }
 
   @Get()

@@ -1,4 +1,11 @@
-import { IsString, IsUUID, IsInt, IsOptional, IsIn, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsInt,
+  IsOptional,
+  IsIn,
+  IsDateString,
+} from 'class-validator';
 
 export class CreateTableBookingDto {
   @IsUUID()
@@ -31,7 +38,13 @@ export class CreateTableBookingDto {
 
   @IsOptional()
   @IsIn(['pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show'])
-  status?: 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no_show';
+  status?:
+    | 'pending'
+    | 'confirmed'
+    | 'seated'
+    | 'completed'
+    | 'cancelled'
+    | 'no_show';
 
   @IsOptional()
   @IsString()
@@ -77,7 +90,13 @@ export class UpdateTableBookingDto {
 
   @IsOptional()
   @IsIn(['pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show'])
-  status?: 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no_show';
+  status?:
+    | 'pending'
+    | 'confirmed'
+    | 'seated'
+    | 'completed'
+    | 'cancelled'
+    | 'no_show';
 
   @IsOptional()
   @IsString()

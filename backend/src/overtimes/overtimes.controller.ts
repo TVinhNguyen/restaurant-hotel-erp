@@ -8,7 +8,7 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { OvertimesService } from './overtimes.service';
@@ -31,7 +31,7 @@ export class OvertimesController {
     @Query('limit') limit?: string,
     @Query('employeeId') employeeId?: string,
     @Query('workingShiftId') workingShiftId?: string,
-    @Query('approvedBy') approvedBy?: string
+    @Query('approvedBy') approvedBy?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -41,7 +41,7 @@ export class OvertimesController {
       limitNum,
       employeeId,
       workingShiftId,
-      approvedBy
+      approvedBy,
     );
   }
 
@@ -49,7 +49,7 @@ export class OvertimesController {
   async findByEmployee(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -61,7 +61,7 @@ export class OvertimesController {
   async findByWorkingShift(
     @Param('workingShiftId', ParseUUIDPipe) workingShiftId: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -69,7 +69,7 @@ export class OvertimesController {
     return this.overtimesService.findByWorkingShift(
       workingShiftId,
       pageNum,
-      limitNum
+      limitNum,
     );
   }
 
@@ -77,7 +77,7 @@ export class OvertimesController {
   async findByApprover(
     @Param('approvedBy', ParseUUIDPipe) approvedBy: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -87,23 +87,23 @@ export class OvertimesController {
 
   @Get('employee/:employeeId/total')
   async getTotalOvertimeByEmployee(
-    @Param('employeeId', ParseUUIDPipe) employeeId: string
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
   ) {
     return this.overtimesService.getTotalOvertimeByEmployee(employeeId);
   }
 
   @Post('calculate')
   async calculateOvertimeAmount(
-    @Body() body: { numberOfHours: number; rate: number }
+    @Body() body: { numberOfHours: number; rate: number },
   ) {
     const amount = await this.overtimesService.calculateOvertimeAmount(
       body.numberOfHours,
-      body.rate
+      body.rate,
     );
     return {
       numberOfHours: body.numberOfHours,
       rate: body.rate,
-      amount
+      amount,
     };
   }
 
@@ -115,7 +115,7 @@ export class OvertimesController {
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateOvertimeDto: UpdateOvertimeDto
+    @Body() updateOvertimeDto: UpdateOvertimeDto,
   ) {
     return this.overtimesService.update(id, updateOvertimeDto);
   }

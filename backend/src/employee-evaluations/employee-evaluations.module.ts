@@ -8,6 +8,6 @@ import { EmployeeEvaluation } from '../entities/hr/employee-evaluation.entity';
   imports: [TypeOrmModule.forFeature([EmployeeEvaluation])],
   controllers: [EmployeeEvaluationsController],
   providers: [EmployeeEvaluationsService],
-  exports: [EmployeeEvaluationsService]
+  exports: [EmployeeEvaluationsService],
 })
 export class EmployeeEvaluationsModule {}

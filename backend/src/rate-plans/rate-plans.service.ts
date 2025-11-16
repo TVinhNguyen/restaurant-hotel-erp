@@ -24,16 +24,21 @@ export class RatePlansService {
     const { page = 1, limit = 10, propertyId, roomTypeId } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.ratePlanRepository.createQueryBuilder('ratePlan')
+    const queryBuilder = this.ratePlanRepository
+      .createQueryBuilder('ratePlan')
       .leftJoinAndSelect('ratePlan.property', 'property')
       .leftJoinAndSelect('ratePlan.roomType', 'roomType');
 
     if (propertyId) {
-      queryBuilder.andWhere('ratePlan.propertyId = :propertyId', { propertyId });
+      queryBuilder.andWhere('ratePlan.propertyId = :propertyId', {
+        propertyId,
+      });
     }
 
     if (roomTypeId) {
-      queryBuilder.andWhere('ratePlan.roomTypeId = :roomTypeId', { roomTypeId });
+      queryBuilder.andWhere('ratePlan.roomTypeId = :roomTypeId', {
+        roomTypeId,
+      });
     }
 
     const [data, total] = await queryBuilder
@@ -74,11 +79,14 @@ export class RatePlansService {
     return await this.ratePlanRepository.save(ratePlan);
   }
 
-  async update(id: string, updateRatePlanDto: UpdateRatePlanDto): Promise<RatePlan> {
+  async update(
+    id: string,
+    updateRatePlanDto: UpdateRatePlanDto,
+  ): Promise<RatePlan> {
     const ratePlan = await this.findOne(id);
-    
+
     Object.assign(ratePlan, updateRatePlanDto);
-    
+
     return await this.ratePlanRepository.save(ratePlan);
   }
 
@@ -87,7 +95,11 @@ export class RatePlansService {
     await this.ratePlanRepository.remove(ratePlan);
   }
 
-  async setDailyRate(ratePlanId: string, date: string, rate: number): Promise<DailyRate> {
+  async setDailyRate(
+    ratePlanId: string,
+    date: string,
+    rate: number,
+  ): Promise<DailyRate> {
     // Check if daily rate already exists for this date
     const existingRate = await this.dailyRateRepository.findOne({
       where: { ratePlanId, date: new Date(date) },
@@ -107,8 +119,13 @@ export class RatePlansService {
     return await this.dailyRateRepository.save(dailyRate);
   }
 
-  async getDailyRates(ratePlanId: string, startDate?: string, endDate?: string) {
-    const queryBuilder = this.dailyRateRepository.createQueryBuilder('dailyRate')
+  async getDailyRates(
+    ratePlanId: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    const queryBuilder = this.dailyRateRepository
+      .createQueryBuilder('dailyRate')
       .where('dailyRate.ratePlanId = :ratePlanId', { ratePlanId });
 
     if (startDate) {
@@ -119,8 +136,6 @@ export class RatePlansService {
       queryBuilder.andWhere('dailyRate.date <= :endDate', { endDate });
     }
 
-    return await queryBuilder
-      .orderBy('dailyRate.date', 'ASC')
-      .getMany();
+    return await queryBuilder.orderBy('dailyRate.date', 'ASC').getMany();
   }
 }

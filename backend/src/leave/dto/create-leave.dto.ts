@@ -1,4 +1,11 @@
-import { IsUUID, IsDateString, IsEnum, IsOptional, IsString, IsNumber } from 'class-validator';
+import {
+  IsUUID,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsNumber,
+} from 'class-validator';
 
 export enum LeaveType {
   ANNUAL = 'annual',

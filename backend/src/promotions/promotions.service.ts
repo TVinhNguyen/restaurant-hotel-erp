@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Promotion } from '../entities/reservation/promotion.entity';
@@ -21,22 +25,26 @@ export class PromotionsService {
     const { page = 1, limit = 10, propertyId, active } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.promotionRepository.createQueryBuilder('promotion')
+    const queryBuilder = this.promotionRepository
+      .createQueryBuilder('promotion')
       .leftJoinAndSelect('promotion.property', 'property');
 
     if (propertyId) {
-      queryBuilder.andWhere('promotion.propertyId = :propertyId', { propertyId });
+      queryBuilder.andWhere('promotion.propertyId = :propertyId', {
+        propertyId,
+      });
     }
 
     if (active !== undefined) {
       const currentDate = new Date().toISOString().split('T')[0];
       if (active) {
-        queryBuilder.andWhere('promotion.validFrom <= :currentDate', { currentDate })
+        queryBuilder
+          .andWhere('promotion.validFrom <= :currentDate', { currentDate })
           .andWhere('promotion.validTo >= :currentDate', { currentDate });
       } else {
         queryBuilder.andWhere(
           '(promotion.validFrom > :currentDate OR promotion.validTo < :currentDate)',
-          { currentDate }
+          { currentDate },
         );
       }
     }
@@ -91,7 +99,9 @@ export class PromotionsService {
     });
 
     if (existingPromotion) {
-      throw new ConflictException(`Promotion with code ${createPromotionDto.code} already exists`);
+      throw new ConflictException(
+        `Promotion with code ${createPromotionDto.code} already exists`,
+      );
     }
 
     // Create entity data with proper type conversion
@@ -99,17 +109,24 @@ export class PromotionsService {
       propertyId: createPromotionDto.propertyId,
       code: createPromotionDto.code,
       discountPercent: createPromotionDto.discountPercent,
-      validFrom: createPromotionDto.validFrom ? new Date(createPromotionDto.validFrom) : undefined,
-      validTo: createPromotionDto.validTo ? new Date(createPromotionDto.validTo) : undefined,
+      validFrom: createPromotionDto.validFrom
+        ? new Date(createPromotionDto.validFrom)
+        : undefined,
+      validTo: createPromotionDto.validTo
+        ? new Date(createPromotionDto.validTo)
+        : undefined,
     };
 
     const promotion = this.promotionRepository.create(entityData);
     return await this.promotionRepository.save(promotion);
   }
 
-  async update(id: string, updatePromotionDto: UpdatePromotionDto): Promise<Promotion> {
+  async update(
+    id: string,
+    updatePromotionDto: UpdatePromotionDto,
+  ): Promise<Promotion> {
     const promotion = await this.findOne(id);
-    
+
     // Check if code already exists for other promotions
     if (updatePromotionDto.code && updatePromotionDto.code !== promotion.code) {
       const existingPromotion = await this.promotionRepository.findOne({
@@ -117,7 +134,9 @@ export class PromotionsService {
       });
 
       if (existingPromotion && existingPromotion.id !== id) {
-        throw new ConflictException(`Promotion with code ${updatePromotionDto.code} already exists`);
+        throw new ConflictException(
+          `Promotion with code ${updatePromotionDto.code} already exists`,
+        );
       }
     }
 
@@ -134,7 +153,7 @@ export class PromotionsService {
     if (updatePromotionDto.validTo !== undefined) {
       promotion.validTo = new Date(updatePromotionDto.validTo);
     }
-    
+
     return await this.promotionRepository.save(promotion);
   }
 
@@ -143,16 +162,21 @@ export class PromotionsService {
     await this.promotionRepository.remove(promotion);
   }
 
-  async validatePromotion(code: string, propertyId: string): Promise<{ valid: boolean; promotion?: Promotion; error?: string }> {
+  async validatePromotion(
+    code: string,
+    propertyId: string,
+  ): Promise<{ valid: boolean; promotion?: Promotion; error?: string }> {
     try {
       const promotion = await this.findByCode(code);
-      
+
       if (promotion.propertyId !== propertyId) {
         return { valid: false, error: 'Promotion not valid for this property' };
       }
 
       const currentDate = new Date();
-      const validFrom = promotion.validFrom ? new Date(promotion.validFrom) : null;
+      const validFrom = promotion.validFrom
+        ? new Date(promotion.validFrom)
+        : null;
       const validTo = promotion.validTo ? new Date(promotion.validTo) : null;
 
       if (validFrom && currentDate < validFrom) {

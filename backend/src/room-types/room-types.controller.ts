@@ -13,7 +13,12 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RoomTypesService } from './room-types.service';
-import { CreateRoomTypeDto, AddAmenityToRoomTypeDto, BulkAddAmenitiesToRoomTypeDto, RoomTypeQueryDto } from './dto/create-room-type.dto';
+import {
+  CreateRoomTypeDto,
+  AddAmenityToRoomTypeDto,
+  BulkAddAmenitiesToRoomTypeDto,
+  RoomTypeQueryDto,
+} from './dto/create-room-type.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 
 @Controller('room-types')
@@ -57,7 +62,10 @@ export class RoomTypesController {
     @Param('id') roomTypeId: string,
     @Body() addAmenityDto: AddAmenityToRoomTypeDto,
   ) {
-    return await this.roomTypesService.addAmenity(roomTypeId, addAmenityDto.amenityId);
+    return await this.roomTypesService.addAmenity(
+      roomTypeId,
+      addAmenityDto.amenityId,
+    );
   }
 
   @Delete(':roomTypeId/amenities/:amenityId')
@@ -75,6 +83,9 @@ export class RoomTypesController {
     @Param('id') roomTypeId: string,
     @Body() bulkAddDto: BulkAddAmenitiesToRoomTypeDto,
   ) {
-    return await this.roomTypesService.addMultipleAmenities(roomTypeId, bulkAddDto.amenityIds);
+    return await this.roomTypesService.addMultipleAmenities(
+      roomTypeId,
+      bulkAddDto.amenityIds,
+    );
   }
 }

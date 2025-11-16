@@ -71,11 +71,7 @@ export class TaxRulesController {
 
   @Post('calculate')
   async calculateTax(
-    @Body() body: { 
-      amount: number; 
-      propertyId: string; 
-      taxType?: string 
-    },
+    @Body() body: { amount: number; propertyId: string; taxType?: string },
   ) {
     return await this.taxRulesService.calculateTax(
       body.amount,

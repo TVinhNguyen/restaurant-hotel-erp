@@ -4,13 +4,13 @@ import {
   IsOptional,
   IsNumber,
   IsDateString,
-  IsString
+  IsString,
 } from 'class-validator';
 
 export enum DeductionType {
   TAX = 'tax',
   INSURANCE = 'insurance',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 export class CreateDeductionDto {

@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsNumber, IsUUID, IsEnum, IsDateString, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsUUID,
+  IsEnum,
+  IsDateString,
+  IsBoolean,
+} from 'class-validator';
 
 export enum OperationalStatus {
   AVAILABLE = 'available',

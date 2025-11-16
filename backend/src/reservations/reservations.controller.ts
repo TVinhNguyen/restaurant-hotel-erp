@@ -65,10 +65,7 @@ export class ReservationsController {
 
   @Post(':id/checkin')
   @HttpCode(HttpStatus.OK)
-  async checkIn(
-    @Param('id') id: string,
-    @Body() body: { roomId?: string },
-  ) {
+  async checkIn(@Param('id') id: string, @Body() body: { roomId?: string }) {
     return await this.reservationsService.checkIn(id, body.roomId);
   }
 
@@ -79,10 +76,7 @@ export class ReservationsController {
   }
 
   @Put(':id/room')
-  async assignRoom(
-    @Param('id') id: string,
-    @Body() body: { roomId: string },
-  ) {
+  async assignRoom(@Param('id') id: string, @Body() body: { roomId: string }) {
     return await this.reservationsService.assignRoom(id, body.roomId);
   }
 

@@ -15,9 +15,11 @@ export const authProvider: AuthProvider = {
 
       if (response.ok) {
         const data = await response.json();
-        // Lưu token và user info
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // SSR-safe: only access localStorage in browser
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', data.access_token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
 
         return {
           success: true,
@@ -45,8 +47,10 @@ export const authProvider: AuthProvider = {
   },
 
   logout: async () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
     return {
       success: true,
       redirectTo: '/login'
@@ -54,6 +58,10 @@ export const authProvider: AuthProvider = {
   },
 
   check: async () => {
+    if (typeof window === 'undefined') {
+      return { authenticated: false };
+    }
+    
     const token = localStorage.getItem('token');
     console.log('Check auth, token:', token);
     if (!token) {
@@ -93,6 +101,10 @@ export const authProvider: AuthProvider = {
   },
 
   getIdentity: async () => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    
     const user = localStorage.getItem('user');
     if (user) {
       return JSON.parse(user);

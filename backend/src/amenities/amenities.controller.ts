@@ -10,7 +10,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AmenitiesService } from './amenities.service';
-import { CreateAmenityDto, UpdateAmenityDto, AmenityQueryDto } from './dto/amenity.dto';
+import {
+  CreateAmenityDto,
+  UpdateAmenityDto,
+  AmenityQueryDto,
+} from './dto/amenity.dto';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('amenities')

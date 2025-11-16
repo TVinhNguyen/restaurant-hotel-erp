@@ -69,7 +69,11 @@ export class RatePlansController {
     @Param('id') ratePlanId: string,
     @Body() body: { date: string; rate: number },
   ) {
-    return await this.ratePlansService.setDailyRate(ratePlanId, body.date, body.rate);
+    return await this.ratePlansService.setDailyRate(
+      ratePlanId,
+      body.date,
+      body.rate,
+    );
   }
 
   @Get(':id/daily-rates')
@@ -78,6 +82,10 @@ export class RatePlansController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return await this.ratePlansService.getDailyRates(ratePlanId, startDate, endDate);
+    return await this.ratePlansService.getDailyRates(
+      ratePlanId,
+      startDate,
+      endDate,
+    );
   }
 }

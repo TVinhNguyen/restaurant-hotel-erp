@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment } from '../entities/reservation/payment.entity';
@@ -22,12 +26,15 @@ export class PaymentsService {
     const { page = 1, limit = 10, reservationId, status, method } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.paymentRepository.createQueryBuilder('payment')
+    const queryBuilder = this.paymentRepository
+      .createQueryBuilder('payment')
       .leftJoinAndSelect('payment.reservation', 'reservation')
       .leftJoinAndSelect('reservation.guest', 'guest');
 
     if (reservationId) {
-      queryBuilder.andWhere('payment.reservationId = :reservationId', { reservationId });
+      queryBuilder.andWhere('payment.reservationId = :reservationId', {
+        reservationId,
+      });
     }
 
     if (status) {
@@ -77,11 +84,14 @@ export class PaymentsService {
     return await this.paymentRepository.save(payment);
   }
 
-  async update(id: string, updatePaymentDto: UpdatePaymentDto): Promise<Payment> {
+  async update(
+    id: string,
+    updatePaymentDto: UpdatePaymentDto,
+  ): Promise<Payment> {
     const payment = await this.findOne(id);
-    
+
     Object.assign(payment, updatePaymentDto);
-    
+
     return await this.paymentRepository.save(payment);
   }
 
@@ -97,8 +107,8 @@ export class PaymentsService {
 
     payment.status = isSuccess ? 'captured' : 'voided';
     payment.transactionId = this.generateTransactionId();
-    payment.notes = isSuccess 
-      ? 'Payment processed successfully' 
+    payment.notes = isSuccess
+      ? 'Payment processed successfully'
       : 'Payment failed - insufficient funds';
 
     return await this.paymentRepository.save(payment);
@@ -114,7 +124,9 @@ export class PaymentsService {
     const amount = refundAmount || payment.amount;
 
     if (amount > payment.amount) {
-      throw new BadRequestException('Refund amount cannot exceed original payment amount');
+      throw new BadRequestException(
+        'Refund amount cannot exceed original payment amount',
+      );
     }
 
     // Create refund payment record
@@ -134,7 +146,7 @@ export class PaymentsService {
 
   async remove(id: string): Promise<void> {
     const payment = await this.findOne(id);
-    
+
     if (payment.status === 'captured') {
       throw new BadRequestException('Cannot delete captured payment');
     }

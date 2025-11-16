@@ -2,7 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Amenity } from '../entities/inventory/amenity.entity';
-import { CreateAmenityDto, UpdateAmenityDto, AmenityQueryDto } from './dto/amenity.dto';
+import {
+  CreateAmenityDto,
+  UpdateAmenityDto,
+  AmenityQueryDto,
+} from './dto/amenity.dto';
 
 @Injectable()
 export class AmenitiesService {
@@ -20,7 +24,8 @@ export class AmenitiesService {
     const { page = 1, limit = 10, category, search } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.amenityRepository.createQueryBuilder('amenity')
+    const queryBuilder = this.amenityRepository
+      .createQueryBuilder('amenity')
       .leftJoinAndSelect('amenity.roomTypeAmenities', 'roomTypeAmenities')
       .leftJoinAndSelect('roomTypeAmenities.roomType', 'roomType')
       .leftJoinAndSelect('roomType.property', 'property');
@@ -30,7 +35,9 @@ export class AmenitiesService {
     }
 
     if (search) {
-      queryBuilder.andWhere('amenity.name ILIKE :search', { search: `%${search}%` });
+      queryBuilder.andWhere('amenity.name ILIKE :search', {
+        search: `%${search}%`,
+      });
     }
 
     const [data, total] = await queryBuilder
@@ -50,7 +57,11 @@ export class AmenitiesService {
   async findOne(id: string) {
     const amenity = await this.amenityRepository.findOne({
       where: { id },
-      relations: ['roomTypeAmenities', 'roomTypeAmenities.roomType', 'roomTypeAmenities.roomType.property'],
+      relations: [
+        'roomTypeAmenities',
+        'roomTypeAmenities.roomType',
+        'roomTypeAmenities.roomType.property',
+      ],
     });
 
     if (!amenity) {
@@ -62,14 +73,14 @@ export class AmenitiesService {
 
   async update(id: string, updateAmenityDto: UpdateAmenityDto) {
     await this.findOne(id); // Check if exists
-    
+
     await this.amenityRepository.update(id, updateAmenityDto);
     return await this.findOne(id);
   }
 
   async remove(id: string) {
     const amenity = await this.findOne(id); // Check if exists
-    
+
     return await this.amenityRepository.remove(amenity);
   }
 }

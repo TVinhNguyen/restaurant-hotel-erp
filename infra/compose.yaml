@@ -10,10 +10,12 @@ services:
     volumes: ["pg:/var/lib/postgresql/data"]
     networks: [devnet]
 
-  # redis:
-  #   image: redis:7
-  #   ports: ["6379:6379"]
-  #   networks: [devnet]
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+    networks: [devnet]
+    command: redis-server --appendonly yes
+    volumes: ["redis:/data"]
 
   # rabbitmq:
   #   image: rabbitmq:3-management
@@ -25,6 +27,7 @@ services:
 
 volumes:
   pg:
+  redis:
 
 networks:
   devnet:

@@ -19,7 +19,9 @@ import { UpdatePropertyServiceDto } from './dto/update-property-service.dto';
 @Controller('property-services')
 @UseGuards(AuthGuard('jwt'))
 export class PropertyServicesController {
-  constructor(private readonly propertyServicesService: PropertyServicesService) {}
+  constructor(
+    private readonly propertyServicesService: PropertyServicesService,
+  ) {}
 
   @Get()
   async findAllPropertyServices(
@@ -44,8 +46,12 @@ export class PropertyServicesController {
   }
 
   @Post()
-  async createPropertyService(@Body() createPropertyServiceDto: CreatePropertyServiceDto) {
-    return await this.propertyServicesService.createPropertyService(createPropertyServiceDto);
+  async createPropertyService(
+    @Body() createPropertyServiceDto: CreatePropertyServiceDto,
+  ) {
+    return await this.propertyServicesService.createPropertyService(
+      createPropertyServiceDto,
+    );
   }
 
   @Put(':id')
@@ -53,7 +59,10 @@ export class PropertyServicesController {
     @Param('id') id: string,
     @Body() updatePropertyServiceDto: UpdatePropertyServiceDto,
   ) {
-    return await this.propertyServicesService.updatePropertyService(id, updatePropertyServiceDto);
+    return await this.propertyServicesService.updatePropertyService(
+      id,
+      updatePropertyServiceDto,
+    );
   }
 
   @Delete(':id')

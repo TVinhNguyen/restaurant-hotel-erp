@@ -13,7 +13,13 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { LeaveService } from './leave.service';
-import { CreateLeaveDto, UpdateLeaveDto, ApproveRejectLeaveDto, LeaveType, LeaveStatus } from './dto/create-leave.dto';
+import {
+  CreateLeaveDto,
+  UpdateLeaveDto,
+  ApproveRejectLeaveDto,
+  LeaveType,
+  LeaveStatus,
+} from './dto/create-leave.dto';
 
 @Controller('leaves')
 @UseGuards(AuthGuard('jwt'))
@@ -36,7 +42,13 @@ export class LeaveController {
     @Query('endDate') endDate?: string,
   ) {
     return this.leaveService.findAllLeaves(
-      page, limit, employeeId, status, leaveType, startDate, endDate
+      page,
+      limit,
+      employeeId,
+      status,
+      leaveType,
+      startDate,
+      endDate,
     );
   }
 
@@ -87,6 +99,10 @@ export class LeaveController {
     @Body() approveRejectDto: ApproveRejectLeaveDto,
     @Query('approverId', ParseUUIDPipe) approverId: string,
   ) {
-    return this.leaveService.approveRejectLeave(id, approveRejectDto, approverId);
+    return this.leaveService.approveRejectLeave(
+      id,
+      approveRejectDto,
+      approverId,
+    );
   }
 }

@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 import { Employee } from '../core/employee.entity';
 import { WorkingShift } from './working-shift.entity';
@@ -26,7 +26,7 @@ export class Overtime {
     type: 'decimal',
     precision: 6,
     scale: 2,
-    nullable: true
+    nullable: true,
   })
   numberOfHours: number;
 
@@ -46,7 +46,7 @@ export class Overtime {
   updatedAt: Date;
 
   // Relations
-  @ManyToOne(() => Employee, employee => employee.overtimes)
+  @ManyToOne(() => Employee, (employee) => employee.overtimes)
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 

@@ -12,16 +12,53 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 
+@ApiTags('Properties')
+@ApiBearerAuth('JWT-auth')
 @Controller('properties')
 @UseGuards(AuthGuard('jwt'))
 export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) {}
 
   @Get()
+  @ApiOperation({
+    summary: 'Get all properties',
+    description:
+      'Retrieve paginated list of properties with optional filtering',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10)',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    type: String,
+    description: 'Filter by property type (hotel, resort, etc.)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Properties retrieved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -49,16 +86,13 @@ export class PropertiesController {
   }
 
   @Get(':id')
-  async findOne(
-    @Param('id') id: string,
-    @Query('include') include?: string,
-  ) {
+  async findOne(@Param('id') id: string, @Query('include') include?: string) {
     // Parse comma-separated relations from query
     if (include) {
-      const relations = include.split(',').map(rel => rel.trim());
+      const relations = include.split(',').map((rel) => rel.trim());
       return await this.propertiesService.findOneWithDetails(id, relations);
     }
-    
+
     // Default: return property without relations for better performance
     return await this.propertiesService.findOne(id);
   }

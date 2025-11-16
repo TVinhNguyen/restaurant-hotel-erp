@@ -71,9 +71,10 @@ export class PromotionsController {
   }
 
   @Post('validate')
-  async validatePromotion(
-    @Body() body: { code: string; propertyId: string },
-  ) {
-    return await this.promotionsService.validatePromotion(body.code, body.propertyId);
+  async validatePromotion(@Body() body: { code: string; propertyId: string }) {
+    return await this.promotionsService.validatePromotion(
+      body.code,
+      body.propertyId,
+    );
   }
 }

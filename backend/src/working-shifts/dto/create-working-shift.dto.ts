@@ -4,13 +4,13 @@ import {
   IsEnum,
   IsOptional,
   IsString,
-  IsBoolean
+  IsBoolean,
 } from 'class-validator';
 
 export enum ShiftType {
   MORNING = 'morning',
   NIGHT = 'night',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 export class CreateWorkingShiftDto {

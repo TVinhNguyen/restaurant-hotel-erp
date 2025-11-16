@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsNumber, IsUUID, Min, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsUUID,
+  Min,
+  IsArray,
+} from 'class-validator';
 
 export class CreateRoomTypeDto {
   @IsUUID()

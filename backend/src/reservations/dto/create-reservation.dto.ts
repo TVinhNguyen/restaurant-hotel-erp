@@ -1,4 +1,12 @@
-import { IsString, IsNumber, IsUUID, IsDateString, IsIn, IsOptional, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsUUID,
+  IsDateString,
+  IsIn,
+  IsOptional,
+  Min,
+} from 'class-validator';
 
 export class CreateReservationDto {
   @IsUUID()
@@ -100,6 +108,19 @@ export class CreateReservationDto {
   paymentStatus?: 'unpaid' | 'partial' | 'paid' | 'refunded';
 
   @IsOptional()
-  @IsIn(['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show'])
-  status?: 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
+  @IsIn([
+    'pending',
+    'confirmed',
+    'checked_in',
+    'checked_out',
+    'cancelled',
+    'no_show',
+  ])
+  status?:
+    | 'pending'
+    | 'confirmed'
+    | 'checked_in'
+    | 'checked_out'
+    | 'cancelled'
+    | 'no_show';
 }

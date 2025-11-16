@@ -47,10 +47,16 @@ export class Restaurant {
   @JoinColumn({ name: 'property_id' })
   property: Property;
 
-  @OneToMany(() => RestaurantArea, (restaurantArea) => restaurantArea.restaurant)
+  @OneToMany(
+    () => RestaurantArea,
+    (restaurantArea) => restaurantArea.restaurant,
+  )
   areas: RestaurantArea[];
 
-  @OneToMany(() => RestaurantTable, (restaurantTable) => restaurantTable.restaurant)
+  @OneToMany(
+    () => RestaurantTable,
+    (restaurantTable) => restaurantTable.restaurant,
+  )
   tables: RestaurantTable[];
 
   @OneToMany(() => TableBooking, (booking) => booking.restaurant)

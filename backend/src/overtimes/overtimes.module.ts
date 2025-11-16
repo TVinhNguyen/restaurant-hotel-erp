@@ -8,6 +8,6 @@ import { Overtime } from '../entities/hr/overtime.entity';
   imports: [TypeOrmModule.forFeature([Overtime])],
   controllers: [OvertimesController],
   providers: [OvertimesService],
-  exports: [OvertimesService]
+  exports: [OvertimesService],
 })
 export class OvertimesModule {}

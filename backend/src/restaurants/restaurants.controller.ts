@@ -18,9 +18,15 @@ import { AuthGuard } from '@nestjs/passport';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
-import { CreateRestaurantAreaDto, UpdateRestaurantAreaDto } from './dto/create-restaurant-area.dto';
+import {
+  CreateRestaurantAreaDto,
+  UpdateRestaurantAreaDto,
+} from './dto/create-restaurant-area.dto';
 import { CreateTableDto, UpdateTableDto } from './dto/create-table.dto';
-import { CreateTableBookingDto, UpdateTableBookingDto } from './dto/create-table-booking.dto';
+import {
+  CreateTableBookingDto,
+  UpdateTableBookingDto,
+} from './dto/create-table-booking.dto';
 
 @Controller('restaurants')
 @UseGuards(AuthGuard('jwt'))
@@ -40,7 +46,12 @@ export class RestaurantsController {
     @Query('propertyId') propertyId?: string,
     @Query('cuisineType') cuisineType?: string,
   ) {
-    return this.restaurantsService.findAllRestaurants(page, limit, propertyId, cuisineType);
+    return this.restaurantsService.findAllRestaurants(
+      page,
+      limit,
+      propertyId,
+      cuisineType,
+    );
   }
 
   @Get(':id')
@@ -70,7 +81,9 @@ export class RestaurantsController {
   }
 
   @Get(':restaurantId/areas')
-  async findAreasByRestaurant(@Param('restaurantId', ParseUUIDPipe) restaurantId: string) {
+  async findAreasByRestaurant(
+    @Param('restaurantId', ParseUUIDPipe) restaurantId: string,
+  ) {
     return this.restaurantsService.findAreasByRestaurant(restaurantId);
   }
 
@@ -107,7 +120,12 @@ export class RestaurantsController {
     @Query('time') time: string,
     @Query('partySize', ParseIntPipe) partySize: number,
   ) {
-    return this.restaurantsService.getAvailableTables(restaurantId, date, time, partySize);
+    return this.restaurantsService.getAvailableTables(
+      restaurantId,
+      date,
+      time,
+      partySize,
+    );
   }
 
   @Get('tables')
@@ -118,7 +136,13 @@ export class RestaurantsController {
     @Query('status') status?: string,
     @Query('areaId') areaId?: string,
   ) {
-    return this.restaurantsService.findAllTables(page, limit, restaurantId, status, areaId);
+    return this.restaurantsService.findAllTables(
+      page,
+      limit,
+      restaurantId,
+      status,
+      areaId,
+    );
   }
 
   @Get('tables/:id')
@@ -154,7 +178,13 @@ export class RestaurantsController {
     @Query('status') status?: string,
     @Query('date') date?: string,
   ) {
-    return this.restaurantsService.findAllBookings(page, limit, restaurantId, status, date);
+    return this.restaurantsService.findAllBookings(
+      page,
+      limit,
+      restaurantId,
+      status,
+      date,
+    );
   }
 
   @Get('bookings/:id')
