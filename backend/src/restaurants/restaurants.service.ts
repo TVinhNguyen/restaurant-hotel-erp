@@ -435,6 +435,11 @@ export class RestaurantsService {
     return this.findBookingById(id);
   }
 
+  // Alias for seatGuests to match controller method name
+  async seatBooking(id: string, tableId: string): Promise<TableBooking> {
+    return this.seatGuests(id, tableId);
+  }
+
   async completeBooking(id: string): Promise<TableBooking> {
     const booking = await this.findBookingById(id);
 

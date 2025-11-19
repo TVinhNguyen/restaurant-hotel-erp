@@ -67,8 +67,7 @@ export class ReservationsService {
           'reservation.createdAt',
           // Add minimal guest info for list display
           'guest.id',
-          'guest.firstName',
-          'guest.lastName',
+          'guest.name',
           'guest.email',
         ])
         .leftJoin('reservation.guest', 'guest');
