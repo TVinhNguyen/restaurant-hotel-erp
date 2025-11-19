@@ -26,15 +26,14 @@ async function bootstrap() {
     }),
   );
 
-  // Enable CORS with environment-based origins
+  // Enable CORS - Allow all origins for public API access
+  const corsOrigins = configService.get('CORS_ORIGINS');
   app.enableCors({
-    origin: [
-      configService.get('CORS_ORIGIN_FRONTEND') || 'http://localhost:3000',
-      configService.get('CORS_ORIGIN_ADMIN') || 'http://localhost:3001',
-    ],
+    origin: corsOrigins ? corsOrigins.split(',') : true, // true = allow all origins
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
+    maxAge: 3600, // Cache preflight requests for 1 hour
   });
 
   // Global prefix for API

@@ -70,17 +70,18 @@ services:
     container_name: hotel-pms-backend
     environment:
       NODE_ENV: production
+      PORT: 4000
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USERNAME: ${DB_USERNAME:-hotel_user_v2}
-      DB_PASSWORD: ${DB_PASSWORD:-123456}
-      DB_NAME: ${DB_NAME:-hotel_pms_v2}
+      DB_USERNAME: ${DB_USERNAME:-app}
+      DB_PASSWORD: ${DB_PASSWORD:-app}
+      DB_NAME: ${DB_NAME:-erp}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-1d}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      CORS_ORIGIN_FRONTEND: ${FRONTEND_URL:-http://localhost:3001}
-      CORS_ORIGIN_ADMIN: ${ADMIN_URL:-http://localhost:3000}
+      # CORS - Empty = allow all origins (true), or specify comma-separated list
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
     ports:
       - "4000:4000"
     depends_on:
