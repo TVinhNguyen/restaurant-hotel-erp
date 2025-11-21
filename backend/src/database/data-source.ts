@@ -23,9 +23,9 @@ export const AppDataSource = new DataSource({
   type: 'postgres',
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432', 10),
-  username: process.env.DB_USERNAME || 'hotel_user_v2',
-  password: process.env.DB_PASSWORD || '123456',
-  database: process.env.DB_NAME || 'hotel_pms_v2',
+  username: process.env.DB_USERNAME || 'app',
+  password: process.env.DB_PASSWORD || 'app',
+  database: process.env.DB_NAME || 'erp',
 
   // Entity paths
   entities: ['src/**/*.entity{.ts,.js}'],
@@ -42,7 +42,7 @@ export const AppDataSource = new DataSource({
   ssl:
     process.env.DB_SSL === 'true'
       ? {
-        rejectUnauthorized: false,
-      }
-      : false,
+          rejectUnauthorized: false
+        }
+      : false
 });
