@@ -34,11 +34,11 @@ export class RestaurantTable {
   @Column({ length: 20, default: 'available' })
   status: 'available' | 'occupied' | 'reserved';
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  // @CreateDateColumn({ name: 'created_at' })
+  // createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  // @UpdateDateColumn({ name: 'updated_at' })
+  // updatedAt: Date;
 
   // Relations
   @ManyToOne(() => Restaurant, (restaurant) => restaurant.tables)

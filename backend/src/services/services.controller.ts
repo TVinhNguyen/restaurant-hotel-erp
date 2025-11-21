@@ -26,11 +26,9 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 
 @ApiTags('Services')
-@ApiBearerAuth('JWT-auth')
 @Controller('services')
-@UseGuards(AuthGuard('jwt'))
 export class ServicesController {
-  constructor(private readonly servicesService: ServicesService) {}
+  constructor(private readonly servicesService: ServicesService) { }
 
   @Get()
   @ApiOperation({ summary: 'Get all services' })

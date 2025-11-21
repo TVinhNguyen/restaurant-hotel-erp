@@ -22,14 +22,14 @@ export class RestaurantArea {
   @Column({ length: 100 })
   name: string;
 
-  @Column({ type: 'text', nullable: true })
-  description: string;
+  // @Column({ type: 'text', nullable: true })
+  // description: string;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  // @CreateDateColumn({ name: 'created_at' })
+  // createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  // @UpdateDateColumn({ name: 'updated_at' })
+  // updatedAt: Date;
 
   // Relations
   @ManyToOne(() => Restaurant, (restaurant) => restaurant.areas)

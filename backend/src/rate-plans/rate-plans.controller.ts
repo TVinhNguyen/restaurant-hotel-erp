@@ -26,11 +26,9 @@ import { CreateRatePlanDto } from './dto/create-rate-plan.dto';
 import { UpdateRatePlanDto } from './dto/update-rate-plan.dto';
 
 @ApiTags('Rate Plans')
-@ApiBearerAuth('JWT-auth')
 @Controller('rate-plans')
-@UseGuards(AuthGuard('jwt'))
 export class RatePlansController {
-  constructor(private readonly ratePlansService: RatePlansService) {}
+  constructor(private readonly ratePlansService: RatePlansService) { }
 
   @Get()
   @ApiOperation({ summary: 'Get all rate plans with pagination and filters' })

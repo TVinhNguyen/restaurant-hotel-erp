@@ -26,11 +26,9 @@ import { CreateTaxRuleDto } from './dto/create-tax-rule.dto';
 import { UpdateTaxRuleDto } from './dto/update-tax-rule.dto';
 
 @ApiTags('Tax Rules')
-@ApiBearerAuth('JWT-auth')
 @Controller('tax-rules')
-@UseGuards(AuthGuard('jwt'))
 export class TaxRulesController {
-  constructor(private readonly taxRulesService: TaxRulesService) {}
+  constructor(private readonly taxRulesService: TaxRulesService) { }
 
   @Get()
   @ApiOperation({ summary: 'Get all tax rules' })

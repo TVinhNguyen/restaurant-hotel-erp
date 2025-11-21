@@ -28,8 +28,6 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 
 @ApiTags('Rooms')
 @Controller('rooms')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth('JWT-auth')
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) { }
 

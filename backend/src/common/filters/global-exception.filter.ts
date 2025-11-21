@@ -35,10 +35,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // Log error for debugging
-    this.logger.error(
-      `${request.method} ${request.url}`,
-      exception instanceof Error ? exception.stack : exception,
-    );
+    if (status === 401 || status === 500) {
+      this.logger.error(
+        `${request.method} ${request.url} - Status: ${status} - Message: ${message}`,
+        exception instanceof Error ? exception.stack : exception,
+      );
+    } else {
+      this.logger.warn(
+        `${request.method} ${request.url} - Status: ${status} - Message: ${message}`,
+      );
+    }
 
     // Send clean error response
     response.status(status).json({
