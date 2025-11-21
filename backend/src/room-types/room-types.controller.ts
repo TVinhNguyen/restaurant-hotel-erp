@@ -24,8 +24,6 @@ import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 
 @ApiTags('Room Types')
 @Controller('room-types')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth('JWT-auth')
 export class RoomTypesController {
   constructor(private readonly roomTypesService: RoomTypesService) { }
 

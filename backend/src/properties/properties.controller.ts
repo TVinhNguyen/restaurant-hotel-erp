@@ -24,11 +24,9 @@ import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 
 @ApiTags('Properties')
-@ApiBearerAuth('JWT-auth')
 @Controller('properties')
-@UseGuards(AuthGuard('jwt'))
 export class PropertiesController {
-  constructor(private readonly propertiesService: PropertiesService) {}
+  constructor(private readonly propertiesService: PropertiesService) { }
 
   @Get()
   @ApiOperation({

@@ -26,11 +26,9 @@ import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 
 @ApiTags('Promotions')
-@ApiBearerAuth('JWT-auth')
 @Controller('promotions')
-@UseGuards(AuthGuard('jwt'))
 export class PromotionsController {
-  constructor(private readonly promotionsService: PromotionsService) {}
+  constructor(private readonly promotionsService: PromotionsService) { }
 
   @Get()
   @ApiOperation({ summary: 'Get all promotions' })

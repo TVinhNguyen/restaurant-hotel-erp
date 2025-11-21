@@ -38,11 +38,9 @@ import {
 } from './dto/create-table-booking.dto';
 
 @ApiTags('Restaurants')
-@ApiBearerAuth('JWT-auth')
 @Controller('restaurants')
-@UseGuards(AuthGuard('jwt'))
 export class RestaurantsController {
-  constructor(private readonly restaurantsService: RestaurantsService) {}
+  constructor(private readonly restaurantsService: RestaurantsService) { }
 
   // Restaurant Management Endpoints
   @Post()
