@@ -8,7 +8,7 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WorkingShiftsService } from './working-shifts.service';
@@ -32,7 +32,7 @@ export class WorkingShiftsController {
     @Query('employeeId') employeeId?: string,
     @Query('propertyId') propertyId?: string,
     @Query('date') date?: string,
-    @Query('shiftType') shiftType?: string
+    @Query('shiftType') shiftType?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -43,7 +43,7 @@ export class WorkingShiftsController {
       employeeId,
       propertyId,
       date,
-      shiftType
+      shiftType,
     );
   }
 
@@ -51,7 +51,7 @@ export class WorkingShiftsController {
   async findByEmployee(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -59,7 +59,7 @@ export class WorkingShiftsController {
     return this.workingShiftsService.findByEmployee(
       employeeId,
       pageNum,
-      limitNum
+      limitNum,
     );
   }
 
@@ -67,7 +67,7 @@ export class WorkingShiftsController {
   async findByProperty(
     @Param('propertyId', ParseUUIDPipe) propertyId: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -75,7 +75,7 @@ export class WorkingShiftsController {
     return this.workingShiftsService.findByProperty(
       propertyId,
       pageNum,
-      limitNum
+      limitNum,
     );
   }
 
@@ -84,7 +84,7 @@ export class WorkingShiftsController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -93,7 +93,7 @@ export class WorkingShiftsController {
       startDate,
       endDate,
       pageNum,
-      limitNum
+      limitNum,
     );
   }
 
@@ -105,7 +105,7 @@ export class WorkingShiftsController {
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateWorkingShiftDto: UpdateWorkingShiftDto
+    @Body() updateWorkingShiftDto: UpdateWorkingShiftDto,
   ) {
     return this.workingShiftsService.update(id, updateWorkingShiftDto);
   }

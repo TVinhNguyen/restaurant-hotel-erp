@@ -20,12 +20,15 @@ export class PropertyServicesService {
     const { page = 1, limit = 10, propertyId } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.propertyServiceRepository.createQueryBuilder('propertyService')
+    const queryBuilder = this.propertyServiceRepository
+      .createQueryBuilder('propertyService')
       .leftJoinAndSelect('propertyService.property', 'property')
       .leftJoinAndSelect('propertyService.service', 'service');
 
     if (propertyId) {
-      queryBuilder.where('propertyService.propertyId = :propertyId', { propertyId });
+      queryBuilder.where('propertyService.propertyId = :propertyId', {
+        propertyId,
+      });
     }
 
     const [data, total] = await queryBuilder
@@ -57,13 +60,20 @@ export class PropertyServicesService {
     return propertyService;
   }
 
-  async createPropertyService(createPropertyServiceDto: CreatePropertyServiceDto): Promise<PropertyService> {
-    const propertyService = this.propertyServiceRepository.create(createPropertyServiceDto);
+  async createPropertyService(
+    createPropertyServiceDto: CreatePropertyServiceDto,
+  ): Promise<PropertyService> {
+    const propertyService = this.propertyServiceRepository.create(
+      createPropertyServiceDto,
+    );
 
     return await this.propertyServiceRepository.save(propertyService);
   }
 
-  async updatePropertyService(id: string, updatePropertyServiceDto: UpdatePropertyServiceDto): Promise<PropertyService> {
+  async updatePropertyService(
+    id: string,
+    updatePropertyServiceDto: UpdatePropertyServiceDto,
+  ): Promise<PropertyService> {
     const propertyService = await this.findOnePropertyService(id);
     Object.assign(propertyService, updatePropertyServiceDto);
 

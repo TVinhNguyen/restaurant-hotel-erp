@@ -20,10 +20,18 @@ export class RoomsService {
     status?: string;
     floor?: string;
   }) {
-    const { page = 1, limit = 10, propertyId, roomTypeId, status, floor } = query;
+    const {
+      page = 1,
+      limit = 10,
+      propertyId,
+      roomTypeId,
+      status,
+      floor,
+    } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.roomRepository.createQueryBuilder('room')
+    const queryBuilder = this.roomRepository
+      .createQueryBuilder('room')
       .leftJoinAndSelect('room.property', 'property')
       .leftJoinAndSelect('room.roomType', 'roomType');
 
@@ -69,7 +77,8 @@ export class RoomsService {
     const { page = 1, limit = 10, propertyId, checkIn, checkOut } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.roomRepository.createQueryBuilder('room')
+    const queryBuilder = this.roomRepository
+      .createQueryBuilder('room')
       .leftJoinAndSelect('room.property', 'property')
       .leftJoinAndSelect('room.roomType', 'roomType')
       .where('room.operationalStatus = :status', { status: 'available' });
@@ -80,7 +89,8 @@ export class RoomsService {
 
     // Check for conflicting reservations if dates provided
     if (checkIn && checkOut) {
-      queryBuilder.andWhere(`
+      queryBuilder.andWhere(
+        `
         room.id NOT IN (
           SELECT DISTINCT r.assignedRoomId 
           FROM reservation.reservations r 
@@ -92,7 +102,9 @@ export class RoomsService {
             (r.checkInDate >= :checkIn AND r.checkOutDate <= :checkOut)
           )
         )
-      `, { checkIn, checkOut });
+      `,
+        { checkIn, checkOut },
+      );
     }
 
     const [data, total] = await queryBuilder
@@ -131,21 +143,24 @@ export class RoomsService {
 
   async update(id: string, updateRoomDto: UpdateRoomDto): Promise<Room> {
     const room = await this.findOne(id);
-    
+
     Object.assign(room, updateRoomDto);
-    
+
     return await this.roomRepository.save(room);
   }
 
-  async updateStatus(id: string, statusData: {
-    operationalStatus?: 'available' | 'out_of_service';
-    housekeepingStatus?: 'clean' | 'dirty' | 'inspected';
-    housekeeperNotes?: string;
-  }): Promise<Room> {
+  async updateStatus(
+    id: string,
+    statusData: {
+      operationalStatus?: 'available' | 'out_of_service';
+      housekeepingStatus?: 'clean' | 'dirty' | 'inspected';
+      housekeeperNotes?: string;
+    },
+  ): Promise<Room> {
     const room = await this.findOne(id);
-    
+
     Object.assign(room, statusData);
-    
+
     return await this.roomRepository.save(room);
   }
 

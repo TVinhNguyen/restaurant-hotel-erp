@@ -1,4 +1,10 @@
-import { IsUUID, IsNumber, IsString, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsUUID,
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 
 export enum PayrollStatus {
   PENDING = 'pending',

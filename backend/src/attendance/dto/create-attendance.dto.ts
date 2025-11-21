@@ -1,4 +1,10 @@
-import { IsUUID, IsOptional, IsDateString, IsString, IsIn } from 'class-validator';
+import {
+  IsUUID,
+  IsOptional,
+  IsDateString,
+  IsString,
+  IsIn,
+} from 'class-validator';
 
 export enum AttendanceStatus {
   PRESENT = 'present',

@@ -8,14 +8,7 @@ import { Overtime } from '../entities/hr/overtime.entity';
 import { Deduction } from '../entities/hr/deduction.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Payroll,
-      Employee,
-      Overtime,
-      Deduction,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([Payroll, Employee, Overtime, Deduction])],
   controllers: [PayrollController],
   providers: [PayrollService],
   exports: [PayrollService],

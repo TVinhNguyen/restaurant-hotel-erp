@@ -12,27 +12,35 @@ import { Photo } from './photo.entity';
 import { Room } from './room.entity';
 import { RatePlan } from '../reservation/rate-plan.entity';
 import { Reservation } from '../reservation/reservation.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Entity({ schema: 'inventory', name: 'room_types' })
 export class RoomType {
+  @ApiProperty({ description: 'Unique identifier for the room type' })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @ApiProperty({ description: 'ID of the property this room type belongs to' })
   @Column({ name: 'property_id', type: 'uuid' })
   propertyId: string;
 
+  @ApiProperty({ description: 'Name of the room type' })
   @Column({ length: 100 })
   name: string;
 
+  @ApiProperty({ description: 'Description of the room type', required: false })
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  @ApiProperty({ description: 'Maximum number of adults', required: false })
   @Column({ name: 'max_adults', type: 'int', nullable: true })
   maxAdults: number;
 
+  @ApiProperty({ description: 'Maximum number of children', required: false })
   @Column({ name: 'max_children', type: 'int', nullable: true })
   maxChildren: number;
 
+  @ApiProperty({ description: 'Base price for the room type', required: false })
   @Column({
     name: 'base_price',
     type: 'decimal',
@@ -42,6 +50,7 @@ export class RoomType {
   })
   basePrice: number;
 
+  @ApiProperty({ description: 'Type of bed', required: false })
   @Column({ name: 'bed_type', length: 50, nullable: true })
   bedType: string;
 

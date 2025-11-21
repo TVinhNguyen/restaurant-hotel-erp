@@ -5,12 +5,12 @@ import {
   IsEnum,
   IsString,
   Min,
-  Max
+  Max,
 } from 'class-validator';
 
 export enum EvaluationPeriod {
   QUARTERLY = 'quarterly',
-  ANNUAL = 'annual'
+  ANNUAL = 'annual',
 }
 
 // may be changed later to satisfy the UI

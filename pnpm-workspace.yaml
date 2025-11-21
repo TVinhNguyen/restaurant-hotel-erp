@@ -1,0 +1,5 @@
+packages:
+  - 'admin'
+  - 'backend'
+  - 'frontend'
+  - 'packages/*'

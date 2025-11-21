@@ -1,4 +1,6 @@
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://34.151.224.213:4000/api'
+
 
 export interface LoginRequest {
   email: string

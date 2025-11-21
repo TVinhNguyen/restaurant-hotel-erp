@@ -6,9 +6,12 @@ const API_URL = 'http://localhost:4000/api'; // Sửa port
 const httpClient = axios.create();
 
 httpClient.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // SSR-safe: only access localStorage in browser
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });

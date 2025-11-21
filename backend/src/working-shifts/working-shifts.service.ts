@@ -1,7 +1,7 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -13,11 +13,11 @@ import { UpdateWorkingShiftDto } from './dto/update-working-shift.dto';
 export class WorkingShiftsService {
   constructor(
     @InjectRepository(WorkingShift)
-    private workingShiftRepository: Repository<WorkingShift>
+    private workingShiftRepository: Repository<WorkingShift>,
   ) {}
 
   async create(
-    createWorkingShiftDto: CreateWorkingShiftDto
+    createWorkingShiftDto: CreateWorkingShiftDto,
   ): Promise<WorkingShift> {
     const workingShiftData = {
       propertyId: createWorkingShiftDto.propertyId,
@@ -29,7 +29,7 @@ export class WorkingShiftsService {
       endTime: createWorkingShiftDto.endTime,
       shiftType: createWorkingShiftDto.shiftType,
       notes: createWorkingShiftDto.notes,
-      isReassigned: createWorkingShiftDto.isReassigned || false
+      isReassigned: createWorkingShiftDto.isReassigned || false,
     };
 
     const workingShift = this.workingShiftRepository.create(workingShiftData);
@@ -42,7 +42,7 @@ export class WorkingShiftsService {
     employeeId?: string,
     propertyId?: string,
     date?: string,
-    shiftType?: string
+    shiftType?: string,
   ) {
     const queryBuilder = this.workingShiftRepository
       .createQueryBuilder('workingShift')
@@ -52,13 +52,13 @@ export class WorkingShiftsService {
     // Apply filters
     if (employeeId) {
       queryBuilder.andWhere('workingShift.employeeId = :employeeId', {
-        employeeId
+        employeeId,
       });
     }
 
     if (propertyId) {
       queryBuilder.andWhere('workingShift.propertyId = :propertyId', {
-        propertyId
+        propertyId,
       });
     }
 
@@ -68,7 +68,7 @@ export class WorkingShiftsService {
 
     if (shiftType) {
       queryBuilder.andWhere('workingShift.shiftType = :shiftType', {
-        shiftType
+        shiftType,
       });
     }
 
@@ -87,14 +87,14 @@ export class WorkingShiftsService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
   async findOne(id: string): Promise<WorkingShift> {
     const workingShift = await this.workingShiftRepository.findOne({
       where: { id },
-      relations: ['employee', 'property', 'attendances', 'overtimes']
+      relations: ['employee', 'property', 'attendances', 'overtimes'],
     });
 
     if (!workingShift) {
@@ -106,7 +106,7 @@ export class WorkingShiftsService {
 
   async update(
     id: string,
-    updateWorkingShiftDto: UpdateWorkingShiftDto
+    updateWorkingShiftDto: UpdateWorkingShiftDto,
   ): Promise<WorkingShift> {
     const workingShift = await this.findOne(id);
 
@@ -114,7 +114,7 @@ export class WorkingShiftsService {
       ...updateWorkingShiftDto,
       workingDate: updateWorkingShiftDto.workingDate
         ? new Date(updateWorkingShiftDto.workingDate)
-        : workingShift.workingDate
+        : workingShift.workingDate,
     };
 
     Object.assign(workingShift, updateData);
@@ -130,7 +130,7 @@ export class WorkingShiftsService {
   async findByEmployee(
     employeeId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, employeeId);
   }
@@ -138,7 +138,7 @@ export class WorkingShiftsService {
   async findByProperty(
     propertyId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, undefined, propertyId);
   }
@@ -147,7 +147,7 @@ export class WorkingShiftsService {
     startDate: string,
     endDate: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     const queryBuilder = this.workingShiftRepository
       .createQueryBuilder('workingShift')
@@ -155,7 +155,7 @@ export class WorkingShiftsService {
       .leftJoinAndSelect('workingShift.property', 'property')
       .where('workingShift.workingDate BETWEEN :startDate AND :endDate', {
         startDate,
-        endDate
+        endDate,
       })
       .orderBy('workingShift.workingDate', 'DESC')
       .addOrderBy('workingShift.startTime', 'ASC');
@@ -170,7 +170,7 @@ export class WorkingShiftsService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 }

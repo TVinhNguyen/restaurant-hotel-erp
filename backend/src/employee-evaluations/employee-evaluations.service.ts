@@ -9,11 +9,11 @@ import { UpdateEmployeeEvaluationDto } from './dto/update-employee-evaluation.dt
 export class EmployeeEvaluationsService {
   constructor(
     @InjectRepository(EmployeeEvaluation)
-    private employeeEvaluationRepository: Repository<EmployeeEvaluation>
+    private employeeEvaluationRepository: Repository<EmployeeEvaluation>,
   ) {}
 
   async create(
-    createEmployeeEvaluationDto: CreateEmployeeEvaluationDto
+    createEmployeeEvaluationDto: CreateEmployeeEvaluationDto,
   ): Promise<EmployeeEvaluation> {
     const evaluationData = {
       employeeId: createEmployeeEvaluationDto.employeeId,
@@ -23,7 +23,7 @@ export class EmployeeEvaluationsService {
       goals: createEmployeeEvaluationDto.goals,
       strength: createEmployeeEvaluationDto.strength,
       improvement: createEmployeeEvaluationDto.improvement,
-      comments: createEmployeeEvaluationDto.comments
+      comments: createEmployeeEvaluationDto.comments,
     };
 
     const evaluation = this.employeeEvaluationRepository.create(evaluationData);
@@ -37,7 +37,7 @@ export class EmployeeEvaluationsService {
     evaluatedBy?: string,
     period?: string,
     rateMin?: number,
-    rateMax?: number
+    rateMax?: number,
   ) {
     const queryBuilder = this.employeeEvaluationRepository
       .createQueryBuilder('evaluation')
@@ -46,13 +46,13 @@ export class EmployeeEvaluationsService {
     // Apply filters
     if (employeeId) {
       queryBuilder.andWhere('evaluation.employeeId = :employeeId', {
-        employeeId
+        employeeId,
       });
     }
 
     if (evaluatedBy) {
       queryBuilder.andWhere('evaluation.evaluatedBy = :evaluatedBy', {
-        evaluatedBy
+        evaluatedBy,
       });
     }
 
@@ -82,19 +82,19 @@ export class EmployeeEvaluationsService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
   async findOne(id: string): Promise<EmployeeEvaluation> {
     const evaluation = await this.employeeEvaluationRepository.findOne({
       where: { id },
-      relations: ['employee']
+      relations: ['employee'],
     });
 
     if (!evaluation) {
       throw new NotFoundException(
-        `Employee evaluation with ID ${id} not found`
+        `Employee evaluation with ID ${id} not found`,
       );
     }
 
@@ -103,7 +103,7 @@ export class EmployeeEvaluationsService {
 
   async update(
     id: string,
-    updateEmployeeEvaluationDto: UpdateEmployeeEvaluationDto
+    updateEmployeeEvaluationDto: UpdateEmployeeEvaluationDto,
   ): Promise<EmployeeEvaluation> {
     const evaluation = await this.findOne(id);
 
@@ -120,7 +120,7 @@ export class EmployeeEvaluationsService {
   async findByEmployee(
     employeeId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, employeeId);
   }
@@ -128,7 +128,7 @@ export class EmployeeEvaluationsService {
   async findByEvaluator(
     evaluatedBy: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, undefined, evaluatedBy);
   }
@@ -141,7 +141,7 @@ export class EmployeeEvaluationsService {
     rateMin: number,
     rateMax: number,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(
       page,
@@ -150,7 +150,7 @@ export class EmployeeEvaluationsService {
       undefined,
       undefined,
       rateMin,
-      rateMax
+      rateMax,
     );
   }
 
@@ -166,7 +166,7 @@ export class EmployeeEvaluationsService {
     return {
       employeeId,
       averageRate: parseFloat(result.averageRate) || 0,
-      totalEvaluations: parseInt(result.totalEvaluations) || 0
+      totalEvaluations: parseInt(result.totalEvaluations) || 0,
     };
   }
 
@@ -186,7 +186,7 @@ export class EmployeeEvaluationsService {
       averageRate: parseFloat(result.averageRate) || 0,
       totalEvaluations: parseInt(result.totalEvaluations) || 0,
       minRate: parseInt(result.minRate) || 0,
-      maxRate: parseInt(result.maxRate) || 0
+      maxRate: parseInt(result.maxRate) || 0,
     };
   }
 }

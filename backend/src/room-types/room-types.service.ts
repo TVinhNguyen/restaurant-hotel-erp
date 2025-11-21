@@ -1,10 +1,17 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RoomType } from '../entities/inventory/room-type.entity';
 import { RoomTypeAmenity } from '../entities/inventory/room-type-amenity.entity';
 import { Amenity } from '../entities/inventory/amenity.entity';
-import { CreateRoomTypeDto, RoomTypeQueryDto } from './dto/create-room-type.dto';
+import {
+  CreateRoomTypeDto,
+  RoomTypeQueryDto,
+} from './dto/create-room-type.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 
 @Injectable()
@@ -22,7 +29,8 @@ export class RoomTypesService {
     const { page = 1, limit = 10, propertyId, search } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.roomTypeRepository.createQueryBuilder('roomType')
+    const queryBuilder = this.roomTypeRepository
+      .createQueryBuilder('roomType')
       .leftJoinAndSelect('roomType.property', 'property')
       .leftJoinAndSelect('roomType.roomTypeAmenities', 'roomTypeAmenities')
       .leftJoinAndSelect('roomTypeAmenities.amenity', 'amenity')
@@ -34,8 +42,10 @@ export class RoomTypesService {
     }
 
     if (search) {
-      queryBuilder.andWhere('(roomType.name ILIKE :search OR roomType.description ILIKE :search)', 
-        { search: `%${search}%` });
+      queryBuilder.andWhere(
+        '(roomType.name ILIKE :search OR roomType.description ILIKE :search)',
+        { search: `%${search}%` },
+      );
     }
 
     const [data, total] = await queryBuilder
@@ -57,7 +67,13 @@ export class RoomTypesService {
   async findOne(id: string): Promise<RoomType> {
     const roomType = await this.roomTypeRepository.findOne({
       where: { id },
-      relations: ['property', 'rooms', 'roomTypeAmenities', 'roomTypeAmenities.amenity', 'photos'],
+      relations: [
+        'property',
+        'rooms',
+        'roomTypeAmenities',
+        'roomTypeAmenities.amenity',
+        'photos',
+      ],
     });
 
     if (!roomType) {
@@ -69,7 +85,7 @@ export class RoomTypesService {
 
   async create(createRoomTypeDto: CreateRoomTypeDto): Promise<RoomType> {
     const { amenityIds, ...roomTypeData } = createRoomTypeDto;
-    
+
     const roomType = this.roomTypeRepository.create(roomTypeData);
     const savedRoomType = await this.roomTypeRepository.save(roomType);
 
@@ -81,11 +97,14 @@ export class RoomTypesService {
     return await this.findOne(savedRoomType.id);
   }
 
-  async update(id: string, updateRoomTypeDto: UpdateRoomTypeDto): Promise<RoomType> {
+  async update(
+    id: string,
+    updateRoomTypeDto: UpdateRoomTypeDto,
+  ): Promise<RoomType> {
     const roomType = await this.findOne(id);
-    
+
     Object.assign(roomType, updateRoomTypeDto);
-    
+
     return await this.roomTypeRepository.save(roomType);
   }
 
@@ -98,8 +117,10 @@ export class RoomTypesService {
   async addAmenity(roomTypeId: string, amenityId: string) {
     // Validate room type and amenity exist
     const roomType = await this.findOne(roomTypeId);
-    const amenity = await this.amenityRepository.findOne({ where: { id: amenityId } });
-    
+    const amenity = await this.amenityRepository.findOne({
+      where: { id: amenityId },
+    });
+
     if (!amenity) {
       throw new NotFoundException(`Amenity with ID ${amenityId} not found`);
     }
@@ -110,7 +131,9 @@ export class RoomTypesService {
     });
 
     if (existingAssociation) {
-      throw new ConflictException('Amenity is already associated with this room type');
+      throw new ConflictException(
+        'Amenity is already associated with this room type',
+      );
     }
 
     const roomTypeAmenity = this.roomTypeAmenityRepository.create({
@@ -158,10 +181,14 @@ export class RoomTypesService {
     const existingAssociations = await this.roomTypeAmenityRepository.find({
       where: { roomTypeId },
     });
-    const existingAmenityIds = existingAssociations.map(assoc => assoc.amenityId);
+    const existingAmenityIds = existingAssociations.map(
+      (assoc) => assoc.amenityId,
+    );
 
     // Filter out already associated amenities
-    const newAmenityIds = amenityIds.filter(id => !existingAmenityIds.includes(id));
+    const newAmenityIds = amenityIds.filter(
+      (id) => !existingAmenityIds.includes(id),
+    );
 
     if (newAmenityIds.length === 0) {
       return {
@@ -173,15 +200,15 @@ export class RoomTypesService {
     }
 
     // Create new associations
-    const newAssociations = newAmenityIds.map(amenityId => 
-      this.roomTypeAmenityRepository.create({ roomTypeId, amenityId })
+    const newAssociations = newAmenityIds.map((amenityId) =>
+      this.roomTypeAmenityRepository.create({ roomTypeId, amenityId }),
     );
 
     await this.roomTypeAmenityRepository.save(newAssociations);
 
     const addedAmenities = amenities
-      .filter(amenity => newAmenityIds.includes(amenity.id))
-      .map(amenity => ({
+      .filter((amenity) => newAmenityIds.includes(amenity.id))
+      .map((amenity) => ({
         amenityId: amenity.id,
         name: amenity.name,
       }));

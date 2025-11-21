@@ -9,7 +9,7 @@ import { UpdateOvertimeDto } from './dto/update-overtime.dto';
 export class OvertimesService {
   constructor(
     @InjectRepository(Overtime)
-    private overtimeRepository: Repository<Overtime>
+    private overtimeRepository: Repository<Overtime>,
   ) {}
 
   async create(createOvertimeDto: CreateOvertimeDto): Promise<Overtime> {
@@ -19,7 +19,7 @@ export class OvertimesService {
       numberOfHours: createOvertimeDto.numberOfHours,
       rate: createOvertimeDto.rate,
       amount: createOvertimeDto.amount,
-      approvedBy: createOvertimeDto.approvedBy
+      approvedBy: createOvertimeDto.approvedBy,
     };
 
     const overtime = this.overtimeRepository.create(overtimeData);
@@ -31,7 +31,7 @@ export class OvertimesService {
     limit: number = 10,
     employeeId?: string,
     workingShiftId?: string,
-    approvedBy?: string
+    approvedBy?: string,
   ) {
     const queryBuilder = this.overtimeRepository
       .createQueryBuilder('overtime')
@@ -41,19 +41,19 @@ export class OvertimesService {
     // Apply filters
     if (employeeId) {
       queryBuilder.andWhere('overtime.employeeId = :employeeId', {
-        employeeId
+        employeeId,
       });
     }
 
     if (workingShiftId) {
       queryBuilder.andWhere('overtime.workingShiftId = :workingShiftId', {
-        workingShiftId
+        workingShiftId,
       });
     }
 
     if (approvedBy) {
       queryBuilder.andWhere('overtime.approvedBy = :approvedBy', {
-        approvedBy
+        approvedBy,
       });
     }
 
@@ -71,14 +71,14 @@ export class OvertimesService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
   async findOne(id: string): Promise<Overtime> {
     const overtime = await this.overtimeRepository.findOne({
       where: { id },
-      relations: ['employee', 'workingShift']
+      relations: ['employee', 'workingShift'],
     });
 
     if (!overtime) {
@@ -90,7 +90,7 @@ export class OvertimesService {
 
   async update(
     id: string,
-    updateOvertimeDto: UpdateOvertimeDto
+    updateOvertimeDto: UpdateOvertimeDto,
   ): Promise<Overtime> {
     const overtime = await this.findOne(id);
 
@@ -107,7 +107,7 @@ export class OvertimesService {
   async findByEmployee(
     employeeId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, employeeId);
   }
@@ -115,7 +115,7 @@ export class OvertimesService {
   async findByWorkingShift(
     workingShiftId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, undefined, workingShiftId);
   }
@@ -123,7 +123,7 @@ export class OvertimesService {
   async findByApprover(
     approvedBy: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, undefined, undefined, approvedBy);
   }
@@ -139,13 +139,13 @@ export class OvertimesService {
     return {
       employeeId,
       totalAmount: parseFloat(result.totalAmount) || 0,
-      totalHours: parseFloat(result.totalHours) || 0
+      totalHours: parseFloat(result.totalHours) || 0,
     };
   }
 
   async calculateOvertimeAmount(
     numberOfHours: number,
-    rate: number
+    rate: number,
   ): Promise<number> {
     return numberOfHours * rate;
   }

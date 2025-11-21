@@ -1,0 +1,22 @@
+{
+  "name": "@restaurant-hotel-erp/shared-types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types for Restaurant-Hotel ERP",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "typescript",
+    "types",
+    "shared"
+  ],
+  "author": "Restaurant-Hotel ERP Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

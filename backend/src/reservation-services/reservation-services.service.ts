@@ -21,17 +21,27 @@ export class ReservationServicesService {
     const { page = 1, limit = 10, reservationId, propertyServiceId } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.reservationServiceRepository.createQueryBuilder('reservationService')
+    const queryBuilder = this.reservationServiceRepository
+      .createQueryBuilder('reservationService')
       .leftJoinAndSelect('reservationService.reservation', 'reservation')
-      .leftJoinAndSelect('reservationService.propertyService', 'propertyService')
+      .leftJoinAndSelect(
+        'reservationService.propertyService',
+        'propertyService',
+      )
       .leftJoinAndSelect('propertyService.service', 'service');
 
     if (reservationId) {
-      queryBuilder.andWhere('reservationService.reservationId = :reservationId', { reservationId });
+      queryBuilder.andWhere(
+        'reservationService.reservationId = :reservationId',
+        { reservationId },
+      );
     }
 
     if (propertyServiceId) {
-      queryBuilder.andWhere('reservationService.propertyServiceId = :propertyServiceId', { propertyServiceId });
+      queryBuilder.andWhere(
+        'reservationService.propertyServiceId = :propertyServiceId',
+        { propertyServiceId },
+      );
     }
 
     const [data, total] = await queryBuilder
@@ -58,36 +68,47 @@ export class ReservationServicesService {
     });
 
     if (!reservationService) {
-      throw new NotFoundException(`Reservation service with ID ${id} not found`);
+      throw new NotFoundException(
+        `Reservation service with ID ${id} not found`,
+      );
     }
 
     return reservationService;
   }
 
-  async create(createReservationServiceDto: CreateReservationServiceDto): Promise<ReservationService> {
+  async create(
+    createReservationServiceDto: CreateReservationServiceDto,
+  ): Promise<ReservationService> {
     // Create a new object with proper type conversion
     const entityData = {
       reservationId: createReservationServiceDto.reservationId,
       propertyServiceId: createReservationServiceDto.propertyServiceId,
       quantity: createReservationServiceDto.quantity,
       totalPrice: createReservationServiceDto.totalPrice,
-      dateProvided: createReservationServiceDto.dateProvided ? 
-        new Date(createReservationServiceDto.dateProvided) : undefined,
+      dateProvided: createReservationServiceDto.dateProvided
+        ? new Date(createReservationServiceDto.dateProvided)
+        : undefined,
     };
 
-    const reservationService = this.reservationServiceRepository.create(entityData);
+    const reservationService =
+      this.reservationServiceRepository.create(entityData);
     return await this.reservationServiceRepository.save(reservationService);
   }
 
-  async update(id: string, updateReservationServiceDto: UpdateReservationServiceDto): Promise<ReservationService> {
+  async update(
+    id: string,
+    updateReservationServiceDto: UpdateReservationServiceDto,
+  ): Promise<ReservationService> {
     const reservationService = await this.findOne(id);
-    
+
     // Update fields individually to handle type conversion
     if (updateReservationServiceDto.reservationId !== undefined) {
-      reservationService.reservationId = updateReservationServiceDto.reservationId;
+      reservationService.reservationId =
+        updateReservationServiceDto.reservationId;
     }
     if (updateReservationServiceDto.propertyServiceId !== undefined) {
-      reservationService.propertyServiceId = updateReservationServiceDto.propertyServiceId;
+      reservationService.propertyServiceId =
+        updateReservationServiceDto.propertyServiceId;
     }
     if (updateReservationServiceDto.quantity !== undefined) {
       reservationService.quantity = updateReservationServiceDto.quantity;
@@ -96,9 +117,11 @@ export class ReservationServicesService {
       reservationService.totalPrice = updateReservationServiceDto.totalPrice;
     }
     if (updateReservationServiceDto.dateProvided !== undefined) {
-      reservationService.dateProvided = new Date(updateReservationServiceDto.dateProvided);
+      reservationService.dateProvided = new Date(
+        updateReservationServiceDto.dateProvided,
+      );
     }
-    
+
     return await this.reservationServiceRepository.save(reservationService);
   }
 
@@ -107,7 +130,9 @@ export class ReservationServicesService {
     await this.reservationServiceRepository.remove(reservationService);
   }
 
-  async findByReservation(reservationId: string): Promise<ReservationService[]> {
+  async findByReservation(
+    reservationId: string,
+  ): Promise<ReservationService[]> {
     return await this.reservationServiceRepository.find({
       where: { reservationId },
       relations: ['propertyService', 'propertyService.service'],
@@ -119,13 +144,19 @@ export class ReservationServicesService {
     const result = await this.reservationServiceRepository
       .createQueryBuilder('reservationService')
       .select('SUM(reservationService.totalPrice)', 'total')
-      .where('reservationService.reservationId = :reservationId', { reservationId })
+      .where('reservationService.reservationId = :reservationId', {
+        reservationId,
+      })
       .getRawOne();
 
     return parseFloat(result.total) || 0;
   }
 
-  async getServiceStatistics(propertyId?: string, startDate?: string, endDate?: string) {
+  async getServiceStatistics(
+    propertyId?: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
     const queryBuilder = this.reservationServiceRepository
       .createQueryBuilder('reservationService')
       .leftJoin('reservationService.propertyService', 'propertyService')
@@ -140,15 +171,21 @@ export class ReservationServicesService {
       .groupBy('service.id, service.name');
 
     if (propertyId) {
-      queryBuilder.andWhere('propertyService.propertyId = :propertyId', { propertyId });
+      queryBuilder.andWhere('propertyService.propertyId = :propertyId', {
+        propertyId,
+      });
     }
 
     if (startDate) {
-      queryBuilder.andWhere('reservationService.dateProvided >= :startDate', { startDate });
+      queryBuilder.andWhere('reservationService.dateProvided >= :startDate', {
+        startDate,
+      });
     }
 
     if (endDate) {
-      queryBuilder.andWhere('reservationService.dateProvided <= :endDate', { endDate });
+      queryBuilder.andWhere('reservationService.dateProvided <= :endDate', {
+        endDate,
+      });
     }
 
     return await queryBuilder.getRawMany();

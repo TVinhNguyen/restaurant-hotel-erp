@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsUUID, IsBoolean, IsOptional, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsUUID,
+  IsBoolean,
+  IsOptional,
+  Min,
+} from 'class-validator';
 
 export class CreateRatePlanDto {
   @IsUUID()

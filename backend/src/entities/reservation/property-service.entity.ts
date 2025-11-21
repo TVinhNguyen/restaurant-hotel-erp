@@ -24,7 +24,13 @@ export class PropertyService {
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   price: number;
 
-  @Column({ name: 'tax_rate', type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({
+    name: 'tax_rate',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    default: 0,
+  })
   taxRate: number;
 
   @Column({ length: 10 })
@@ -39,6 +45,9 @@ export class PropertyService {
   @JoinColumn({ name: 'service_id' })
   service: Service;
 
-  @OneToMany(() => ReservationService, (reservationService) => reservationService.propertyService)
+  @OneToMany(
+    () => ReservationService,
+    (reservationService) => reservationService.propertyService,
+  )
   reservationServices: ReservationService[];
 }

@@ -29,11 +29,17 @@ export class ReservationService {
   dateProvided: Date;
 
   // Relations
-  @ManyToOne(() => Reservation, (reservation) => reservation.reservationServices)
+  @ManyToOne(
+    () => Reservation,
+    (reservation) => reservation.reservationServices,
+  )
   @JoinColumn({ name: 'reservation_id' })
   reservation: Reservation;
 
-  @ManyToOne(() => PropertyService, (propertyService) => propertyService.reservationServices)
+  @ManyToOne(
+    () => PropertyService,
+    (propertyService) => propertyService.reservationServices,
+  )
   @JoinColumn({ name: 'property_service_id' })
   propertyService: PropertyService;
 }

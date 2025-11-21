@@ -6,7 +6,7 @@ import {
   OneToMany,
   JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 import { Property } from '../core/property.entity';
 import { Employee } from '../core/employee.entity';
@@ -49,17 +49,17 @@ export class WorkingShift {
   updatedAt: Date;
 
   // Relations
-  @ManyToOne(() => Property, property => property.workingShifts)
+  @ManyToOne(() => Property, (property) => property.workingShifts)
   @JoinColumn({ name: 'property_id' })
   property: Property;
 
-  @ManyToOne(() => Employee, employee => employee.workingShifts)
+  @ManyToOne(() => Employee, (employee) => employee.workingShifts)
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 
-  @OneToMany(() => Attendance, attendance => attendance.workingShift)
+  @OneToMany(() => Attendance, (attendance) => attendance.workingShift)
   attendances: Attendance[];
 
-  @OneToMany(() => Overtime, overtime => overtime.workingShift)
+  @OneToMany(() => Overtime, (overtime) => overtime.workingShift)
   overtimes: Overtime[];
 }

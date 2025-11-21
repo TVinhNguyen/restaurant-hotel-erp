@@ -9,7 +9,7 @@ import { UpdateGuestDto } from './dto/update-guest.dto';
 export class GuestsService {
   constructor(
     @InjectRepository(Guest)
-    private guestRepository: Repository<Guest>
+    private guestRepository: Repository<Guest>,
   ) {}
 
   async findAll(query: { page?: number; limit?: number; search?: string }) {
@@ -21,7 +21,7 @@ export class GuestsService {
     if (search) {
       queryBuilder.where(
         '(guest.name ILIKE :search OR guest.email ILIKE :search OR guest.phone ILIKE :search)',
-        { search: `%${search}%` }
+        { search: `%${search}%` },
       );
     }
 
@@ -38,13 +38,13 @@ export class GuestsService {
       limit,
       totalPages: Math.ceil(total / limit),
       hasNext: page * limit < total,
-      hasPrev: page > 1
+      hasPrev: page > 1,
     };
   }
 
   async findOne(id: string): Promise<Guest> {
     const guest = await this.guestRepository.findOne({
-      where: { id }
+      where: { id },
       //relations: ['reservations', 'tableBookings']
     });
 

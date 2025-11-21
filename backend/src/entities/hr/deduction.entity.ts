@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 import { Employee } from '../core/employee.entity';
 import { Leave } from './leave.entity';
@@ -40,7 +40,7 @@ export class Deduction {
   updatedAt: Date;
 
   // Relations
-  @ManyToOne(() => Employee, employee => employee.deductions)
+  @ManyToOne(() => Employee, (employee) => employee.deductions)
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 

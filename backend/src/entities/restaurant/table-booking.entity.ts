@@ -36,7 +36,13 @@ export class TableBooking {
   pax: number;
 
   @Column({ length: 30, default: 'pending' })
-  status: 'pending' | 'confirmed' | 'seated' | 'completed' | 'no_show' | 'cancelled';
+  status:
+    | 'pending'
+    | 'confirmed'
+    | 'seated'
+    | 'completed'
+    | 'no_show'
+    | 'cancelled';
 
   @Column({ name: 'assigned_table_id', type: 'uuid', nullable: true })
   assignedTableId: string;
@@ -66,7 +72,9 @@ export class TableBooking {
   @JoinColumn({ name: 'reservation_id' })
   reservation: Reservation;
 
-  @ManyToOne(() => RestaurantTable, (table) => table.bookings, { nullable: true })
+  @ManyToOne(() => RestaurantTable, (table) => table.bookings, {
+    nullable: true,
+  })
   @JoinColumn({ name: 'assigned_table_id' })
   assignedTable: RestaurantTable;
 }

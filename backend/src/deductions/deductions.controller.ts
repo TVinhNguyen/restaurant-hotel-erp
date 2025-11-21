@@ -8,7 +8,7 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { DeductionsService } from './deductions.service';
@@ -32,7 +32,7 @@ export class DeductionsController {
     @Query('employeeId') employeeId?: string,
     @Query('type') type?: string,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -43,7 +43,7 @@ export class DeductionsController {
       employeeId,
       type,
       startDate,
-      endDate
+      endDate,
     );
   }
 
@@ -51,7 +51,7 @@ export class DeductionsController {
   async findByEmployee(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -63,7 +63,7 @@ export class DeductionsController {
   async findByType(
     @Param('type') type: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -76,7 +76,7 @@ export class DeductionsController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -85,7 +85,7 @@ export class DeductionsController {
       startDate,
       endDate,
       pageNum,
-      limitNum
+      limitNum,
     );
   }
 
@@ -93,12 +93,12 @@ export class DeductionsController {
   async getTotalDeductionsByEmployee(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     return this.deductionsService.getTotalDeductionsByEmployee(
       employeeId,
       startDate,
-      endDate
+      endDate,
     );
   }
 
@@ -110,7 +110,7 @@ export class DeductionsController {
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateDeductionDto: UpdateDeductionDto
+    @Body() updateDeductionDto: UpdateDeductionDto,
   ) {
     return this.deductionsService.update(id, updateDeductionDto);
   }
