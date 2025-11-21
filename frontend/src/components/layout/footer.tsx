@@ -1,69 +1,60 @@
 import Link from "next/link"
+import { colors } from "@/lib/designTokens"
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-background">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+    <footer className="bg-white border-t mt-20" style={{ borderColor: colors.border }}>
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="font-semibold mb-4">Tripster</h3>
-            <p className="text-sm text-muted-foreground">
-              Your trusted partner for finding the perfect accommodations and dining experiences.
-            </p>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-4">Support</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/contact" className="text-muted-foreground hover:text-foreground">
-                  Help
-                </Link>
+            <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              Về LuxStay
+            </h4>
+            <ul className="space-y-2 text-sm" style={{ color: colors.textSecondary }}>
+              <li className="cursor-pointer hover:opacity-70">
+                <Link href="/about">Giới thiệu</Link>
               </li>
-              <li>
-                <Link href="/contact" className="text-muted-foreground hover:text-foreground">
-                  FAQ
-                </Link>
+              <li className="cursor-pointer hover:opacity-70">
+                <Link href="/contact">Liên hệ</Link>
               </li>
-              <li>
-                <Link href="/contact" className="text-muted-foreground hover:text-foreground">
-                  Customer service
-                </Link>
-              </li>
+              <li className="cursor-pointer hover:opacity-70">Tuyển dụng</li>
             </ul>
           </div>
           <div>
-            <h3 className="font-semibold mb-4">Company</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/about" className="text-muted-foreground hover:text-foreground">
-                  About us
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-muted-foreground hover:text-foreground">
-                  Contact us
-                </Link>
-              </li>
+            <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              Hỗ trợ
+            </h4>
+            <ul className="space-y-2 text-sm" style={{ color: colors.textSecondary }}>
+              <li className="cursor-pointer hover:opacity-70">Trung tâm hỗ trợ</li>
+              <li className="cursor-pointer hover:opacity-70">Chính sách hoàn hủy</li>
+              <li className="cursor-pointer hover:opacity-70">Điều khoản</li>
             </ul>
           </div>
           <div>
-            <h3 className="font-semibold mb-4">Legal</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/contact" className="text-muted-foreground hover:text-foreground">
-                  Terms & Conditions
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-muted-foreground hover:text-foreground">
-                  Privacy Policy
-                </Link>
-              </li>
+            <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              Đối tác
+            </h4>
+            <ul className="space-y-2 text-sm" style={{ color: colors.textSecondary }}>
+              <li className="cursor-pointer hover:opacity-70">Đăng ký khách sạn</li>
+              <li className="cursor-pointer hover:opacity-70">Chương trình affiliate</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              Theo dõi
+            </h4>
+            <ul className="space-y-2 text-sm" style={{ color: colors.textSecondary }}>
+              <li className="cursor-pointer hover:opacity-70">Facebook</li>
+              <li className="cursor-pointer hover:opacity-70">Instagram</li>
+              <li className="cursor-pointer hover:opacity-70">Twitter</li>
             </ul>
           </div>
         </div>
-        <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Tripster. All rights reserved.</p>
+        <div
+          className="border-t mt-8 pt-8 text-center text-sm"
+          style={{ borderColor: colors.border, color: colors.textSecondary }}
+        >
+          © 2025 LuxStay. Premium Booking Platform.
         </div>
       </div>
     </footer>

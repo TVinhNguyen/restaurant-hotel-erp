@@ -3,37 +3,40 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, User as UserIcon, CreditCard, Shield, Settings, Bell, LogOut, Edit, Calendar, MapPin, X, Loader2 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Calendar, MapPin, User as UserIcon, Heart, Settings, LogOut, X, Loader2, CheckCircle, XCircle, Clock, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { authService, type User } from "@/lib/auth"
 import { reservationsService, type Reservation } from "@/lib/services/reservations"
 import { guestsService } from "@/lib/services/guests"
+import { colors, shadows, borderRadius } from "@/lib/designTokens"
+import { showToast } from "@/lib/toast"
 
-type TabType = "personal" | "bookings"
+type TabType = "bookings" | "personal"
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<TabType>("personal")
+  const [activeTab, setActiveTab] = useState<TabType>("bookings")
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loadingReservations, setLoadingReservations] = useState(false)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [reservationToCancel, setReservationToCancel] = useState<string | null>(null)
   const router = useRouter()
-
-  const sidebarItems = [
-    { icon: UserIcon, label: "Personal details", tab: "personal" as TabType, id: "personal" },
-    { icon: Calendar, label: "My Bookings", tab: "bookings" as TabType, id: "bookings" },
-    { icon: CreditCard, label: "Payment information", tab: "personal" as TabType, id: "payment", disabled: true },
-    { icon: Shield, label: "Safety", tab: "personal" as TabType, id: "safety", disabled: true },
-    { icon: Settings, label: "Preferences", tab: "personal" as TabType, id: "preferences", disabled: true },
-    { icon: Bell, label: "Notifications", tab: "personal" as TabType, id: "notifications", disabled: true },
-  ]
 
   useEffect(() => {
     const loadUser = async () => {
@@ -82,20 +85,26 @@ export default function ProfilePage() {
     }
   }
 
-  const handleCancelBooking = async (reservationId: string) => {
-    if (!confirm("Are you sure you want to cancel this booking?")) {
-      return
-    }
+  const handleCancelBookingClick = (reservationId: string) => {
+    setReservationToCancel(reservationId)
+    setCancelDialogOpen(true)
+  }
 
-    setCancellingId(reservationId)
+  const handleCancelBooking = async () => {
+    if (!reservationToCancel) return
+
+    setCancellingId(reservationToCancel)
+    setCancelDialogOpen(false)
+    
     try {
-      await reservationsService.cancelReservation(reservationId)
-      // Reload reservations
+      await reservationsService.cancelReservation(reservationToCancel)
       await loadReservations()
+      showToast.success("Hủy đặt phòng thành công!")
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to cancel booking")
+      showToast.error(error instanceof Error ? error.message : "Hủy đặt phòng thất bại")
     } finally {
       setCancellingId(null)
+      setReservationToCancel(null)
     }
   }
 
@@ -117,38 +126,81 @@ export default function ProfilePage() {
     return name.substring(0, 2).toUpperCase()
   }
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status.toLowerCase()) {
       case "confirmed":
-        return "default"
+        return {
+          label: "Đã xác nhận",
+          color: colors.primary,
+          bgColor: colors.lightBlue,
+          icon: CheckCircle,
+        }
       case "pending":
-        return "secondary"
+        return {
+          label: "Đang chờ",
+          color: colors.accent,
+          bgColor: "#FFF5E6",
+          icon: Clock,
+        }
       case "cancelled":
-        return "destructive"
+        return {
+          label: "Đã hủy",
+          color: "#E53E3E",
+          bgColor: "#FFF5F5",
+          icon: XCircle,
+        }
       case "checked_in":
-        return "default"
+        return {
+          label: "Đã nhận phòng",
+          color: colors.success,
+          bgColor: "#F0FFF4",
+          icon: CheckCircle,
+        }
       case "checked_out":
-        return "outline"
+        return {
+          label: "Đã trả phòng",
+          color: colors.textSecondary,
+          bgColor: colors.background,
+          icon: CheckCircle,
+        }
       default:
-        return "secondary"
+        return {
+          label: status,
+          color: colors.textSecondary,
+          bgColor: colors.background,
+          icon: Clock,
+        }
     }
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
       year: "numeric",
       month: "long",
       day: "numeric",
     })
   }
 
+  const getImageUrl = (property?: { images?: string[] }) => {
+    if (property?.images && property.images.length > 0) {
+      return property.images[0]
+    }
+    const fallbacks = [
+      "/luxury-hotel-room-with-blue-accents-and-modern-des.jpg",
+      "/modern-hotel-room-with-city-view-london.jpg",
+      "/modern-green-hotel-building-exterior.jpg",
+      "/dark-modern-hotel-room-with-ambient-lighting.jpg",
+    ]
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)] || "/placeholder.svg"
+  }
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div style={{ backgroundColor: colors.background }} className="min-h-screen">
         <Header />
-        <div className="container mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: colors.primary }} />
           </div>
         </div>
         <Footer />
@@ -161,285 +213,417 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div style={{ backgroundColor: colors.background }} className="min-h-screen">
       <Header />
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center space-x-4 mb-6">
-          <Link href="/">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
-        </div>
-
-        <h2 className="text-2xl font-bold mb-8">Profile settings</h2>
-
+      <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardContent className="p-0">
-                <nav className="space-y-1">
-                  {sidebarItems.map((item, index) => {
-                    const isActive = activeTab === item.id && !item.disabled
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => !item.disabled && setActiveTab(item.id as TabType)}
-                        disabled={item.disabled}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors ${
-                          isActive
-                            ? "bg-primary text-primary-foreground"
-                            : item.disabled
-                            ? "text-muted-foreground cursor-not-allowed opacity-50"
-                            : "hover:bg-muted text-foreground"
-                        }`}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span className="text-sm">{item.label}</span>
-                      </button>
-                    )
-                  })}
-                  <Separator />
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-muted text-foreground transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span className="text-sm">Log out</span>
-                  </button>
-                </nav>
-              </CardContent>
-            </Card>
-          </div>
+          <aside>
+            <div
+              className="bg-white p-6"
+              style={{
+                borderRadius: borderRadius.card,
+                boxShadow: shadows.card,
+              }}
+            >
+              <div className="text-center mb-6 pb-6 border-b" style={{ borderColor: colors.border }}>
+                <div
+                  className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center"
+                  style={{ backgroundColor: colors.lightBlue }}
+                >
+                  <span className="text-2xl font-bold" style={{ color: colors.primary }}>
+                    {getInitials(user.name)}
+                  </span>
+                </div>
+                <h3 className="font-bold text-lg mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  {user.name || "User"}
+                </h3>
+                <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  {user.email}
+                </p>
+              </div>
+
+              <nav className="space-y-2">
+                <button
+                  onClick={() => setActiveTab("bookings")}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors cursor-pointer ${
+                    activeTab === "bookings" ? "font-semibold" : ""
+                  }`}
+                  style={{
+                    backgroundColor: activeTab === "bookings" ? colors.lightBlue : "transparent",
+                    color: activeTab === "bookings" ? colors.primary : colors.textSecondary,
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                  }}
+                >
+                  <Calendar className="w-5 h-5" />
+                  <span>Đặt phòng của tôi</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("personal")}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors cursor-pointer ${
+                    activeTab === "personal" ? "font-semibold" : ""
+                  }`}
+                  style={{
+                    backgroundColor: activeTab === "personal" ? colors.lightBlue : "transparent",
+                    color: activeTab === "personal" ? colors.primary : colors.textSecondary,
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                  }}
+                >
+                  <Settings className="w-5 h-5" />
+                  <span>Cài đặt</span>
+                </button>
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors hover:opacity-70 cursor-pointer"
+                  style={{
+                    color: colors.textSecondary,
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                  }}
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Đăng xuất</span>
+                </button>
+              </nav>
+            </div>
+          </aside>
 
           {/* Main Content */}
-          <div className="lg:col-span-2">
-            {activeTab === "personal" ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Personal details</CardTitle>
-                  <p className="text-sm text-muted-foreground">Edit your personal details</p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Profile Picture */}
-                  <div className="flex items-center space-x-4">
-                    <Avatar className="h-16 w-16">
-                      <AvatarImage src="/placeholder.svg" />
-                      <AvatarFallback className="text-lg bg-primary text-primary-foreground">
-                        {getInitials(user.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <Button variant="outline" size="sm">
-                      Change photo
-                    </Button>
-                  </div>
+          <div className="lg:col-span-3">
+            {activeTab === "bookings" ? (
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Đặt phòng của tôi
+                  </h2>
+                  <p style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Quản lý và theo dõi các đặt phòng của bạn
+                  </p>
+                </div>
 
-                  {/* Form Fields */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <label className="text-sm font-medium text-foreground">Full name</label>
-                        <p className="text-foreground">{user.name || "Not set"}</p>
-                      </div>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
+                {loadingReservations ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin" style={{ color: colors.primary }} />
+                  </div>
+                ) : reservations.length === 0 ? (
+                  <div
+                    className="bg-white p-12 text-center"
+                    style={{
+                      borderRadius: borderRadius.card,
+                      boxShadow: shadows.card,
+                    }}
+                  >
+                    <div
+                      className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center"
+                      style={{ backgroundColor: colors.lightBlue }}
+                    >
+                      <Calendar className="w-10 h-10" style={{ color: colors.primary }} />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Chưa có đặt phòng
+                    </h3>
+                    <p className="mb-6" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Hãy đặt phòng đầu tiên của bạn ngay hôm nay
+                    </p>
+                    <Link href="/properties">
+                      <Button
+                        className="px-6 py-3 text-white font-semibold rounded-xl hover:opacity-90 transition-all"
+                        style={{
+                          backgroundColor: colors.primary,
+                          borderRadius: borderRadius.button,
+                          fontFamily: 'system-ui, -apple-system, sans-serif',
+                        }}
+                      >
+                        Khám phá ngay
                       </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {reservations.map((reservation) => {
+                      const statusConfig = getStatusConfig(reservation.status)
+                      const StatusIcon = statusConfig.icon
+
+                      return (
+                        <div
+                          key={reservation.id}
+                          className="bg-white p-6 hover:shadow-lg transition-all"
+                          style={{
+                            borderRadius: borderRadius.card,
+                            boxShadow: shadows.card,
+                          }}
+                        >
+                          <div className="flex gap-6">
+                            <img
+                              src={getImageUrl(reservation.property)}
+                              alt={reservation.property?.name || "Property"}
+                              className="w-48 h-32 object-cover flex-shrink-0"
+                              style={{ borderRadius: borderRadius.image }}
+                            />
+
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between mb-3">
+                                <div>
+                                  <h3 className="text-xl font-bold mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    {reservation.property?.name || "Property"}
+                                  </h3>
+                                  {reservation.roomType && (
+                                    <p className="text-sm mb-2" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      {reservation.roomType.name}
+                                    </p>
+                                  )}
+                                  {reservation.confirmationCode && (
+                                    <p className="text-xs mb-2" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Mã xác nhận: {reservation.confirmationCode}
+                                    </p>
+                                  )}
+                                </div>
+                                <div
+                                  className="flex items-center gap-2 px-3 py-1 rounded-lg"
+                                  style={{
+                                    backgroundColor: statusConfig.bgColor,
+                                    color: statusConfig.color,
+                                  }}
+                                >
+                                  <StatusIcon className="w-4 h-4" />
+                                  <span className="text-sm font-medium">{statusConfig.label}</span>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                                  <div>
+                                    <p className="text-xs" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Nhận phòng
+                                    </p>
+                                    <p className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      {formatDate(reservation.checkIn)}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                                  <div>
+                                    <p className="text-xs" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Trả phòng
+                                    </p>
+                                    <p className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      {formatDate(reservation.checkOut)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {reservation.property?.address && (
+                                <div className="flex items-center gap-2 mb-4">
+                                  <MapPin className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                                  <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    {reservation.property.address}
+                                  </p>
+                                </div>
+                              )}
+
+                              <div
+                                className="flex items-center justify-between pt-4 border-t"
+                                style={{ borderColor: colors.border }}
+                              >
+                                <div>
+                                  <p className="text-xs mb-1" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    Tổng thanh toán
+                                  </p>
+                                  <p className="text-xl font-bold" style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    {typeof reservation.totalAmount === "number"
+                                      ? reservation.totalAmount.toLocaleString("vi-VN")
+                                      : typeof reservation.totalAmount === "string"
+                                      ? parseFloat(reservation.totalAmount).toLocaleString("vi-VN")
+                                      : "0"}
+                                    đ
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  {reservation.status !== "cancelled" &&
+                                    reservation.status !== "checked_out" && (
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => handleCancelBookingClick(reservation.id)}
+                                        disabled={cancellingId === reservation.id}
+                                        className="flex items-center gap-2"
+                                        style={{
+                                          fontFamily: 'system-ui, -apple-system, sans-serif',
+                                        }}
+                                      >
+                                        {cancellingId === reservation.id ? (
+                                          <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Đang hủy...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <X className="h-4 w-4" />
+                                            Hủy đặt phòng
+                                          </>
+                                        )}
+                                      </Button>
+                                    )}
+                                  {reservation.propertyId && (
+                                    <Link href={`/property/${reservation.propertyId}`}>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex items-center gap-2"
+                                        style={{
+                                          borderColor: colors.border,
+                                          color: colors.textPrimary,
+                                          fontFamily: 'system-ui, -apple-system, sans-serif',
+                                        }}
+                                      >
+                                        Xem chi tiết
+                                        <ChevronRight className="w-4 h-4" />
+                                      </Button>
+                                    </Link>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Cài đặt tài khoản
+                  </h2>
+                  <p style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Quản lý thông tin cá nhân và bảo mật
+                  </p>
+                </div>
+
+                <div
+                  className="bg-white p-6"
+                  style={{
+                    borderRadius: borderRadius.card,
+                    boxShadow: shadows.card,
+                  }}
+                >
+                  <h3 className="text-lg font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Thông tin cá nhân
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Họ và tên
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue={user.name || ""}
+                        className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2"
+                        style={{
+                          borderRadius: borderRadius.input,
+                          borderColor: colors.border,
+                          fontFamily: 'system-ui, -apple-system, sans-serif',
+                        }}
+                        readOnly
+                      />
                     </div>
 
-                    <Separator />
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <label className="text-sm font-medium text-foreground">Email</label>
-                        <p className="text-foreground">{user.email}</p>
-                      </div>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        defaultValue={user.email}
+                        className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2"
+                        style={{
+                          borderRadius: borderRadius.input,
+                          borderColor: colors.border,
+                          fontFamily: 'system-ui, -apple-system, sans-serif',
+                        }}
+                        readOnly
+                      />
                     </div>
 
                     {user.phone && (
-                      <>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium text-foreground">Phone</label>
-                            <p className="text-foreground">{user.phone}</p>
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </>
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          Số điện thoại
+                        </label>
+                        <input
+                          type="tel"
+                          defaultValue={user.phone}
+                          className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2"
+                          style={{
+                            borderRadius: borderRadius.input,
+                            borderColor: colors.border,
+                            fontFamily: 'system-ui, -apple-system, sans-serif',
+                          }}
+                          readOnly
+                        />
+                      </div>
                     )}
                   </div>
-
-                  <div className="pt-4">
-                    <Button>Save changes</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>My Bookings</CardTitle>
-                  <p className="text-sm text-muted-foreground">View and manage your reservations</p>
-                </CardHeader>
-                <CardContent>
-                  {loadingReservations ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : reservations.length === 0 ? (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground mb-4">No bookings found</p>
-                      <Link href="/properties">
-                        <Button>Browse Properties</Button>
-                      </Link>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {reservations.map((reservation) => (
-                        <Card key={reservation.id} className="overflow-hidden">
-                          <CardContent className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <h3 className="text-lg font-semibold">
-                                    {reservation.property?.name || "Property"}
-                                  </h3>
-                                  <Badge variant={getStatusBadgeVariant(reservation.status)}>
-                                    {reservation.status}
-                                  </Badge>
-                                </div>
-                                {reservation.confirmationCode && (
-                                  <p className="text-sm text-muted-foreground mb-2">
-                                    Confirmation: {reservation.confirmationCode}
-                                  </p>
-                                )}
-                                {reservation.roomType && (
-                                  <p className="text-sm text-muted-foreground mb-2">
-                                    {reservation.roomType.name}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold">
-                                  {reservation.currency || "$"}
-                                  {typeof reservation.totalAmount === "number"
-                                    ? reservation.totalAmount.toFixed(2)
-                                    : typeof reservation.totalAmount === "string"
-                                    ? parseFloat(reservation.totalAmount).toFixed(2)
-                                    : "0.00"}
-                                </p>
-                              </div>
-                            </div>
-
-                            <Separator className="my-4" />
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                              <div className="flex items-start space-x-2">
-                                <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                <div>
-                                  <p className="text-sm font-medium">Check-in</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {formatDate(reservation.checkIn)}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-start space-x-2">
-                                <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                <div>
-                                  <p className="text-sm font-medium">Check-out</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {formatDate(reservation.checkOut)}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {reservation.property?.address && (
-                              <div className="flex items-start space-x-2 mb-4">
-                                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                <p className="text-sm text-muted-foreground">
-                                  {reservation.property.address}
-                                </p>
-                              </div>
-                            )}
-
-                            <div className="flex items-center space-x-2 pt-4 border-t">
-                              {reservation.status !== "cancelled" &&
-                                reservation.status !== "checked_out" &&
-                                reservation.status !== "checked_in" && (
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => handleCancelBooking(reservation.id)}
-                                    disabled={cancellingId === reservation.id}
-                                  >
-                                    {cancellingId === reservation.id ? (
-                                      <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Cancelling...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <X className="h-4 w-4 mr-2" />
-                                        Cancel Booking
-                                      </>
-                                    )}
-                                  </Button>
-                                )}
-                              {reservation.propertyId && (
-                                <Link href={`/property/${reservation.propertyId}`} className="ml-auto">
-                                  <Button variant="outline" size="sm">
-                                    View Property
-                                  </Button>
-                                </Link>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="lg:col-span-1">
-            {/* Additional Profile Stats */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-foreground">Your Travel Stats</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Bookings made</span>
-                      <span className="text-sm font-medium">{reservations.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Countries visited</span>
-                      <span className="text-sm font-medium">-</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Member since</span>
-                      <span className="text-sm font-medium">-</span>
-                    </div>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <Footer />
+
+      {/* Cancel Booking Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ color: colors.textPrimary }}>
+              Xác nhận hủy đặt phòng
+            </AlertDialogTitle>
+            <AlertDialogDescription style={{ color: colors.textSecondary }}>
+              Bạn có chắc chắn muốn hủy đặt phòng này? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setCancelDialogOpen(false)
+                setReservationToCancel(null)
+              }}
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelBooking}
+              disabled={cancellingId !== null}
+              className="bg-red-600 hover:bg-red-700"
+              style={{
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}
+            >
+              {cancellingId ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Đang xử lý...
+                </>
+              ) : (
+                'Xác nhận hủy'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

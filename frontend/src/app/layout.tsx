@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const geistSans = Geist({
@@ -27,6 +28,20 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${geistSans.variable} ${geistMono.variable}`}>
         {children}
+        <Toaster 
+          position="top-right" 
+          theme="dark"
+          toastOptions={{
+            style: {
+              background: '#1F2937',
+              color: '#FFFFFF',
+              borderRadius: '8px',
+              border: 'none',
+            },
+            className: 'sonner-toast',
+          }}
+          closeButton
+        />
       </body>
     </html>
   )
