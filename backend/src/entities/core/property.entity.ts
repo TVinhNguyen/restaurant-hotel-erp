@@ -38,12 +38,6 @@ export class Property {
   @Column({ name: 'property_type', length: 50, nullable: true })
   propertyType: 'Hotel' | 'Resort' | 'Restaurant Chain';
 
-  @Column({ name: 'check_in_time', type: 'time', nullable: true })
-  checkInTime: string;
-
-  @Column({ name: 'check_out_time', type: 'time', nullable: true })
-  checkOutTime: string;
-
   // Relations
   @OneToMany(() => RoomType, (roomType) => roomType.property)
   roomTypes: RoomType[];

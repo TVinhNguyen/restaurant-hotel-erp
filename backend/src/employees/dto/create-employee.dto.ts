@@ -3,7 +3,7 @@ import {
   IsOptional,
   IsUUID,
   IsIn,
-  IsDateString
+  IsDateString,
 } from 'class-validator';
 
 export class CreateEmployeeDto {

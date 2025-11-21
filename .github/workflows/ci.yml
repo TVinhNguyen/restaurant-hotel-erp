@@ -1,5 +1,9 @@
-name: ci
-on: [push, pull_request]
+name: CI Pipeline
+on: 
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
 
 jobs:
   backend:
@@ -7,6 +11,29 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,10 +42,18 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      - run: npx prisma generate
       - run: npm run lint --if-present
       - run: npm run build --if-present
       - run: npm test -- --ci --watchAll=false
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: test_user
+          DB_PASSWORD: test_pass
+          DB_NAME: test_db
+          JWT_SECRET: test-secret-key-for-ci-pipeline-32chars
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
 
   frontend:
     runs-on: ubuntu-latest
@@ -35,3 +70,23 @@ jobs:
       - run: npm ci
       - run: npm run lint --if-present
       - run: npm run build --if-present
+
+  admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run build --if-present
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000/api
+          NEXTAUTH_SECRET: test-nextauth-secret-for-ci-pipeline
+          NEXTAUTH_URL: http://localhost:3000

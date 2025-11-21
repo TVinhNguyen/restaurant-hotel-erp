@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
@@ -25,9 +30,11 @@ export class AuthService {
       const existingUser = await this.userRepository.findOne({
         where: { email: email.toLowerCase() },
       });
-      
+
       if (existingUser) {
-        throw new ConflictException('An account with this email already exists');
+        throw new ConflictException(
+          'An account with this email already exists',
+        );
       }
 
       // Hash password with higher salt rounds for better security
@@ -64,10 +71,10 @@ export class AuthService {
     password: string,
   ): Promise<UserPayload | null> {
     try {
-      const user = await this.userRepository.findOne({ 
+      const user = await this.userRepository.findOne({
         where: { email: email.toLowerCase() },
       });
-      
+
       if (!user) {
         // Add delay to prevent timing attacks
         await bcrypt.hash('dummy-password', 12);
@@ -75,7 +82,7 @@ export class AuthService {
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-      
+
       if (!isPasswordValid) {
         this.logger.warn(`Failed login attempt for email: ${email}`);
         return null;
@@ -96,9 +103,9 @@ export class AuthService {
     try {
       const payload = { email: user.email, sub: user.id };
       const access_token = this.jwtService.sign(payload);
-      
+
       this.logger.log(`Token generated for user: ${user.email}`);
-      
+
       return {
         access_token,
         user: {
@@ -120,16 +127,19 @@ export class AuthService {
     try {
       const payload = { email: user.email, sub: user.id };
       const access_token = this.jwtService.sign(payload);
-      
+
       this.logger.log(`Token refreshed for user: ${user.email}`);
-      
+
       return {
         access_token,
         expires_in: '24h',
         token_type: 'Bearer',
       };
     } catch (error) {
-      this.logger.error(`Token refresh failed for user: ${user.email}`, error.stack);
+      this.logger.error(
+        `Token refresh failed for user: ${user.email}`,
+        error.stack,
+      );
       throw new UnauthorizedException('Token refresh failed');
     }
   }

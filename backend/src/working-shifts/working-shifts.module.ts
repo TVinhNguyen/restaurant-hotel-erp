@@ -8,6 +8,6 @@ import { WorkingShift } from '../entities/hr/working-shift.entity';
   imports: [TypeOrmModule.forFeature([WorkingShift])],
   controllers: [WorkingShiftsController],
   providers: [WorkingShiftsService],
-  exports: [WorkingShiftsService]
+  exports: [WorkingShiftsService],
 })
 export class WorkingShiftsModule {}

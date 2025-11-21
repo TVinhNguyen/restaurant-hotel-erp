@@ -9,7 +9,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   private readonly logger = new Logger(LocalStrategy.name);
 
   constructor(private authService: AuthService) {
-    super({ 
+    super({
       usernameField: 'email',
       passwordField: 'password',
     });
@@ -21,12 +21,12 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     }
 
     const user = await this.authService.validateUser(email, password);
-    
+
     if (!user) {
       this.logger.warn(`Failed login attempt for email: ${email}`);
       throw new UnauthorizedException('Invalid email or password');
     }
-    
+
     return user;
   }
 }

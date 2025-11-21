@@ -9,7 +9,7 @@ import { UpdateDeductionDto } from './dto/update-deduction.dto';
 export class DeductionsService {
   constructor(
     @InjectRepository(Deduction)
-    private deductionRepository: Repository<Deduction>
+    private deductionRepository: Repository<Deduction>,
   ) {}
 
   async create(createDeductionDto: CreateDeductionDto): Promise<Deduction> {
@@ -21,7 +21,7 @@ export class DeductionsService {
       date: createDeductionDto.date
         ? new Date(createDeductionDto.date)
         : undefined,
-      reasonDetails: createDeductionDto.reasonDetails
+      reasonDetails: createDeductionDto.reasonDetails,
     };
 
     const deduction = this.deductionRepository.create(deductionData);
@@ -34,7 +34,7 @@ export class DeductionsService {
     employeeId?: string,
     type?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ) {
     const queryBuilder = this.deductionRepository
       .createQueryBuilder('deduction')
@@ -44,7 +44,7 @@ export class DeductionsService {
     // Apply filters
     if (employeeId) {
       queryBuilder.andWhere('deduction.employeeId = :employeeId', {
-        employeeId
+        employeeId,
       });
     }
 
@@ -55,7 +55,7 @@ export class DeductionsService {
     if (startDate && endDate) {
       queryBuilder.andWhere('deduction.date BETWEEN :startDate AND :endDate', {
         startDate,
-        endDate
+        endDate,
       });
     }
 
@@ -74,14 +74,14 @@ export class DeductionsService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
   async findOne(id: string): Promise<Deduction> {
     const deduction = await this.deductionRepository.findOne({
       where: { id },
-      relations: ['employee', 'leave']
+      relations: ['employee', 'leave'],
     });
 
     if (!deduction) {
@@ -93,7 +93,7 @@ export class DeductionsService {
 
   async update(
     id: string,
-    updateDeductionDto: UpdateDeductionDto
+    updateDeductionDto: UpdateDeductionDto,
   ): Promise<Deduction> {
     const deduction = await this.findOne(id);
 
@@ -101,7 +101,7 @@ export class DeductionsService {
       ...updateDeductionDto,
       date: updateDeductionDto.date
         ? new Date(updateDeductionDto.date)
-        : deduction.date
+        : deduction.date,
     };
 
     Object.assign(deduction, updateData);
@@ -117,7 +117,7 @@ export class DeductionsService {
   async findByEmployee(
     employeeId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, employeeId);
   }
@@ -130,7 +130,7 @@ export class DeductionsService {
     startDate: string,
     endDate: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, undefined, undefined, startDate, endDate);
   }
@@ -138,7 +138,7 @@ export class DeductionsService {
   async getTotalDeductionsByEmployee(
     employeeId: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ) {
     const queryBuilder = this.deductionRepository
       .createQueryBuilder('deduction')
@@ -148,7 +148,7 @@ export class DeductionsService {
     if (startDate && endDate) {
       queryBuilder.andWhere('deduction.date BETWEEN :startDate AND :endDate', {
         startDate,
-        endDate
+        endDate,
       });
     }
 
@@ -156,7 +156,7 @@ export class DeductionsService {
     return {
       employeeId,
       totalDeductions: parseFloat(result.total) || 0,
-      period: startDate && endDate ? { startDate, endDate } : 'all-time'
+      period: startDate && endDate ? { startDate, endDate } : 'all-time',
     };
   }
 }

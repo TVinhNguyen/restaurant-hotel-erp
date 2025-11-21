@@ -11,12 +11,13 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { RoomsService } from './rooms.service';
-import { 
-  CreateRoomDto, 
-  UpdateRoomStatusDto, 
-  RoomQueryDto, 
+import {
+  CreateRoomDto,
+  UpdateRoomStatusDto,
+  RoomQueryDto,
   // AvailableRoomsQueryDto,
   // BulkUpdateRoomsStatusDto,
   // ScheduleMaintenanceDto,
@@ -25,12 +26,16 @@ import {
 } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 
+@ApiTags('Rooms')
 @Controller('rooms')
 @UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth('JWT-auth')
 export class RoomsController {
-  constructor(private readonly roomsService: RoomsService) {}
+  constructor(private readonly roomsService: RoomsService) { }
 
   @Get()
+  @ApiOperation({ summary: 'Get all rooms' })
+  @ApiResponse({ status: 200, description: 'Return all rooms.' })
   async findAll(@Query() query: RoomQueryDto) {
     return await this.roomsService.findAll(query);
   }
@@ -51,6 +56,9 @@ export class RoomsController {
   // }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a room by id' })
+  @ApiResponse({ status: 200, description: 'Return the room.' })
+  @ApiResponse({ status: 404, description: 'Room not found.' })
   async findOne(@Param('id') id: string) {
     return await this.roomsService.findOne(id);
   }
@@ -66,7 +74,7 @@ export class RoomsController {
   // ) {
   //   const pageNum = page ? parseInt(page, 10) : 1;
   //   const limitNum = limit ? parseInt(limit, 10) : 10;
-
+  //
   //   return await this.roomsService.getStatusHistory(id, {
   //     statusType,
   //     dateFrom,
@@ -77,6 +85,8 @@ export class RoomsController {
   // }
 
   @Post()
+  @ApiOperation({ summary: 'Create a new room' })
+  @ApiResponse({ status: 201, description: 'The room has been successfully created.' })
   async create(@Body() createRoomDto: CreateRoomDto) {
     return await this.roomsService.create(createRoomDto);
   }
@@ -95,14 +105,17 @@ export class RoomsController {
   // }
 
   @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateRoomDto: UpdateRoomDto,
-  ) {
+  @ApiOperation({ summary: 'Update a room' })
+  @ApiResponse({ status: 200, description: 'The room has been successfully updated.' })
+  @ApiResponse({ status: 404, description: 'Room not found.' })
+  async update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
     return await this.roomsService.update(id, updateRoomDto);
   }
 
   @Put(':id/status')
+  @ApiOperation({ summary: 'Update room status' })
+  @ApiResponse({ status: 200, description: 'The room status has been successfully updated.' })
+  @ApiResponse({ status: 404, description: 'Room not found.' })
   async updateStatus(
     @Param('id') id: string,
     @Body() updateStatusDto: UpdateRoomStatusDto,
@@ -112,6 +125,9 @@ export class RoomsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a room' })
+  @ApiResponse({ status: 200, description: 'The room has been successfully deleted.' })
+  @ApiResponse({ status: 404, description: 'Room not found.' })
   async remove(@Param('id') id: string) {
     await this.roomsService.remove(id);
     return { message: 'Room deleted successfully' };

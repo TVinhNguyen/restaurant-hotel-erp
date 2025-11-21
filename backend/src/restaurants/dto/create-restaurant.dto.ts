@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsUUID } from 'class-validator';
 
 export class CreateRestaurantDto {
   @IsUUID()
@@ -9,17 +9,17 @@ export class CreateRestaurantDto {
 
   @IsOptional()
   @IsString()
-  cuisine?: string;
+  description?: string;
 
   @IsOptional()
   @IsString()
-  openTime?: string;
+  location?: string;
 
   @IsOptional()
   @IsString()
-  closeTime?: string;
+  openingHours?: string;
 
   @IsOptional()
-  @IsInt()
-  maxCapacity?: number;
+  @IsString()
+  cuisineType?: string;
 }

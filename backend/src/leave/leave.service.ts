@@ -1,7 +1,11 @@
 import {
   Injectable,
   NotFoundException,
+<<<<<<< HEAD
   BadRequestException
+=======
+  BadRequestException,
+>>>>>>> origin/dev
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
@@ -12,7 +16,11 @@ import {
   UpdateLeaveDto,
   ApproveRejectLeaveDto,
   LeaveType,
+<<<<<<< HEAD
   LeaveStatus
+=======
+  LeaveStatus,
+>>>>>>> origin/dev
 } from './dto/create-leave.dto';
 
 @Injectable()
@@ -31,7 +39,11 @@ export class LeaveService {
     });
     if (!employee) {
       throw new NotFoundException(
+<<<<<<< HEAD
         `Employee with ID ${createLeaveDto.employeeId} not found`
+=======
+        `Employee with ID ${createLeaveDto.employeeId} not found`,
+>>>>>>> origin/dev
       );
     }
 
@@ -113,7 +125,11 @@ export class LeaveService {
 
   async updateLeave(
     id: string,
+<<<<<<< HEAD
     updateLeaveDto: UpdateLeaveDto
+=======
+    updateLeaveDto: UpdateLeaveDto,
+>>>>>>> origin/dev
   ): Promise<Leave> {
     const leave = await this.findLeaveById(id);
 
@@ -122,7 +138,11 @@ export class LeaveService {
       leave.status === LeaveStatus.REJECTED
     ) {
       throw new BadRequestException(
+<<<<<<< HEAD
         `Cannot update leave with status: ${leave.status}`
+=======
+        `Cannot update leave with status: ${leave.status}`,
+>>>>>>> origin/dev
       );
     }
 
@@ -143,13 +163,21 @@ export class LeaveService {
   async approveRejectLeave(
     id: string,
     approveRejectDto: ApproveRejectLeaveDto,
+<<<<<<< HEAD
     approverId: string
+=======
+    approverId: string,
+>>>>>>> origin/dev
   ): Promise<Leave> {
     const leave = await this.findLeaveById(id);
 
     if (leave.status !== LeaveStatus.PENDING) {
       throw new BadRequestException(
+<<<<<<< HEAD
         `Cannot review leave with status: ${leave.status}`
+=======
+        `Cannot review leave with status: ${leave.status}`,
+>>>>>>> origin/dev
       );
     }
 
@@ -172,7 +200,11 @@ export class LeaveService {
       .leftJoin('leave.employee', 'employee')
       .where('leave.leaveDate BETWEEN :startDate AND :endDate', {
         startDate,
+<<<<<<< HEAD
         endDate
+=======
+        endDate,
+>>>>>>> origin/dev
       });
 
     if (employeeId) {
@@ -184,7 +216,7 @@ export class LeaveService {
     const statusBreakdown: { [key: string]: number } = {};
     const typeBreakdown: { [key: string]: number } = {};
 
-    leaves.forEach(leave => {
+    leaves.forEach((leave) => {
       statusBreakdown[leave.status] = (statusBreakdown[leave.status] || 0) + 1;
       typeBreakdown[leave.leaveType] =
         (typeBreakdown[leave.leaveType] || 0) + 1;
@@ -197,11 +229,19 @@ export class LeaveService {
       typeBreakdown,
       totalDaysRequested: leaves.reduce(
         (sum, leave) => sum + leave.numberOfDays,
+<<<<<<< HEAD
         0
       ),
       approvedDays: leaves
         .filter(leave => leave.status === LeaveStatus.APPROVED)
         .reduce((sum, leave) => sum + leave.numberOfDays, 0)
+=======
+        0,
+      ),
+      approvedDays: leaves
+        .filter((leave) => leave.status === LeaveStatus.APPROVED)
+        .reduce((sum, leave) => sum + leave.numberOfDays, 0),
+>>>>>>> origin/dev
     };
   }
 
@@ -215,7 +255,11 @@ export class LeaveService {
 
   async getEmployeeLeaveBalance(
     employeeId: string,
+<<<<<<< HEAD
     year?: number
+=======
+    year?: number,
+>>>>>>> origin/dev
   ): Promise<any> {
     const currentYear = year || new Date().getFullYear();
     const startDate = `${currentYear}-01-01`;
@@ -230,7 +274,11 @@ export class LeaveService {
     });
 
     const leaveByType: { [key: string]: number } = {};
+<<<<<<< HEAD
     leaves.forEach(leave => {
+=======
+    leaves.forEach((leave) => {
+>>>>>>> origin/dev
       leaveByType[leave.leaveType] =
         (leaveByType[leave.leaveType] || 0) + leave.numberOfDays;
     });
@@ -238,11 +286,15 @@ export class LeaveService {
     // Standard entitlements (can be made configurable)
     const entitlements: { [key: string]: number } = {
       [LeaveType.ANNUAL]: 20, // 20 days annual leave
+<<<<<<< HEAD
       [LeaveType.SICK]: 10 // 10 days sick leave
+=======
+      [LeaveType.SICK]: 10, // 10 days sick leave
+>>>>>>> origin/dev
     };
 
     const balance: { [key: string]: any } = {};
-    Object.keys(entitlements).forEach(type => {
+    Object.keys(entitlements).forEach((type) => {
       const used = leaveByType[type] || 0;
       const entitled = entitlements[type];
       balance[type] = {
@@ -258,8 +310,13 @@ export class LeaveService {
       balance,
       totalLeavesTaken: Object.values(leaveByType).reduce(
         (sum: number, days: number) => sum + days,
+<<<<<<< HEAD
         0
       )
+=======
+        0,
+      ),
+>>>>>>> origin/dev
     };
   }
 }

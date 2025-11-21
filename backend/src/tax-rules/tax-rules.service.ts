@@ -21,7 +21,8 @@ export class TaxRulesService {
     const { page = 1, limit = 10, propertyId, type } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.taxRuleRepository.createQueryBuilder('taxRule')
+    const queryBuilder = this.taxRuleRepository
+      .createQueryBuilder('taxRule')
       .leftJoinAndSelect('taxRule.property', 'property');
 
     if (propertyId) {
@@ -68,7 +69,10 @@ export class TaxRulesService {
     return await this.taxRuleRepository.save(taxRule);
   }
 
-  async update(id: string, updateTaxRuleDto: UpdateTaxRuleDto): Promise<TaxRule> {
+  async update(
+    id: string,
+    updateTaxRuleDto: UpdateTaxRuleDto,
+  ): Promise<TaxRule> {
     const taxRule = await this.findOne(id);
     Object.assign(taxRule, updateTaxRuleDto);
     return await this.taxRuleRepository.save(taxRule);
@@ -86,14 +90,18 @@ export class TaxRulesService {
     });
   }
 
-  async calculateTax(amount: number, propertyId: string, taxType?: string): Promise<{
+  async calculateTax(
+    amount: number,
+    propertyId: string,
+    taxType?: string,
+  ): Promise<{
     vatAmount: number;
     serviceAmount: number;
     totalTax: number;
     breakdown: Array<{ type: string; rate: number; amount: number }>;
   }> {
     const taxRules = await this.findByProperty(propertyId);
-    
+
     let vatAmount = 0;
     let serviceAmount = 0;
     const breakdown = [];
@@ -102,7 +110,7 @@ export class TaxRulesService {
       if (taxType && taxRule.type !== taxType) continue;
 
       const taxAmount = (amount * taxRule.rate) / 100;
-      
+
       if (taxRule.type === 'VAT') {
         vatAmount += taxAmount;
       } else if (taxRule.type === 'service') {

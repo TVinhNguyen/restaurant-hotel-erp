@@ -72,22 +72,57 @@ export class Reservation {
   @Column({ name: 'guest_notes', type: 'text', nullable: true })
   guestNotes: string;
 
-  @Column({ name: 'confirmation_code', length: 50, unique: true, nullable: true })
+  @Column({
+    name: 'confirmation_code',
+    length: 50,
+    unique: true,
+    nullable: true,
+  })
   confirmationCode: string;
 
-  @Column({ name: 'total_amount', type: 'decimal', precision: 12, scale: 2, default: 0 })
+  @Column({
+    name: 'total_amount',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
   totalAmount: number;
 
-  @Column({ name: 'tax_amount', type: 'decimal', precision: 12, scale: 2, default: 0 })
+  @Column({
+    name: 'tax_amount',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
   taxAmount: number;
 
-  @Column({ name: 'discount_amount', type: 'decimal', precision: 12, scale: 2, default: 0 })
+  @Column({
+    name: 'discount_amount',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
   discountAmount: number;
 
-  @Column({ name: 'service_amount', type: 'decimal', precision: 12, scale: 2, default: 0 })
+  @Column({
+    name: 'service_amount',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
   serviceAmount: number;
 
-  @Column({ name: 'amount_paid', type: 'decimal', precision: 12, scale: 2, default: 0 })
+  @Column({
+    name: 'amount_paid',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
   amountPaid: number;
 
   @Column({ length: 10 })
@@ -97,7 +132,13 @@ export class Reservation {
   paymentStatus: 'unpaid' | 'partial' | 'paid' | 'refunded';
 
   @Column({ length: 20, default: 'pending' })
-  status: 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
+  status:
+    | 'pending'
+    | 'confirmed'
+    | 'checked_in'
+    | 'checked_out'
+    | 'cancelled'
+    | 'no_show';
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -129,6 +170,9 @@ export class Reservation {
   @OneToMany(() => Payment, (payment) => payment.reservation)
   payments: Payment[];
 
-  @OneToMany(() => ReservationService, (reservationService) => reservationService.reservation)
+  @OneToMany(
+    () => ReservationService,
+    (reservationService) => reservationService.reservation,
+  )
   reservationServices: ReservationService[];
 }

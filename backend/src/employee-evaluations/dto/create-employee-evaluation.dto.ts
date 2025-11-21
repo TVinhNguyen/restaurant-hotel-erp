@@ -9,10 +9,14 @@ import {
   IsArray,
   Min,
   Max,
+<<<<<<< HEAD
   ArrayMinSize
+=======
+>>>>>>> origin/dev
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+<<<<<<< HEAD
 export enum EvaluationStatus {
   DRAFT = 'draft',
   COMPLETED = 'completed',
@@ -27,6 +31,11 @@ export enum RecommendedAction {
   MAINTAIN = 'maintain',
   IMPROVEMENT_PLAN = 'improvement_plan',
   WARNING = 'warning'
+=======
+export enum EvaluationPeriod {
+  QUARTERLY = 'quarterly',
+  ANNUAL = 'annual',
+>>>>>>> origin/dev
 }
 
 export class CreateEmployeeEvaluationDto {

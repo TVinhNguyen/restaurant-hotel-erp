@@ -33,14 +33,4 @@ export class CreatePropertyDto {
   @IsIn(['Hotel', 'Resort', 'Restaurant Chain'])
   @Transform(({ obj }: any) => obj.property_type || obj.propertyType)
   propertyType?: 'Hotel' | 'Resort' | 'Restaurant Chain';
-
-  @IsOptional()
-  @IsString()
-  @Transform(({ obj }: any) => obj.check_in_time || obj.checkInTime)
-  checkInTime?: string;
-
-  @IsOptional()
-  @IsString()
-  @Transform(({ obj }: any) => obj.check_out_time || obj.checkOutTime)
-  checkOutTime?: string;
 }

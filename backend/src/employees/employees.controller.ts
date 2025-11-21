@@ -65,9 +65,12 @@ export class EmployeesController {
     await this.employeesService.remove(id);
     return { message: 'Employee deleted successfully' };
   }
+<<<<<<< HEAD
 
   @Get('get-employee-by-user-id/:userId')
   async getByUserId(@Param('userId') userId: string) {
     return this.employeesService.getByUserId(userId);
   }
+=======
+>>>>>>> origin/dev
 }

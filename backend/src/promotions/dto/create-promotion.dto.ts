@@ -1,4 +1,12 @@
-import { IsString, IsNumber, IsUUID, IsOptional, Min, Max, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsUUID,
+  IsOptional,
+  Min,
+  Max,
+  MaxLength,
+} from 'class-validator';
 
 export class CreatePromotionDto {
   @IsOptional()

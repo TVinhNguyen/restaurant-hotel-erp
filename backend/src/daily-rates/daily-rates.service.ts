@@ -22,11 +22,14 @@ export class DailyRatesService {
     const { page = 1, limit = 10, ratePlanId, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.dailyRateRepository.createQueryBuilder('dailyRate')
+    const queryBuilder = this.dailyRateRepository
+      .createQueryBuilder('dailyRate')
       .leftJoinAndSelect('dailyRate.ratePlan', 'ratePlan');
 
     if (ratePlanId) {
-      queryBuilder.andWhere('dailyRate.ratePlanId = :ratePlanId', { ratePlanId });
+      queryBuilder.andWhere('dailyRate.ratePlanId = :ratePlanId', {
+        ratePlanId,
+      });
     }
 
     if (startDate) {
@@ -76,15 +79,18 @@ export class DailyRatesService {
     return await this.dailyRateRepository.save(dailyRate);
   }
 
-  async update(id: string, updateDailyRateDto: UpdateDailyRateDto): Promise<DailyRate> {
+  async update(
+    id: string,
+    updateDailyRateDto: UpdateDailyRateDto,
+  ): Promise<DailyRate> {
     const dailyRate = await this.findOne(id);
-    
+
     if (updateDailyRateDto.date) {
       updateDailyRateDto.date = new Date(updateDailyRateDto.date).toISOString();
     }
-    
+
     Object.assign(dailyRate, updateDailyRateDto);
-    
+
     return await this.dailyRateRepository.save(dailyRate);
   }
 
@@ -93,8 +99,13 @@ export class DailyRatesService {
     await this.dailyRateRepository.remove(dailyRate);
   }
 
-  async findByRatePlanAndDateRange(ratePlanId: string, startDate: string, endDate: string): Promise<DailyRate[]> {
-    const queryBuilder = this.dailyRateRepository.createQueryBuilder('dailyRate')
+  async findByRatePlanAndDateRange(
+    ratePlanId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<DailyRate[]> {
+    const queryBuilder = this.dailyRateRepository
+      .createQueryBuilder('dailyRate')
       .where('dailyRate.ratePlanId = :ratePlanId', { ratePlanId });
 
     if (startDate && endDate) {
@@ -104,8 +115,6 @@ export class DailyRatesService {
       });
     }
 
-    return await queryBuilder
-      .orderBy('dailyRate.date', 'ASC')
-      .getMany();
+    return await queryBuilder.orderBy('dailyRate.date', 'ASC').getMany();
   }
 }

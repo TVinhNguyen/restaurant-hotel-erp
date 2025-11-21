@@ -8,6 +8,6 @@ import { Deduction } from '../entities/hr/deduction.entity';
   imports: [TypeOrmModule.forFeature([Deduction])],
   controllers: [DeductionsController],
   providers: [DeductionsService],
-  exports: [DeductionsService]
+  exports: [DeductionsService],
 })
 export class DeductionsModule {}

@@ -58,7 +58,10 @@ export class ServicesService {
     return service;
   }
 
-  async updateService(id: string, updateServiceDto: UpdateServiceDto): Promise<Service> {
+  async updateService(
+    id: string,
+    updateServiceDto: UpdateServiceDto,
+  ): Promise<Service> {
     const service = await this.serviceRepository.findOne({ where: { id } });
     if (!service) {
       throw new NotFoundException(`Service with ID ${id} not found`);

@@ -9,14 +9,14 @@ import {
   Query,
   ParseUUIDPipe,
   ParseIntPipe,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AttendanceService } from './attendance.service';
 import {
   CreateAttendanceDto,
   BulkAttendanceDto,
-  AttendanceStatus
+  AttendanceStatus,
 } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 
@@ -42,7 +42,7 @@ export class AttendanceController {
     @Query('employeeId') employeeId?: string,
     @Query('date') date?: string,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     const page = pageParam ? parseInt(pageParam, 10) : 1;
     const limit = limitParam ? parseInt(limitParam, 10) : 10;
@@ -53,7 +53,7 @@ export class AttendanceController {
       employeeId,
       date,
       startDate,
-      endDate
+      endDate,
     );
   }
 
@@ -61,12 +61,12 @@ export class AttendanceController {
   async getAttendanceSummary(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
-    @Query('employeeId') employeeId?: string
+    @Query('employeeId') employeeId?: string,
   ) {
     return this.attendanceService.getAttendanceSummary(
       startDate,
       endDate,
-      employeeId
+      employeeId,
     );
   }
 
@@ -83,7 +83,7 @@ export class AttendanceController {
   @Put(':id')
   async updateAttendance(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateAttendanceDto: UpdateAttendanceDto
+    @Body() updateAttendanceDto: UpdateAttendanceDto,
   ) {
     return this.attendanceService.updateAttendance(id, updateAttendanceDto);
   }

@@ -9,7 +9,7 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 export class EmployeesService {
   constructor(
     @InjectRepository(Employee)
-    private employeeRepository: Repository<Employee>
+    private employeeRepository: Repository<Employee>,
   ) {}
 
   async findAll(query: {
@@ -29,7 +29,7 @@ export class EmployeesService {
 
     if (department) {
       queryBuilder.andWhere('employee.department = :department', {
-        department
+        department,
       });
     }
 
@@ -40,7 +40,7 @@ export class EmployeesService {
     if (search) {
       queryBuilder.andWhere(
         '(employee.fullName ILIKE :search OR employee.employeeCode ILIKE :search)',
-        { search: `%${search}%` }
+        { search: `%${search}%` },
       );
     }
 
@@ -57,7 +57,7 @@ export class EmployeesService {
       limit,
       totalPages: Math.ceil(total / limit),
       hasNext: page * limit < total,
-      hasPrev: page > 1
+      hasPrev: page > 1,
     };
   }
 
@@ -71,8 +71,8 @@ export class EmployeesService {
         'attendances',
         'leaves',
         'evaluations',
-        'payrolls'
-      ]
+        'payrolls',
+      ],
     });
 
     if (!employee) {
@@ -115,7 +115,7 @@ export class EmployeesService {
     const employee = this.employeeRepository.create({
       ...createEmployeeDto,
       employeeCode,
-      status: createEmployeeDto.status || 'active'
+      status: createEmployeeDto.status || 'active',
     });
 
     return await this.employeeRepository.save(employee);
@@ -123,7 +123,7 @@ export class EmployeesService {
 
   async update(
     id: string,
-    updateEmployeeDto: UpdateEmployeeDto
+    updateEmployeeDto: UpdateEmployeeDto,
   ): Promise<Employee> {
     const employee = await this.findOne(id);
 
