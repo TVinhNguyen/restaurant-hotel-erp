@@ -2,41 +2,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Star, Clock, Users, Calendar, Utensils } from "lucide-react"
-import Link from "next/link"
+import { Header } from "@/components/layout/header"
+import { Footer } from "@/components/layout/footer"
 
 export default function RestaurantConfirmationPage() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="text-2xl font-bold text-primary">
-                Tripster
-              </Link>
-              <nav className="hidden md:flex space-x-6">
-                <Link href="/search" className="text-foreground hover:text-primary transition-colors">
-                  Properties
-                </Link>
-                <Link href="/search" className="text-foreground hover:text-primary transition-colors">
-                  Attractions
-                </Link>
-                <Link href="/search" className="text-foreground hover:text-primary transition-colors">
-                  Popular
-                </Link>
-              </nav>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/register">
-                <Button variant="ghost" size="sm">Sign up</Button>
-              </Link>
-              <Link href="/login">
-                <Button size="sm">Log in</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
@@ -152,29 +124,11 @@ export default function RestaurantConfirmationPage() {
         </div>
       </div>
 
-      <footer className="bg-background border-t border-border py-8 mt-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h5 className="font-bold text-primary mb-2">Tripster</h5>
-              <p className="text-sm text-muted-foreground">Your favorite hotel booking experience since 1991</p>
-              <p className="text-xs text-muted-foreground mt-2">Loved © 2023</p>
-            </div>
-            <div className="flex space-x-8 text-sm">
-              <div>
-                <a href="#" className="text-muted-foreground hover:text-foreground">Help</a>
-              </div>
-              <div>
-                <a href="#" className="text-muted-foreground hover:text-foreground">FAQ</a>
-              </div>
-              <div>
-                <a href="#" className="text-muted-foreground hover:text-foreground">Customer service</a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
+
+
+
 

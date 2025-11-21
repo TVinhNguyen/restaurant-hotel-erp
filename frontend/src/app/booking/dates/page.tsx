@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { ArrowLeft, Calendar, Users } from "lucide-react"
+import { Header } from "@/components/layout/header"
 
 const bookingDatesSchema = z.object({
   checkin: z.string().min(1, "Check-in date is required"),
@@ -44,29 +45,11 @@ export default function BookingDatesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="text-2xl font-bold text-primary">
-                Tripster
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/register">
-                <Button variant="ghost" size="sm">Sign up</Button>
-              </Link>
-              <Link href="/login">
-                <Button size="sm">Log in</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <div className="container mx-auto px-4 py-12">
         <div className="flex items-center space-x-4 mb-6">
-          <Link href="/property/hotel-norrebro">
+          <Link href="/property/1">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to hotel
