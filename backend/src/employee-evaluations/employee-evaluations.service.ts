@@ -9,13 +9,12 @@ import { UpdateEmployeeEvaluationDto } from './dto/update-employee-evaluation.dt
 export class EmployeeEvaluationsService {
   constructor(
     @InjectRepository(EmployeeEvaluation)
-    private employeeEvaluationRepository: Repository<EmployeeEvaluation>,
+    private employeeEvaluationRepository: Repository<EmployeeEvaluation>
   ) {}
 
   async create(
-    createEmployeeEvaluationDto: CreateEmployeeEvaluationDto,
+    createEmployeeEvaluationDto: CreateEmployeeEvaluationDto
   ): Promise<EmployeeEvaluation> {
-<<<<<<< HEAD
     // Calculate overall score from category scores
     const overallScore =
       ((createEmployeeEvaluationDto.workQualityScore || 0) +
@@ -26,18 +25,6 @@ export class EmployeeEvaluationsService {
         (createEmployeeEvaluationDto.punctualityScore || 0) +
         (createEmployeeEvaluationDto.initiativeScore || 0)) /
       7;
-=======
-    const evaluationData = {
-      employeeId: createEmployeeEvaluationDto.employeeId,
-      evaluatedBy: createEmployeeEvaluationDto.evaluatedBy,
-      rate: createEmployeeEvaluationDto.rate,
-      period: createEmployeeEvaluationDto.period,
-      goals: createEmployeeEvaluationDto.goals,
-      strength: createEmployeeEvaluationDto.strength,
-      improvement: createEmployeeEvaluationDto.improvement,
-      comments: createEmployeeEvaluationDto.comments,
-    };
->>>>>>> origin/dev
 
     const evaluation = this.employeeEvaluationRepository.create({
       ...createEmployeeEvaluationDto,
@@ -50,16 +37,9 @@ export class EmployeeEvaluationsService {
     page: number = 1,
     limit: number = 10,
     employeeId?: string,
-<<<<<<< HEAD
     evaluatorId?: string,
     status?: string,
     evaluationPeriod?: string
-=======
-    evaluatedBy?: string,
-    period?: string,
-    rateMin?: number,
-    rateMax?: number,
->>>>>>> origin/dev
   ) {
     const queryBuilder = this.employeeEvaluationRepository
       .createQueryBuilder('evaluation')
@@ -69,19 +49,13 @@ export class EmployeeEvaluationsService {
     // Apply filters
     if (employeeId) {
       queryBuilder.andWhere('evaluation.employeeId = :employeeId', {
-        employeeId,
+        employeeId
       });
     }
 
-<<<<<<< HEAD
     if (evaluatorId) {
       queryBuilder.andWhere('evaluation.evaluatorId = :evaluatorId', {
         evaluatorId
-=======
-    if (evaluatedBy) {
-      queryBuilder.andWhere('evaluation.evaluatedBy = :evaluatedBy', {
-        evaluatedBy,
->>>>>>> origin/dev
       });
     }
 
@@ -109,23 +83,19 @@ export class EmployeeEvaluationsService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit)
     };
   }
 
   async findOne(id: string): Promise<EmployeeEvaluation> {
     const evaluation = await this.employeeEvaluationRepository.findOne({
       where: { id },
-<<<<<<< HEAD
       relations: ['employee', 'evaluator', 'evaluatedByEmployee']
-=======
-      relations: ['employee'],
->>>>>>> origin/dev
     });
 
     if (!evaluation) {
       throw new NotFoundException(
-        `Employee evaluation with ID ${id} not found`,
+        `Employee evaluation with ID ${id} not found`
       );
     }
 
@@ -134,7 +104,7 @@ export class EmployeeEvaluationsService {
 
   async update(
     id: string,
-    updateEmployeeEvaluationDto: UpdateEmployeeEvaluationDto,
+    updateEmployeeEvaluationDto: UpdateEmployeeEvaluationDto
   ): Promise<EmployeeEvaluation> {
     const evaluation = await this.findOne(id);
 
@@ -177,7 +147,7 @@ export class EmployeeEvaluationsService {
   async findByEmployee(
     employeeId: string,
     page: number = 1,
-    limit: number = 10,
+    limit: number = 10
   ) {
     return this.findAll(page, limit, employeeId);
   }
@@ -185,7 +155,7 @@ export class EmployeeEvaluationsService {
   async findByEvaluator(
     evaluatorId: string,
     page: number = 1,
-    limit: number = 10,
+    limit: number = 10
   ) {
     return this.findAll(page, limit, undefined, evaluatorId);
   }
@@ -197,7 +167,7 @@ export class EmployeeEvaluationsService {
   async findByPeriod(
     evaluationPeriod: string,
     page: number = 1,
-    limit: number = 10,
+    limit: number = 10
   ) {
     return this.findAll(
       page,
@@ -205,12 +175,7 @@ export class EmployeeEvaluationsService {
       undefined,
       undefined,
       undefined,
-<<<<<<< HEAD
       evaluationPeriod
-=======
-      rateMin,
-      rateMax,
->>>>>>> origin/dev
     );
   }
 
@@ -225,13 +190,8 @@ export class EmployeeEvaluationsService {
 
     return {
       employeeId,
-<<<<<<< HEAD
       averageScore: parseFloat(result.averageScore) || 0,
       totalEvaluations: parseInt(result.totalEvaluations) || 0
-=======
-      averageRate: parseFloat(result.averageRate) || 0,
-      totalEvaluations: parseInt(result.totalEvaluations) || 0,
->>>>>>> origin/dev
     };
   }
 
@@ -252,13 +212,8 @@ export class EmployeeEvaluationsService {
       evaluationPeriod,
       averageScore: parseFloat(result.averageScore) || 0,
       totalEvaluations: parseInt(result.totalEvaluations) || 0,
-<<<<<<< HEAD
       minScore: parseFloat(result.minScore) || 0,
       maxScore: parseFloat(result.maxScore) || 0
-=======
-      minRate: parseInt(result.minRate) || 0,
-      maxRate: parseInt(result.maxRate) || 0,
->>>>>>> origin/dev
     };
   }
 

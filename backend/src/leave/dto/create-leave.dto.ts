@@ -4,11 +4,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
-<<<<<<< HEAD
   IsNumber
-=======
-  IsNumber,
->>>>>>> origin/dev
 } from 'class-validator';
 
 export enum LeaveType {

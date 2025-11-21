@@ -3,11 +3,7 @@ import {
   IsOptional,
   IsDateString,
   IsString,
-<<<<<<< HEAD
   IsIn
-=======
-  IsIn,
->>>>>>> origin/dev
 } from 'class-validator';
 
 export enum AttendanceStatus {
