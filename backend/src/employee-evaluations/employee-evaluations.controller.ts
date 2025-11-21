@@ -8,7 +8,7 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { EmployeeEvaluationsService } from './employee-evaluations.service';
@@ -19,12 +19,12 @@ import { UpdateEmployeeEvaluationDto } from './dto/update-employee-evaluation.dt
 @UseGuards(AuthGuard('jwt'))
 export class EmployeeEvaluationsController {
   constructor(
-    private readonly employeeEvaluationsService: EmployeeEvaluationsService,
+    private readonly employeeEvaluationsService: EmployeeEvaluationsService
   ) {}
 
   @Post()
   async create(
-    @Body() createEmployeeEvaluationDto: CreateEmployeeEvaluationDto,
+    @Body() createEmployeeEvaluationDto: CreateEmployeeEvaluationDto
   ) {
     return this.employeeEvaluationsService.create(createEmployeeEvaluationDto);
   }
@@ -34,24 +34,20 @@ export class EmployeeEvaluationsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('employeeId') employeeId?: string,
-    @Query('evaluatedBy') evaluatedBy?: string,
-    @Query('period') period?: string,
-    @Query('rateMin') rateMin?: string,
-    @Query('rateMax') rateMax?: string,
+    @Query('evaluatorId') evaluatorId?: string,
+    @Query('status') status?: string,
+    @Query('evaluationPeriod') evaluationPeriod?: string
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    const rateMinNum = rateMin ? parseInt(rateMin, 10) : undefined;
-    const rateMaxNum = rateMax ? parseInt(rateMax, 10) : undefined;
 
     return this.employeeEvaluationsService.findAll(
       pageNum,
       limitNum,
       employeeId,
-      evaluatedBy,
-      period,
-      rateMinNum,
-      rateMaxNum,
+      evaluatorId,
+      status,
+      evaluationPeriod
     );
   }
 
@@ -59,7 +55,7 @@ export class EmployeeEvaluationsController {
   async findByEmployee(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query('limit') limit?: string
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -67,72 +63,92 @@ export class EmployeeEvaluationsController {
     return this.employeeEvaluationsService.findByEmployee(
       employeeId,
       pageNum,
-      limitNum,
+      limitNum
     );
   }
 
-  @Get('evaluator/:evaluatedBy')
+  @Get('evaluator/:evaluatorId')
   async findByEvaluator(
-    @Param('evaluatedBy', ParseUUIDPipe) evaluatedBy: string,
+    @Param('evaluatorId', ParseUUIDPipe) evaluatorId: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query('limit') limit?: string
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
     return this.employeeEvaluationsService.findByEvaluator(
-      evaluatedBy,
+      evaluatorId,
       pageNum,
-      limitNum,
+      limitNum
     );
   }
 
-  @Get('period/:period')
-  async findByPeriod(
-    @Param('period') period: string,
+  @Get('status/:status')
+  async findByStatus(
+    @Param('status') status: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query('limit') limit?: string
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+
+    return this.employeeEvaluationsService.findByStatus(
+      status,
+      pageNum,
+      limitNum
+    );
+  }
+
+  @Get('period/:evaluationPeriod')
+  async findByPeriod(
+    @Param('evaluationPeriod') evaluationPeriod: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
     return this.employeeEvaluationsService.findByPeriod(
-      period,
+      evaluationPeriod,
       pageNum,
-      limitNum,
-    );
-  }
-
-  @Get('rate-range')
-  async findByRateRange(
-    @Query('rateMin') rateMin: string,
-    @Query('rateMax') rateMax: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
-    const rateMinNum = parseInt(rateMin, 10);
-    const rateMaxNum = parseInt(rateMax, 10);
-
-    return this.employeeEvaluationsService.findByRateRange(
-      rateMinNum,
-      rateMaxNum,
-      pageNum,
-      limitNum,
+      limitNum
     );
   }
 
   @Get('employee/:employeeId/average')
-  async getAverageRateByEmployee(
-    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+  async getAverageScoreByEmployee(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string
   ) {
-    return this.employeeEvaluationsService.getAverageRateByEmployee(employeeId);
+    return this.employeeEvaluationsService.getAverageScoreByEmployee(
+      employeeId
+    );
   }
 
-  @Get('stats/period/:period')
-  async getEvaluationStatsByPeriod(@Param('period') period: string) {
-    return this.employeeEvaluationsService.getEvaluationStatsByPeriod(period);
+  @Get('stats/period/:evaluationPeriod')
+  async getEvaluationStatsByPeriod(
+    @Param('evaluationPeriod') evaluationPeriod: string
+  ) {
+    return this.employeeEvaluationsService.getEvaluationStatsByPeriod(
+      evaluationPeriod
+    );
+  }
+
+  @Post(':id/acknowledge')
+  async acknowledgeEvaluation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('employeeComments') employeeComments?: string
+  ) {
+    return this.employeeEvaluationsService.acknowledgeEvaluation(
+      id,
+      employeeComments
+    );
+  }
+
+  @Post(':id/calculate-score')
+  async calculateOverallScore(@Param('id', ParseUUIDPipe) id: string) {
+    const score =
+      await this.employeeEvaluationsService.calculateOverallScore(id);
+    return { overallScore: score };
   }
 
   @Get(':id')
@@ -143,11 +159,11 @@ export class EmployeeEvaluationsController {
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateEmployeeEvaluationDto: UpdateEmployeeEvaluationDto,
+    @Body() updateEmployeeEvaluationDto: UpdateEmployeeEvaluationDto
   ) {
     return this.employeeEvaluationsService.update(
       id,
-      updateEmployeeEvaluationDto,
+      updateEmployeeEvaluationDto
     );
   }
 
