@@ -13,12 +13,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { Header } from "@/components/layout/header"
+import { Footer } from "@/components/layout/footer"
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
+  phone: z.string()
+    .min(8, "Phone number must be at least 8 characters")
+    .max(16, "Phone number must not exceed 16 characters")
+    .regex(/^[\+]?[0-9]{8,15}$/, "Please enter a valid phone number"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
   agreeToTerms: z.boolean().refine(val => val === true, {
@@ -67,37 +72,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="text-2xl font-bold text-primary">
-                Tripster
-              </Link>
-              <nav className="hidden md:flex space-x-6">
-                <Link href="/search" className="text-foreground hover:text-primary transition-colors">
-                  Properties
-                </Link>
-                <Link href="/search" className="text-foreground hover:text-primary transition-colors">
-                  Attractions
-                </Link>
-                <Link href="/search" className="text-foreground hover:text-primary transition-colors">
-                  Popular
-                </Link>
-              </nav>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" disabled>
-                Sign up
-              </Button>
-              <Link href="/login">
-                <Button size="sm">Log in</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <div className="container mx-auto px-4 py-12">
         <div className="flex items-center space-x-4 mb-6">
@@ -304,35 +279,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-background border-t border-border py-8 mt-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h5 className="font-bold text-primary mb-2">Tripster</h5>
-              <p className="text-sm text-muted-foreground">Your favorite hotel booking experience since 1991</p>
-              <p className="text-xs text-muted-foreground mt-2">Loved © 2023</p>
-            </div>
-            <div className="flex space-x-8 text-sm">
-              <div>
-                <a href="#" className="text-muted-foreground hover:text-foreground">
-                  Help
-                </a>
-              </div>
-              <div>
-                <a href="#" className="text-muted-foreground hover:text-foreground">
-                  FAQ
-                </a>
-              </div>
-              <div>
-                <a href="#" className="text-muted-foreground hover:text-foreground">
-                  Customer service
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
