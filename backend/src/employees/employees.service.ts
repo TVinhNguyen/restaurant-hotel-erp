@@ -82,6 +82,31 @@ export class EmployeesService {
     return employee;
   }
 
+  /**
+   * Find employee by associated user id
+   * @param userId UUID of the user
+   */
+  async getByUserId(userId: string): Promise<Employee> {
+    const employee = await this.employeeRepository.findOne({
+      where: { user: { id: userId } },
+      relations: [
+        'user',
+        'employeeRoles',
+        'workingShifts',
+        'attendances',
+        'leaves',
+        'evaluations',
+        'payrolls'
+      ]
+    });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with user ID ${userId} not found`);
+    }
+
+    return employee;
+  }
+
   async create(createEmployeeDto: CreateEmployeeDto): Promise<Employee> {
     // Generate employee code if not provided
     const employeeCode =

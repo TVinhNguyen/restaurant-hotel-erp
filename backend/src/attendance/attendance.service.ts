@@ -1,7 +1,7 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
+  BadRequestException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
@@ -9,10 +9,10 @@ import { Attendance } from '../entities/hr/attendance.entity';
 import { Employee } from '../entities/core/employee.entity';
 import {
   CreateAttendanceDto,
-  UpdateAttendanceDto,
   BulkAttendanceDto,
-  AttendanceStatus,
+  AttendanceStatus
 } from './dto/create-attendance.dto';
+import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -20,32 +20,34 @@ export class AttendanceService {
     @InjectRepository(Attendance)
     private attendanceRepository: Repository<Attendance>,
     @InjectRepository(Employee)
-    private employeeRepository: Repository<Employee>,
+    private employeeRepository: Repository<Employee>
   ) {}
 
   async createAttendance(
-    createAttendanceDto: CreateAttendanceDto,
+    createAttendanceDto: CreateAttendanceDto
   ): Promise<Attendance> {
     // Check if employee exists
     const employee = await this.employeeRepository.findOne({
-      where: { id: createAttendanceDto.employeeId },
+      where: { id: createAttendanceDto.employeeId }
     });
     if (!employee) {
       throw new NotFoundException(
-        `Employee with ID ${createAttendanceDto.employeeId} not found`,
+        `Employee with ID ${createAttendanceDto.employeeId} not found`
       );
     }
 
     const attendanceData = {
       employeeId: createAttendanceDto.employeeId,
       workingShiftId: createAttendanceDto.workingShiftId,
+      date: createAttendanceDto.date,
       checkInTime: createAttendanceDto.checkInTime
         ? new Date(createAttendanceDto.checkInTime)
         : undefined,
       checkOutTime: createAttendanceDto.checkOutTime
         ? new Date(createAttendanceDto.checkOutTime)
         : undefined,
-      notes: createAttendanceDto.notes,
+      status: createAttendanceDto.status || 'present',
+      notes: createAttendanceDto.notes
     };
 
     const attendance = this.attendanceRepository.create(attendanceData);
@@ -58,7 +60,7 @@ export class AttendanceService {
     employeeId?: string,
     date?: string,
     startDate?: string,
-    endDate?: string,
+    endDate?: string
   ) {
     const queryBuilder = this.attendanceRepository
       .createQueryBuilder('attendance')
@@ -67,26 +69,24 @@ export class AttendanceService {
 
     if (employeeId) {
       queryBuilder.andWhere('attendance.employeeId = :employeeId', {
-        employeeId,
+        employeeId
       });
     }
 
     if (date) {
-      queryBuilder.andWhere('DATE(attendance.checkInTime) = :date', { date });
+      queryBuilder.andWhere('attendance.date = :date', { date });
     }
 
     if (startDate && endDate) {
-      queryBuilder.andWhere(
-        'DATE(attendance.checkInTime) BETWEEN :startDate AND :endDate',
-        {
-          startDate,
-          endDate,
-        },
-      );
+      queryBuilder.andWhere('attendance.date BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate
+      });
     }
 
     const [attendance, total] = await queryBuilder
-      .orderBy('attendance.checkInTime', 'DESC')
+      .orderBy('attendance.date', 'DESC')
+      .addOrderBy('attendance.checkInTime', 'DESC')
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
@@ -96,14 +96,14 @@ export class AttendanceService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit)
     };
   }
 
   async findAttendanceById(id: string): Promise<Attendance> {
     const attendance = await this.attendanceRepository.findOne({
       where: { id },
-      relations: ['employee', 'workingShift'],
+      relations: ['employee', 'workingShift']
     });
 
     if (!attendance) {
@@ -115,17 +115,39 @@ export class AttendanceService {
 
   async updateAttendance(
     id: string,
-    updateAttendanceDto: UpdateAttendanceDto,
+    updateAttendanceDto: UpdateAttendanceDto
   ): Promise<Attendance> {
     await this.findAttendanceById(id);
 
+    // If employeeId is being updated, validate that the employee exists
+    if (updateAttendanceDto.employeeId) {
+      const employee = await this.employeeRepository.findOne({
+        where: { id: updateAttendanceDto.employeeId }
+      });
+      if (!employee) {
+        throw new NotFoundException(
+          `Employee with ID ${updateAttendanceDto.employeeId} not found`
+        );
+      }
+    }
+
     const updateData: any = {};
+    if (updateAttendanceDto.employeeId !== undefined)
+      updateData.employeeId = updateAttendanceDto.employeeId;
     if (updateAttendanceDto.workingShiftId !== undefined)
       updateData.workingShiftId = updateAttendanceDto.workingShiftId;
+    if (updateAttendanceDto.date !== undefined)
+      updateData.date = updateAttendanceDto.date;
     if (updateAttendanceDto.checkInTime !== undefined)
-      updateData.checkInTime = new Date(updateAttendanceDto.checkInTime);
+      updateData.checkInTime = updateAttendanceDto.checkInTime
+        ? new Date(updateAttendanceDto.checkInTime)
+        : null;
     if (updateAttendanceDto.checkOutTime !== undefined)
-      updateData.checkOutTime = new Date(updateAttendanceDto.checkOutTime);
+      updateData.checkOutTime = updateAttendanceDto.checkOutTime
+        ? new Date(updateAttendanceDto.checkOutTime)
+        : null;
+    if (updateAttendanceDto.status !== undefined)
+      updateData.status = updateAttendanceDto.status;
     if (updateAttendanceDto.notes !== undefined)
       updateData.notes = updateAttendanceDto.notes;
 
@@ -148,8 +170,8 @@ export class AttendanceService {
     const existingAttendance = await this.attendanceRepository.findOne({
       where: {
         employeeId,
-        checkInTime: Between(today, tomorrow),
-      },
+        checkInTime: Between(today, tomorrow)
+      }
     });
 
     if (existingAttendance) {
@@ -158,7 +180,7 @@ export class AttendanceService {
 
     const attendance = this.attendanceRepository.create({
       employeeId,
-      checkInTime: new Date(),
+      checkInTime: new Date()
     });
 
     return await this.attendanceRepository.save(attendance);
@@ -173,8 +195,8 @@ export class AttendanceService {
     const attendance = await this.attendanceRepository.findOne({
       where: {
         employeeId,
-        checkInTime: Between(today, tomorrow),
-      },
+        checkInTime: Between(today, tomorrow)
+      }
     });
 
     if (!attendance) {
@@ -186,20 +208,20 @@ export class AttendanceService {
     }
 
     await this.attendanceRepository.update(attendance.id, {
-      checkOutTime: new Date(),
+      checkOutTime: new Date()
     });
 
     return this.findAttendanceById(attendance.id);
   }
 
   async bulkCreateAttendance(
-    bulkAttendanceDto: BulkAttendanceDto,
+    bulkAttendanceDto: BulkAttendanceDto
   ): Promise<Attendance[]> {
     const { date, attendances } = bulkAttendanceDto;
 
     if (!date) {
       throw new BadRequestException(
-        'Date is required for bulk attendance creation',
+        'Date is required for bulk attendance creation'
       );
     }
 
@@ -212,13 +234,11 @@ export class AttendanceService {
     // Check for existing attendance records
     const existingAttendances = await this.attendanceRepository.find({
       where: {
-        checkInTime: Between(startDate, endDate),
-      },
+        checkInTime: Between(startDate, endDate)
+      }
     });
 
-    const existingEmployeeIds = existingAttendances.map(
-      (att) => att.employeeId,
-    );
+    const existingEmployeeIds = existingAttendances.map(att => att.employeeId);
 
     if (!attendances || attendances.length === 0) {
       throw new BadRequestException('No attendance records provided');
@@ -226,12 +246,12 @@ export class AttendanceService {
 
     // Filter out employees who already have attendance for this date
     const newAttendances = attendances.filter(
-      (att: any) => !existingEmployeeIds.includes(att.employeeId),
+      (att: any) => !existingEmployeeIds.includes(att.employeeId)
     );
 
     if (newAttendances.length === 0) {
       throw new BadRequestException(
-        'All employees already have attendance records for this date',
+        'All employees already have attendance records for this date'
       );
     }
 
@@ -240,7 +260,7 @@ export class AttendanceService {
         employeeId: att.employeeId,
         checkInTime: att.checkInTime ? new Date(att.checkInTime) : undefined,
         checkOutTime: att.checkOutTime ? new Date(att.checkOutTime) : undefined,
-        notes: att.notes,
+        notes: att.notes
       });
     });
 
@@ -250,19 +270,19 @@ export class AttendanceService {
   async getAttendanceSummary(
     startDate: string,
     endDate: string,
-    employeeId?: string,
+    employeeId?: string
   ) {
     const queryBuilder = this.attendanceRepository
       .createQueryBuilder('attendance')
       .leftJoin('attendance.employee', 'employee')
       .where('attendance.checkInTime BETWEEN :startDate AND :endDate', {
         startDate,
-        endDate,
+        endDate
       });
 
     if (employeeId) {
       queryBuilder.andWhere('attendance.employeeId = :employeeId', {
-        employeeId,
+        employeeId
       });
     }
 
@@ -280,14 +300,14 @@ export class AttendanceService {
           present: 0,
           absent: 0,
           late: 0,
-          halfDay: 0,
+          halfDay: 0
         };
       }
 
       // Calculate hours worked for this record
       const hours = this.calculateHoursWorked(
         record.checkInTime,
-        record.checkOutTime,
+        record.checkOutTime
       );
       employeeAttendance[record.employeeId].hoursWorked += hours;
       employeeAttendance[record.employeeId].totalDays += 1;
@@ -300,7 +320,7 @@ export class AttendanceService {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const totalWorkingDays = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
     );
 
     return {
@@ -316,16 +336,16 @@ export class AttendanceService {
                     totalWorkingDays) *
                   100
                 ).toFixed(2)
-              : 0,
-        }),
+              : 0
+        })
       ),
       overallStats: {
         totalRecords: attendanceRecords.length,
         presentCount: attendanceRecords.length, // Simplified for now
         absentCount: 0,
         lateCount: 0,
-        overtimeCount: 0,
-      },
+        overtimeCount: 0
+      }
     };
   }
 
@@ -337,14 +357,14 @@ export class AttendanceService {
 
     const attendance = await this.attendanceRepository.find({
       where: {
-        checkInTime: Between(startDate, endDate),
+        checkInTime: Between(startDate, endDate)
       },
       relations: ['employee'],
-      order: { checkInTime: 'ASC' },
+      order: { checkInTime: 'ASC' }
     });
 
     const totalEmployees = await this.employeeRepository.count({
-      where: { status: 'active' },
+      where: { status: 'active' }
     });
 
     return {
@@ -357,16 +377,16 @@ export class AttendanceService {
         employee: {
           id: record.employee.id,
           name: record.employee.fullName,
-          department: record.employee.department,
+          department: record.employee.department
         },
         checkInTime: record.checkInTime,
         checkOutTime: record.checkOutTime,
         hoursWorked: this.calculateHoursWorked(
           record.checkInTime,
-          record.checkOutTime,
+          record.checkOutTime
         ),
-        notes: record.notes,
-      })),
+        notes: record.notes
+      }))
     };
   }
 

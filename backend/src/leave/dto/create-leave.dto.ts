@@ -4,20 +4,23 @@ import {
   IsEnum,
   IsOptional,
   IsString,
-  IsNumber,
+  IsNumber
 } from 'class-validator';
 
 export enum LeaveType {
   ANNUAL = 'annual',
   SICK = 'sick',
   UNPAID = 'unpaid',
-  OTHER = 'other',
+  PERSONAL = 'personal',
+  MATERNITY = 'maternity',
+  EMERGENCY = 'emergency',
+  OTHER = 'other'
 }
 
 export enum LeaveStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
-  REJECTED = 'rejected',
+  REJECTED = 'rejected'
 }
 
 export class CreateLeaveDto {
@@ -26,6 +29,12 @@ export class CreateLeaveDto {
 
   @IsDateString()
   leaveDate: string;
+
+  @IsDateString()
+  startDate: string;
+
+  @IsDateString()
+  endDate: string;
 
   @IsOptional()
   @IsNumber()
@@ -42,18 +51,38 @@ export class CreateLeaveDto {
   reason: string;
 
   @IsOptional()
+  @IsDateString()
+  appliedDate?: string;
+
+  @IsOptional()
   @IsUUID()
   approvedBy?: string;
 
   @IsOptional()
+  @IsDateString()
+  approvedDate?: string;
+
+  @IsOptional()
   @IsString()
   hrNote?: string;
+
+  @IsOptional()
+  @IsString()
+  rejectionReason?: string;
 }
 
 export class UpdateLeaveDto {
   @IsOptional()
   @IsDateString()
   leaveDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
 
   @IsOptional()
   @IsNumber()
@@ -72,12 +101,24 @@ export class UpdateLeaveDto {
   reason?: string;
 
   @IsOptional()
+  @IsDateString()
+  appliedDate?: string;
+
+  @IsOptional()
   @IsUUID()
   approvedBy?: string;
 
   @IsOptional()
+  @IsDateString()
+  approvedDate?: string;
+
+  @IsOptional()
   @IsString()
   hrNote?: string;
+
+  @IsOptional()
+  @IsString()
+  rejectionReason?: string;
 }
 
 export class ApproveRejectLeaveDto {

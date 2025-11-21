@@ -4,52 +4,110 @@ import { Edit } from "@refinedev/antd";
 import { Form, Input, Select, DatePicker, InputNumber, message } from "antd";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getMockEmployee, updateMockEmployee } from "../../../../data/mockEmployees";
+import { Employee, getMockEmployee, updateMockEmployee } from "../../../../data/mockEmployees";
 import dayjs from "dayjs";
 
 export default function CategoryEdit() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [emailEdit, setEmailEdit] = useState(false);
+  const [phoneEdit, setPhoneEdit] = useState(false);
   const params = useParams();
   const router = useRouter();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
   useEffect(() => {
-    if (id) {
-      const employee = getMockEmployee(id);
-      if (employee) {
-        form.setFieldsValue({
-          ...employee,
-          startDate: dayjs(employee.hireDate),
+    const getEmployee = async (id: string) => {
+      try {
+        setLoading(true);
+        const employeesResponse = await fetch(`${API_ENDPOINT}/employees/${id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          }
         });
+
+        if (employeesResponse.ok) {
+          const employeesData = await employeesResponse.json();
+
+          const formattedEmployee = {
+            id: employeesData.id || employeesData.data?.id,
+            userId: employeesData.userId || employeesData.data?.userId || 'Unknown',
+            fullName: employeesData.fullName || employeesData.full_name || employeesData.data?.fullName || employeesData.data?.full_name || 'Unknown',
+            email: employeesData.email || employeesData.user?.email || employeesData.data?.email || employeesData.data?.user?.email || 'No email',
+            position: employeesData.position || employeesData.data?.position || 'Not specified',
+            department: employeesData.department || employeesData.data?.department || 'Unassigned',
+            phone: employeesData.phone || employeesData.user?.phone || employeesData.data?.phone || employeesData.data?.user?.phone || 'No phone',
+            hireDate: employeesData.hireDate || employeesData.hire_date || employeesData.data?.hireDate || employeesData.data?.hire_date || new Date().toISOString(),
+            salary: employeesData.salary || employeesData.data?.salary || 0,
+            status: employeesData.status || employeesData.data?.status || 'active',
+            employeeCode: employeesData.employeeCode || employeesData.employee_code || employeesData.data?.employeeCode || employeesData.data?.employee_code,
+            terminationDate: employeesData.terminationDate || employeesData.termination_date || employeesData.data?.terminationDate || employeesData.data?.termination_date,
+          };
+          console.log('Formatted employee:', formattedEmployee);
+          setEmployee(formattedEmployee);
+          if (formattedEmployee) {
+            form.setFieldsValue({
+              ...formattedEmployee,
+              hireDate: formattedEmployee.hireDate ? dayjs(formattedEmployee.hireDate) : null
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Fetch Error:', error);
+      } finally {
+        setLoading(false);
       }
+    };
+
+    if (id) {
+      getEmployee(id);
     }
   }, [id, form]);
 
   const handleSubmit = async (values: any) => {
-    if (!id) return;
-
+    console.log(values);
+    console.log(employee);
     setLoading(true);
     try {
-      const updatedData = {
-        ...values,
-        title: values.position, // Sử dụng position làm title
-        startDate: values.startDate.format('YYYY-MM-DD'),
-      };
-
-      const result = updateMockEmployee(id, updatedData);
-
-      if (result) {
-        message.success('Cập nhật nhân viên thành công!');
-        router.push('/hr-management');
-      } else {
-        message.error('Không tìm thấy nhân viên để cập nhật!');
+      if (emailEdit || phoneEdit) {
+        await fetch(`${API_ENDPOINT}/users/${employee?.userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({
+            email: emailEdit ? values.email : undefined,
+            phone: phoneEdit ? values.phone : undefined,
+          })
+        });
       }
+      await fetch(`${API_ENDPOINT}/employees/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          fullName: values.fullName,
+          department: values.department,
+          position: values.position,
+          hireDate: values.hireDate.format('YYYY-MM-DD'),
+          status: values.status
+        })
+      });
+      message.success('Cập nhật nhân viên thành công!');
+      router.push('/hr-management');
     } catch (error) {
       message.error('Có lỗi xảy ra khi cập nhật nhân viên!');
     } finally {
       setLoading(false);
     }
+    // nên cân nhắc để có thể update cái mock data!
   };
 
   return (
@@ -102,7 +160,7 @@ export default function CategoryEdit() {
             { type: 'email', message: 'Email không hợp lệ!' }
           ]}
         >
-          <Input placeholder="example@company.com" />
+          <Input placeholder="example@company.com" onChange={() => setEmailEdit(true)} />
         </Form.Item>
 
         <Form.Item
@@ -110,12 +168,12 @@ export default function CategoryEdit() {
           name="phone"
           rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}
         >
-          <Input placeholder="0901234567" />
+          <Input placeholder="0901234567" onChange={() => setPhoneEdit(true)} />
         </Form.Item>
 
         <Form.Item
           label={"Ngày bắt đầu làm việc"}
-          name="startDate"
+          name="hireDate"
           rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu!' }]}
         >
           <DatePicker

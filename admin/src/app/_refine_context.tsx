@@ -196,6 +196,15 @@ const App = (props: React.PropsWithChildren<AppProps>) => {
                   },
                 },
                 {
+                  name: "working-shifts",
+                  list: "/hr-management/working-shifts",
+                  meta: {
+                    label: "Working Shifts",
+                    parent: "hr-management",
+                    icon: "⏰",
+                  },
+                },
+                {
                   name: "leaves",
                   list: "/hr-management/leaves",
                   meta: {

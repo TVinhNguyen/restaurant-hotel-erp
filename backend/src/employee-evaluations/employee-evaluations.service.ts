@@ -9,24 +9,27 @@ import { UpdateEmployeeEvaluationDto } from './dto/update-employee-evaluation.dt
 export class EmployeeEvaluationsService {
   constructor(
     @InjectRepository(EmployeeEvaluation)
-    private employeeEvaluationRepository: Repository<EmployeeEvaluation>,
+    private employeeEvaluationRepository: Repository<EmployeeEvaluation>
   ) {}
 
   async create(
-    createEmployeeEvaluationDto: CreateEmployeeEvaluationDto,
+    createEmployeeEvaluationDto: CreateEmployeeEvaluationDto
   ): Promise<EmployeeEvaluation> {
-    const evaluationData = {
-      employeeId: createEmployeeEvaluationDto.employeeId,
-      evaluatedBy: createEmployeeEvaluationDto.evaluatedBy,
-      rate: createEmployeeEvaluationDto.rate,
-      period: createEmployeeEvaluationDto.period,
-      goals: createEmployeeEvaluationDto.goals,
-      strength: createEmployeeEvaluationDto.strength,
-      improvement: createEmployeeEvaluationDto.improvement,
-      comments: createEmployeeEvaluationDto.comments,
-    };
+    // Calculate overall score from category scores
+    const overallScore =
+      ((createEmployeeEvaluationDto.workQualityScore || 0) +
+        (createEmployeeEvaluationDto.productivityScore || 0) +
+        (createEmployeeEvaluationDto.communicationScore || 0) +
+        (createEmployeeEvaluationDto.teamworkScore || 0) +
+        (createEmployeeEvaluationDto.problemSolvingScore || 0) +
+        (createEmployeeEvaluationDto.punctualityScore || 0) +
+        (createEmployeeEvaluationDto.initiativeScore || 0)) /
+      7;
 
-    const evaluation = this.employeeEvaluationRepository.create(evaluationData);
+    const evaluation = this.employeeEvaluationRepository.create({
+      ...createEmployeeEvaluationDto,
+      overallScore: Math.round(overallScore * 100) / 100 // Round to 2 decimal places
+    });
     return await this.employeeEvaluationRepository.save(evaluation);
   }
 
@@ -34,38 +37,36 @@ export class EmployeeEvaluationsService {
     page: number = 1,
     limit: number = 10,
     employeeId?: string,
-    evaluatedBy?: string,
-    period?: string,
-    rateMin?: number,
-    rateMax?: number,
+    evaluatorId?: string,
+    status?: string,
+    evaluationPeriod?: string
   ) {
     const queryBuilder = this.employeeEvaluationRepository
       .createQueryBuilder('evaluation')
-      .leftJoinAndSelect('evaluation.employee', 'employee');
+      .leftJoinAndSelect('evaluation.employee', 'employee')
+      .leftJoinAndSelect('evaluation.evaluator', 'evaluator');
 
     // Apply filters
     if (employeeId) {
       queryBuilder.andWhere('evaluation.employeeId = :employeeId', {
-        employeeId,
+        employeeId
       });
     }
 
-    if (evaluatedBy) {
-      queryBuilder.andWhere('evaluation.evaluatedBy = :evaluatedBy', {
-        evaluatedBy,
+    if (evaluatorId) {
+      queryBuilder.andWhere('evaluation.evaluatorId = :evaluatorId', {
+        evaluatorId
       });
     }
 
-    if (period) {
-      queryBuilder.andWhere('evaluation.period = :period', { period });
+    if (status) {
+      queryBuilder.andWhere('evaluation.status = :status', { status });
     }
 
-    if (rateMin !== undefined) {
-      queryBuilder.andWhere('evaluation.rate >= :rateMin', { rateMin });
-    }
-
-    if (rateMax !== undefined) {
-      queryBuilder.andWhere('evaluation.rate <= :rateMax', { rateMax });
+    if (evaluationPeriod) {
+      queryBuilder.andWhere('evaluation.evaluationPeriod = :evaluationPeriod', {
+        evaluationPeriod
+      });
     }
 
     // Apply pagination
@@ -82,19 +83,19 @@ export class EmployeeEvaluationsService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit)
     };
   }
 
   async findOne(id: string): Promise<EmployeeEvaluation> {
     const evaluation = await this.employeeEvaluationRepository.findOne({
       where: { id },
-      relations: ['employee'],
+      relations: ['employee', 'evaluator', 'evaluatedByEmployee']
     });
 
     if (!evaluation) {
       throw new NotFoundException(
-        `Employee evaluation with ID ${id} not found`,
+        `Employee evaluation with ID ${id} not found`
       );
     }
 
@@ -103,11 +104,37 @@ export class EmployeeEvaluationsService {
 
   async update(
     id: string,
-    updateEmployeeEvaluationDto: UpdateEmployeeEvaluationDto,
+    updateEmployeeEvaluationDto: UpdateEmployeeEvaluationDto
   ): Promise<EmployeeEvaluation> {
     const evaluation = await this.findOne(id);
 
     Object.assign(evaluation, updateEmployeeEvaluationDto);
+
+    // Recalculate overall score if any category scores are updated
+    const hasScoreUpdates = [
+      'workQualityScore',
+      'productivityScore',
+      'communicationScore',
+      'teamworkScore',
+      'problemSolvingScore',
+      'punctualityScore',
+      'initiativeScore'
+    ].some(field => (updateEmployeeEvaluationDto as any)[field] !== undefined);
+
+    if (hasScoreUpdates) {
+      const overallScore =
+        ((evaluation.workQualityScore || 0) +
+          (evaluation.productivityScore || 0) +
+          (evaluation.communicationScore || 0) +
+          (evaluation.teamworkScore || 0) +
+          (evaluation.problemSolvingScore || 0) +
+          (evaluation.punctualityScore || 0) +
+          (evaluation.initiativeScore || 0)) /
+        7;
+
+      evaluation.overallScore = Math.round(overallScore * 100) / 100; // Round to 2 decimal places
+    }
+
     return await this.employeeEvaluationRepository.save(evaluation);
   }
 
@@ -120,28 +147,27 @@ export class EmployeeEvaluationsService {
   async findByEmployee(
     employeeId: string,
     page: number = 1,
-    limit: number = 10,
+    limit: number = 10
   ) {
     return this.findAll(page, limit, employeeId);
   }
 
   async findByEvaluator(
-    evaluatedBy: string,
+    evaluatorId: string,
     page: number = 1,
-    limit: number = 10,
+    limit: number = 10
   ) {
-    return this.findAll(page, limit, undefined, evaluatedBy);
+    return this.findAll(page, limit, undefined, evaluatorId);
   }
 
-  async findByPeriod(period: string, page: number = 1, limit: number = 10) {
-    return this.findAll(page, limit, undefined, undefined, period);
+  async findByStatus(status: string, page: number = 1, limit: number = 10) {
+    return this.findAll(page, limit, undefined, undefined, status);
   }
 
-  async findByRateRange(
-    rateMin: number,
-    rateMax: number,
+  async findByPeriod(
+    evaluationPeriod: string,
     page: number = 1,
-    limit: number = 10,
+    limit: number = 10
   ) {
     return this.findAll(
       page,
@@ -149,44 +175,85 @@ export class EmployeeEvaluationsService {
       undefined,
       undefined,
       undefined,
-      rateMin,
-      rateMax,
+      evaluationPeriod
     );
   }
 
-  async getAverageRateByEmployee(employeeId: string) {
+  async getAverageScoreByEmployee(employeeId: string) {
     const result = await this.employeeEvaluationRepository
       .createQueryBuilder('evaluation')
-      .select('AVG(evaluation.rate)', 'averageRate')
+      .select('AVG(evaluation.overallScore)', 'averageScore')
       .addSelect('COUNT(evaluation.id)', 'totalEvaluations')
       .where('evaluation.employeeId = :employeeId', { employeeId })
-      .andWhere('evaluation.rate IS NOT NULL')
+      .andWhere('evaluation.overallScore IS NOT NULL')
       .getRawOne();
 
     return {
       employeeId,
-      averageRate: parseFloat(result.averageRate) || 0,
-      totalEvaluations: parseInt(result.totalEvaluations) || 0,
+      averageScore: parseFloat(result.averageScore) || 0,
+      totalEvaluations: parseInt(result.totalEvaluations) || 0
     };
   }
 
-  async getEvaluationStatsByPeriod(period: string) {
+  async getEvaluationStatsByPeriod(evaluationPeriod: string) {
     const result = await this.employeeEvaluationRepository
       .createQueryBuilder('evaluation')
-      .select('AVG(evaluation.rate)', 'averageRate')
+      .select('AVG(evaluation.overallScore)', 'averageScore')
       .addSelect('COUNT(evaluation.id)', 'totalEvaluations')
-      .addSelect('MIN(evaluation.rate)', 'minRate')
-      .addSelect('MAX(evaluation.rate)', 'maxRate')
-      .where('evaluation.period = :period', { period })
-      .andWhere('evaluation.rate IS NOT NULL')
+      .addSelect('MIN(evaluation.overallScore)', 'minScore')
+      .addSelect('MAX(evaluation.overallScore)', 'maxScore')
+      .where('evaluation.evaluationPeriod = :evaluationPeriod', {
+        evaluationPeriod
+      })
+      .andWhere('evaluation.overallScore IS NOT NULL')
       .getRawOne();
 
     return {
-      period,
-      averageRate: parseFloat(result.averageRate) || 0,
+      evaluationPeriod,
+      averageScore: parseFloat(result.averageScore) || 0,
       totalEvaluations: parseInt(result.totalEvaluations) || 0,
-      minRate: parseInt(result.minRate) || 0,
-      maxRate: parseInt(result.maxRate) || 0,
+      minScore: parseFloat(result.minScore) || 0,
+      maxScore: parseFloat(result.maxScore) || 0
     };
+  }
+
+  async acknowledgeEvaluation(
+    id: string,
+    employeeComments?: string
+  ): Promise<EmployeeEvaluation> {
+    const evaluation = await this.findOne(id);
+
+    evaluation.employeeAcknowledged = true;
+    evaluation.employeeAcknowledgedDate = new Date();
+    if (employeeComments) {
+      evaluation.employeeComments = employeeComments;
+    }
+
+    return await this.employeeEvaluationRepository.save(evaluation);
+  }
+
+  async calculateOverallScore(evaluationId: string): Promise<number> {
+    const evaluation = await this.findOne(evaluationId);
+
+    const scores = [
+      evaluation.workQualityScore,
+      evaluation.productivityScore,
+      evaluation.communicationScore,
+      evaluation.teamworkScore,
+      evaluation.problemSolvingScore,
+      evaluation.punctualityScore,
+      evaluation.initiativeScore
+    ].filter(score => score !== null && score !== undefined);
+
+    if (scores.length === 0) return 0;
+
+    const average =
+      scores.reduce((sum, score) => sum + score, 0) / scores.length;
+
+    // Update the overall score in database
+    evaluation.overallScore = Math.round(average * 100) / 100; // Round to 2 decimal places
+    await this.employeeEvaluationRepository.save(evaluation);
+
+    return evaluation.overallScore;
   }
 }

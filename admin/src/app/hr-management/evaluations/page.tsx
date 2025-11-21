@@ -1,51 +1,19 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { act, useEffect, useState } from 'react';
 import {
-    Card,
-    Table,
-    Button,
-    Modal,
-    Form,
-    Select,
-    Input,
-    Rate,
-    message,
-    Tag,
-    Space,
-    Row,
-    Col,
-    Statistic,
-    Typography,
-    Progress,
-    List,
-    Avatar,
-    Tooltip,
-    Divider,
-    Alert,
-    Tabs
+    Card, Table, Button, Modal, Form, Select, Input, Rate, message, Tag, Space, Row, Col, Statistic, Typography, Progress,
+    List, Avatar, Tooltip, Divider, Alert, Tabs
 } from 'antd';
 import {
-    StarOutlined,
-    TrophyOutlined,
-    UserOutlined,
-    PlusOutlined,
-    EyeOutlined,
-    EditOutlined,
-    CheckCircleOutlined,
-    ClockCircleOutlined,
-    FileTextOutlined
+    StarOutlined, TrophyOutlined, UserOutlined, PlusOutlined, EyeOutlined, EditOutlined, CheckCircleOutlined,
+    ClockCircleOutlined, FileTextOutlined
 } from '@ant-design/icons';
 import {
-    getMockEvaluations,
-    getMockEvaluationsByEmployee,
-    addMockEvaluation,
-    updateMockEvaluation,
-    evaluationCategories,
-    scoreDescriptions,
-    type EmployeeEvaluation
+    getMockEvaluations, getMockEvaluationsByEmployee, addMockEvaluation, updateMockEvaluation,
+    evaluationCategories, scoreDescriptions, type EmployeeEvaluation
 } from '../../../data/mockEvaluations';
-import { getMockEmployees } from '../../../data/mockEmployees';
+import { Employee, getMockEmployees } from '../../../data/mockEmployees';
 import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
@@ -57,18 +25,130 @@ export default function EvaluationsPage() {
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [selectedEvaluation, setSelectedEvaluation] = useState<EmployeeEvaluation | null>(null);
     const [form] = Form.useForm();
-    const [evaluations, setEvaluations] = useState(getMockEvaluations());
+    const [evaluations, setEvaluations] = useState<EmployeeEvaluation[]>([]);
     const [activeTab, setActiveTab] = useState('all');
 
-    const employees = getMockEmployees();
+    const currentYear = dayjs().year();
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+
+    useEffect(() => {
+        const getAllEmployees = async () => {
+            const employeesResponse = await fetch(`${API_ENDPOINT}/employees`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                }
+            }).then();
+            if (employeesResponse.ok) {
+                const employeesData = await employeesResponse.json();
+                const formattedEmployees = employeesData.data.map((employee: any, index: number) => {
+                    console.log('Raw employee data:', employee);
+                    return {
+                        id: employee.id || `emp-${index}`,
+                        userId: employeesData.userId || employeesData.data?.userId || 'Unknown',
+                        fullName: employee.fullName || employee.full_name || 'Unknown',
+                        position: employee.position || 'Not specified',
+                        department: employee.department || 'Unassigned',
+                        status: employee.status || 'active',
+                    };
+                });
+                setEmployees(formattedEmployees);
+            }
+        }
+        const getAllEvaluations = async () => {
+            const evaluationsResponse = await fetch(`${API_ENDPOINT}/employee-evaluations`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            if (evaluationsResponse.ok) {
+                const evaluationsData = await evaluationsResponse.json();
+                const formattedEvaluations = evaluationsData.data.map((evaluation: any, index: number) => {
+                    console.log('Raw evaluation data evaluation:', evaluation);
+                    console.log(typeof evaluation.workQualityScore);
+                    return {
+                        id: evaluation.id || `eval-${index}`,
+                        employeeId: evaluation.employeeId || evaluation.employee_id || 'Unknown',
+                        employeeName: evaluation.employeeName || evaluation.employee_name || 'Unknown',
+                        evaluatorId: evaluation.evaluatorId || evaluation.evaluator_id || 'Unknown',
+                        evaluatorName: evaluation.evaluatorName || evaluation.evaluator_name || 'Unknown',
+                        evaluationPeriod: evaluation.evaluationPeriod || evaluation.evaluation_period || `Year ${currentYear}`,
+                        evaluationDate: evaluation.evaluationDate || evaluation.evaluation_date || dayjs().format('YYYY-MM-DD'),
+                        status: evaluation.status || 'draft',
+
+                        overallScore: (
+                            (Number(evaluation.workQualityScore) || 0) +
+                            (Number(evaluation.productivityScore) || 0) +
+                            (Number(evaluation.communicationScore) || 0) +
+                            (Number(evaluation.teamworkScore) || 0) +
+                            (Number(evaluation.problemSolvingScore) || 0) +
+                            (Number(evaluation.punctualityScore) || 0) +
+                            (Number(evaluation.initiativeScore) || 0)
+                        ) / 7,
+                        workQuality: {
+                            score: evaluation.workQualityScore || evaluation.work_quality_score || 0,
+                            comments: evaluation.workQualityComments || evaluation.work_quality_comments || ''
+                        },
+                        productivity: {
+                            score: evaluation.productivityScore || evaluation.productivity_score || 0,
+                            comments: evaluation.productivityComments || evaluation.productivity_comments || ''
+                        },
+                        communication: {
+                            score: evaluation.communicationScore || evaluation.communication_score || 0,
+                            comments: evaluation.communicationComments || evaluation.communication_comments || ''
+                        },
+                        teamwork: {
+                            score: evaluation.teamworkScore || evaluation.teamwork_score || 0,
+                            comments: evaluation.teamworkComments || evaluation.teamwork_comments || ''
+                        },
+                        problemSolving: {
+                            score: evaluation.problemSolvingScore || evaluation.problem_solving_score || 0,
+                            comments: evaluation.problemSolvingComments || evaluation.problem_solving_comments || ''
+                        },
+                        punctuality: {
+                            score: evaluation.punctualityScore || evaluation.punctuality_score || 0,
+                            comments: evaluation.punctualityComments || evaluation.punctuality_comments || ''
+                        },
+                        initiative: {
+                            score: evaluation.initiativeScore || evaluation.initiative_score || 0,
+                            comments: evaluation.initiativeComments || evaluation.initiative_comments || ''
+                        },
+
+                        recommendedAction: evaluation.recommendedAction || evaluation.recommended_action || 'maintain',
+                        overallComments: evaluation.overallComments || evaluation.overall_comments || '',
+                        salaryRecommendation: evaluation.salaryRecommendation || evaluation.salary_recommendation || 0,
+                        strengths: evaluation.strengths || [],
+                        areasForImprovement: evaluation.areasForImprovement || evaluation.areas_for_improvement || [],
+                        goals: evaluation.goals || [],
+                        trainingRecommendations: evaluation.trainingRecommendations || evaluation.training_recommendations || [],
+                        employeeAcknowledged: evaluation.employeeAcknowledged || evaluation.employee_acknowledged || false,
+                        employeeComments: evaluation.employeeComments || evaluation.employee_comments || '',
+                        employeeAcknowledgedDate: evaluation.employeeAcknowledgedDate || evaluation.employee_acknowledged_date || null,
+                    }
+                });
+                setEvaluations(formattedEvaluations);
+            } else {
+                message.error('Failed to fetch evaluations from server.');
+                setEvaluations([]);
+            }
+        }
+        getAllEmployees();
+        getAllEvaluations();
+    }, []);
 
     // Calculate statistics
     const completedEvaluations = evaluations.filter(evaluation => evaluation.status === 'completed' || evaluation.status === 'approved').length;
     const pendingEvaluations = evaluations.filter(evaluation => evaluation.status === 'draft' || evaluation.status === 'reviewed').length;
-    const averageScore = evaluations.reduce((sum, evaluation) => sum + evaluation.overallScore, 0) / evaluations.length;
+    const averageScore = evaluations.length > 0
+        ? evaluations.reduce((sum, evaluation) => sum + (Number(evaluation.overallScore) || 0), 0) / evaluations.length
+        : 0;
     const topPerformers = evaluations
-        .filter(evaluation => evaluation.overallScore >= 4.5)
-        .sort((a, b) => b.overallScore - a.overallScore)
+        .filter(evaluation => (Number(evaluation.overallScore) || 0) >= 4.5)
+        .sort((a, b) => (Number(b.overallScore) || 0) - (Number(a.overallScore) || 0))
         .slice(0, 3);
 
     const handleCreateEvaluation = async (values: any) => {
@@ -78,12 +158,55 @@ export default function EvaluationsPage() {
                 message.error('Employee not found!');
                 return;
             }
+            const evaluator = JSON.parse(localStorage.getItem('user') || '{}');
+            const newEvaluationAddToDB = {
+                employeeId: values.employeeId,
+                employeeName: employee.fullName,
+                evaluatorId: evaluator.id,
+                evaluatorName: evaluator.name,
+                evaluationPeriod: values.evaluationPeriod,
+                evaluationDate: dayjs().format('YYYY-MM-DD'),
+                status: 'draft',
 
+                workQualityScore: values.workQuality,
+                workQualityComments: values.workQualityComments,
+                productivityScore: values.productivity,
+                productivityComments: values.productivityComments,
+                communicationScore: values.communication,
+                communicationComments: values.communicationComments,
+                teamworkScore: values.teamwork,
+                teamworkComments: values.teamworkComments,
+                problemSolvingScore: values.problemSolving,
+                problemSolvingComments: values.problemSolvingComments,
+                punctualityScore: values.punctuality,
+                punctualityComments: values.punctualityComments,
+                initiativeScore: values.initiative,
+                initiativeComments: values.initiativeComments,
+
+                overallComments: values.overallComments || '',
+                strengths: values.strengths ? values.strengths.split(',').map((s: string) => s.trim()) : [],
+                areasForImprovement: values.areasForImprovement ? values.areasForImprovement.split(',').map((s: string) => s.trim()) : [],
+                goals: values.goals ? values.goals.split(',').map((s: string) => s.trim()) : [],
+
+                recommendedAction: values.recommendedAction,
+                salaryRecommendation: values.salaryRecommendation,
+                trainingRecommendations: values.trainingRecommendations ? values.trainingRecommendations.split(',').map((s: string) => s.trim()) : [],
+
+                employeeAcknowledged: false
+            }
+            await fetch(`${API_ENDPOINT}/employee-evaluations`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(newEvaluationAddToDB)
+            });
             const newEvaluation = addMockEvaluation({
                 employeeId: values.employeeId,
                 employeeName: employee.fullName,
-                evaluatorId: 'hr1',
-                evaluatorName: 'HR Manager',
+                evaluatorId: evaluator.id,
+                evaluatorName: evaluator.name,
                 evaluationPeriod: values.evaluationPeriod,
                 evaluationDate: dayjs().format('YYYY-MM-DD'),
                 status: 'draft',
@@ -128,7 +251,6 @@ export default function EvaluationsPage() {
 
                 employeeAcknowledged: false
             });
-
             setEvaluations([...evaluations, newEvaluation]);
             message.success('Evaluation created successfully!');
             setIsModalVisible(false);
@@ -182,24 +304,27 @@ export default function EvaluationsPage() {
             title: 'Overall Score',
             dataIndex: 'overallScore',
             key: 'overallScore',
-            render: (score: number) => (
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                        fontSize: '18px',
-                        fontWeight: 'bold',
-                        color: getScoreColor(score)
-                    }}>
-                        {score.toFixed(2)}
+            render: (score: number) => {
+                const safeScore = Number(score) || 0;
+                return (
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            color: getScoreColor(safeScore)
+                        }}>
+                            {safeScore.toFixed(2)}
+                        </div>
+                        <Rate
+                            disabled
+                            value={safeScore}
+                            allowHalf
+                            style={{ fontSize: '12px' }}
+                        />
                     </div>
-                    <Rate
-                        disabled
-                        value={score}
-                        allowHalf
-                        style={{ fontSize: '12px' }}
-                    />
-                </div>
-            ),
-            sorter: (a: EmployeeEvaluation, b: EmployeeEvaluation) => a.overallScore - b.overallScore,
+                );
+            },
+            sorter: (a: EmployeeEvaluation, b: EmployeeEvaluation) => (a.overallScore || 0) - (b.overallScore || 0),
         },
         {
             title: 'Status',
@@ -229,7 +354,13 @@ export default function EvaluationsPage() {
                     improvement_plan: { color: 'warning', text: 'Improvement Plan' },
                     warning: { color: 'red', text: 'Warning' },
                 };
-                const config = actionConfig[action as keyof typeof actionConfig];
+
+                // Add safety check
+                const config = actionConfig[action as keyof typeof actionConfig] || {
+                    color: 'default',
+                    text: action || 'Not specified'
+                };
+
                 return <Tag color={config.color}>{config.text}</Tag>;
             },
         },
@@ -459,7 +590,7 @@ export default function EvaluationsPage() {
                                 rules={[{ required: true, message: 'Please select an employee!' }]}
                             >
                                 <Select placeholder="Select employee">
-                                    {employees.filter(emp => emp.status === 'active').map(employee => (
+                                    {employees != null && employees.filter(emp => emp.status === 'active').map(employee => (
                                         <Select.Option key={employee.id} value={employee.id}>
                                             {employee.fullName} - {employee.position}
                                         </Select.Option>
@@ -474,11 +605,11 @@ export default function EvaluationsPage() {
                                 rules={[{ required: true, message: 'Please enter evaluation period!' }]}
                             >
                                 <Select placeholder="Select period">
-                                    <Select.Option value="Q1 2025">Q1 2025</Select.Option>
-                                    <Select.Option value="Q2 2025">Q2 2025</Select.Option>
-                                    <Select.Option value="Q3 2025">Q3 2025</Select.Option>
-                                    <Select.Option value="Q4 2025">Q4 2025</Select.Option>
-                                    <Select.Option value="2025 Annual">2025 Annual</Select.Option>
+                                    <Select.Option value={`Q1 ${currentYear}`}>Q1 {currentYear}</Select.Option>
+                                    <Select.Option value={`Q2 ${currentYear}`}>Q2 {currentYear}</Select.Option>
+                                    <Select.Option value={`Q3 ${currentYear}`}>Q3 {currentYear}</Select.Option>
+                                    <Select.Option value={`Q4 ${currentYear}`}>Q4 {currentYear}</Select.Option>
+                                    <Select.Option value={`${currentYear} Annual`}>{currentYear} Annual</Select.Option>
                                 </Select>
                             </Form.Item>
                         </Col>

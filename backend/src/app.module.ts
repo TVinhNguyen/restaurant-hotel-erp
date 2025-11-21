@@ -31,7 +31,7 @@ import { ReservationServicesModule } from './reservation-services/reservation-se
 import { PropertyServicesModule } from './property-services/property-services.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
 // import { ReportsModule } from './reports/reports.module';
-// import { AttendanceModule } from './attendance/attendance.module';
+import { AttendanceModule } from './attendance/attendance.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { LeaveModule } from './leave/leave.module';
 import { WorkingShiftsModule } from './working-shifts/working-shifts.module';
@@ -123,7 +123,7 @@ import { MessagingModule } from './infra.messaging';
     PropertyServicesModule,
     RestaurantsModule, // ✅ ENABLED - Restaurant management module
     // ReportsModule, // Disabled due to compilation errors
-    // AttendanceModule, // Disabled due to compilation errors
+    AttendanceModule,
     PayrollModule,
     LeaveModule,
     WorkingShiftsModule,
