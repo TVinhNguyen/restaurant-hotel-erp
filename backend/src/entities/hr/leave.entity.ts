@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from 'typeorm';
 import { Employee } from '../core/employee.entity';
 
@@ -20,23 +20,45 @@ export class Leave {
   @Column({ name: 'leave_date', type: 'date' })
   leaveDate: Date;
 
+  @Column({ name: 'start_date', type: 'date' })
+  startDate: Date;
+
+  @Column({ name: 'end_date', type: 'date' })
+  endDate: Date;
+
   @Column({ name: 'number_of_days', type: 'int', default: 1 })
   numberOfDays: number;
 
   @Column({ name: 'leave_type', length: 20 })
-  leaveType: 'annual' | 'sick' | 'unpaid' | 'other';
+  leaveType:
+    | 'annual'
+    | 'sick'
+    | 'unpaid'
+    | 'personal'
+    | 'maternity'
+    | 'emergency'
+    | 'other';
 
   @Column({ length: 20, default: 'pending' })
   status: 'pending' | 'approved' | 'rejected';
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text' })
   reason: string;
+
+  @Column({ name: 'applied_date', type: 'date', nullable: true })
+  appliedDate: Date;
 
   @Column({ name: 'approved_by', type: 'uuid', nullable: true })
   approvedBy: string;
 
+  @Column({ name: 'approved_date', type: 'date', nullable: true })
+  approvedDate: Date;
+
   @Column({ name: 'hr_note', type: 'text', nullable: true })
   hrNote: string;
+
+  @Column({ name: 'rejection_reason', type: 'text', nullable: true })
+  rejectionReason: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -45,7 +67,7 @@ export class Leave {
   updatedAt: Date;
 
   // Relations
-  @ManyToOne(() => Employee, (employee) => employee.leaves)
+  @ManyToOne(() => Employee, employee => employee.leaves)
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 

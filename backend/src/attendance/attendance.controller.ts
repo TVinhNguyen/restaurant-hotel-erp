@@ -15,10 +15,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { AttendanceService } from './attendance.service';
 import {
   CreateAttendanceDto,
-  UpdateAttendanceDto,
   BulkAttendanceDto,
   AttendanceStatus
 } from './dto/create-attendance.dto';
+import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 
 @Controller('attendance')
 @UseGuards(AuthGuard('jwt'))
@@ -37,13 +37,16 @@ export class AttendanceController {
 
   @Get()
   async findAllAttendance(
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('limit', ParseIntPipe) limit: number = 10,
+    @Query('page') pageParam?: string,
+    @Query('limit') limitParam?: string,
     @Query('employeeId') employeeId?: string,
     @Query('date') date?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
+    const page = pageParam ? parseInt(pageParam, 10) : 1;
+    const limit = limitParam ? parseInt(limitParam, 10) : 10;
+
     return this.attendanceService.findAllAttendance(
       page,
       limit,

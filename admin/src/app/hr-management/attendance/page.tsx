@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Card,
     Table,
@@ -18,7 +18,8 @@ import {
     Statistic,
     Progress,
     Space,
-    Typography
+    Typography,
+    Popconfirm
 } from 'antd';
 import {
     ClockCircleOutlined,
@@ -26,23 +27,138 @@ import {
     CloseCircleOutlined,
     ExclamationCircleOutlined,
     PlusOutlined,
-    CalendarOutlined
+    CalendarOutlined,
+    EditOutlined,
+    DeleteOutlined
 } from '@ant-design/icons';
-import { getMockAttendance, getMockAttendanceByDate, addMockAttendance, type AttendanceRecord } from '../../../data/mockAttendance';
-import { getMockEmployees } from '../../../data/mockEmployees';
+import { mockAttendance, type AttendanceRecord } from '../../../data/mockAttendanceNew';
+import { Employee, getMockEmployees } from '../../../data/mockEmployees';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
 
 export default function AttendancePage() {
+    const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [selectedAttendance, setSelectedAttendance] = useState<AttendanceRecord | null>(null);
     const [form] = Form.useForm();
 
-    const allAttendance = getMockAttendance();
-    const todayAttendance = getMockAttendanceByDate(selectedDate.format('YYYY-MM-DD'));
-    const employees = getMockEmployees();
+    const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(mockAttendance);
+    const [workingShifts, setWorkingShifts] = useState<any[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+
+    const todayAttendance = attendanceRecords.filter(record => {
+        const recordDate = record.date;
+        const selectedDateStr = selectedDate.format('YYYY-MM-DD');
+        console.log('Filtering attendance:', { recordDate, selectedDateStr, match: recordDate === selectedDateStr });
+        return recordDate === selectedDateStr;
+    });
+
+    console.log('Total attendance records:', attendanceRecords.length);
+    console.log('Today attendance records:', todayAttendance.length);
+    useEffect(() => {
+        fetchEmployees();
+        fetchWorkingShifts();
+        fetchAttendance();
+    }, []);
+    const fetchEmployees = async () => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/employees`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const formattedEmployees = data.data.map((employee: any) => ({
+                    id: employee.id,
+                    fullName: employee.fullName || employee.full_name || 'Unknown',
+                    position: employee.position || 'Not specified',
+                    department: employee.department || 'Unassigned',
+                    status: employee.status || 'active',
+                }));
+                setEmployees(formattedEmployees);
+            }
+        } catch (error) {
+            console.error('Error fetching employees:', error);
+        }
+    };
+
+    const fetchWorkingShifts = async () => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/working-shifts`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const formattedShifts = data.data.map((shift: any) => ({
+                    id: shift.id,
+                    employeeId: shift.employeeId || shift.employee_id,
+                    employeeName: shift.employee?.fullName || shift.employee?.full_name || 'Unknown',
+                    workingDate: shift.workingDate || shift.working_date,
+                    startTime: shift.startTime || shift.start_time,
+                    endTime: shift.endTime || shift.end_time,
+                    shiftType: shift.shiftType || shift.shift_type
+                }));
+                setWorkingShifts(formattedShifts);
+            }
+        } catch (error) {
+            console.error('Error fetching working shifts:', error);
+        }
+    };
+
+    const fetchAttendance = async () => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/attendance?page=1&limit=10`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Attendance response:', result);
+
+                // Handle the response format from backend service
+                const attendanceData = result.data || result;
+                const formattedAttendance = attendanceData.map((record: any) => ({
+                    id: record.id,
+                    workingShiftId: record.workingShiftId || record.working_shift_id,
+                    employeeId: record.employeeId || record.employee_id,
+                    employeeName: record.employee?.fullName || record.employee?.full_name || 'Unknown',
+                    date: record.date,
+                    checkIn: record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',
+                    checkOut: record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',
+                    status: record.status,
+                    notes: record.notes || ''
+                }));
+                setAttendanceRecords(formattedAttendance);
+            } else {
+                console.error('Failed to fetch attendance:', response.status, response.statusText);
+                message.error('Failed to fetch attendance records');
+                // Fallback to mock data
+                setAttendanceRecords(mockAttendance);
+            }
+        } catch (error) {
+            console.error('Error fetching attendance:', error);
+            message.error('Error fetching attendance records');
+            // Fallback to mock data
+            setAttendanceRecords(mockAttendance);
+        }
+    };
 
     // Calculate statistics
     const presentCount = todayAttendance.filter(a => a.status === 'present').length;
@@ -50,8 +166,8 @@ export default function AttendancePage() {
     const lateCount = todayAttendance.filter(a => a.status === 'late').length;
     const halfDayCount = todayAttendance.filter(a => a.status === 'half-day').length;
 
-    const totalWorkingHours = todayAttendance.reduce((sum, a) => sum + (a.workingHours || 0), 0);
-    const totalOvertime = todayAttendance.reduce((sum, a) => sum + (a.overtime || 0), 0);
+    // Statistics calculations
+    const attendancePercentage = employees.length > 0 ? (presentCount / employees.length) * 100 : 0;
 
     const columns = [
         {
@@ -59,6 +175,15 @@ export default function AttendancePage() {
             dataIndex: 'employeeName',
             key: 'employeeName',
             sorter: (a: AttendanceRecord, b: AttendanceRecord) => a.employeeName.localeCompare(b.employeeName),
+        },
+        {
+            title: 'Working Shift',
+            dataIndex: 'workingShiftId',
+            key: 'workingShiftId',
+            render: (shiftId: string) => {
+                const shift = workingShifts.find(s => s.id === shiftId);
+                return shift ? `${shift.shiftType} (${shift.startTime}-${shift.endTime})` : 'No Shift';
+            },
         },
         {
             title: 'Date',
@@ -93,45 +218,148 @@ export default function AttendancePage() {
                 return <Tag color={config.color}>{config.text}</Tag>;
             },
         },
-        {
-            title: 'Working Hours',
-            dataIndex: 'workingHours',
-            key: 'workingHours',
-            render: (hours: number) => hours ? `${hours}h` : '-',
-        },
-        {
-            title: 'Overtime',
-            dataIndex: 'overtime',
-            key: 'overtime',
-            render: (hours: number) => hours ? `${hours}h` : '-',
-        },
+        // {
+        //     title: 'Working Hours',
+        //     dataIndex: 'workingHours',
+        //     key: 'workingHours',
+        //     render: (hours: number) => hours ? `${hours}h` : '-',
+        // },
+        // {
+        //     title: 'Overtime',
+        //     dataIndex: 'overtime',
+        //     key: 'overtime',
+        //     render: (hours: number) => hours ? `${hours}h` : '-',
+        // },
         {
             title: 'Notes',
             dataIndex: 'notes',
             key: 'notes',
             render: (notes: string) => notes || '-',
         },
+        {
+            title: 'Actions',
+            key: 'actions',
+            render: (_: any, record: AttendanceRecord) => (
+                <Space>
+                    <Button
+                        size="small"
+                        type="primary"
+                        icon={<EditOutlined />}
+                        onClick={() => showEditModal(record)}
+                    >
+                        Edit
+                    </Button>
+                    <Popconfirm
+                        title="Delete Attendance"
+                        description="Are you sure you want to delete this attendance record?"
+                        onConfirm={() => handleDeleteAttendance(record.id)}
+                        okText="Yes"
+                        cancelText="No"
+                    >
+                        <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                        >
+                            Delete
+                        </Button>
+                    </Popconfirm>
+                </Space>
+            ),
+        },
     ];
 
-    const handleAddAttendance = (values: any) => {
-        const newRecord = {
-            employeeId: values.employeeId,
-            employeeName: employees.find(emp => emp.id === values.employeeId)?.fullName || '',
-            date: values.date.format('YYYY-MM-DD'),
-            checkIn: values.checkIn?.format('HH:mm') || '',
-            checkOut: values.checkOut?.format('HH:mm') || '',
-            status: values.status,
-            workingHours: values.workingHours || 0,
-            overtime: values.overtime || 0,
-            notes: values.notes || '',
-        };
+    const handleAddAttendance = async (values: any) => {
+        try {
+            const attendanceData = {
+                employeeId: values.employeeId,
+                workingShiftId: values.workingShiftId || null,
+                date: values.date.format('YYYY-MM-DD'),
+                checkInTime: values.checkIn ? `${values.date.format('YYYY-MM-DD')}T${values.checkIn.format('HH:mm:ss')}` : null,
+                checkOutTime: values.checkOut ? `${values.date.format('YYYY-MM-DD')}T${values.checkOut.format('HH:mm:ss')}` : null,
+                status: values.status,
+                notes: values.notes || ''
+            };
 
-        addMockAttendance(newRecord);
-        message.success('Attendance record added successfully!');
-        setIsModalVisible(false);
-        form.resetFields();
-        // Trigger re-render by updating state (in real app, you'd refetch data)
-        window.location.reload();
+            let response;
+            if (isEditMode && selectedAttendance) {
+                // Update existing attendance
+                response = await fetch(`${API_ENDPOINT}/attendance/${selectedAttendance.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                    body: JSON.stringify(attendanceData)
+                });
+            } else {
+                // Create new attendance
+                response = await fetch(`${API_ENDPOINT}/attendance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                    body: JSON.stringify(attendanceData)
+                });
+            }
+
+            if (response.ok) {
+                message.success(`Attendance record ${isEditMode ? 'updated' : 'added'} successfully!`);
+                setIsModalVisible(false);
+                setIsEditMode(false);
+                setSelectedAttendance(null);
+                form.resetFields();
+                fetchAttendance(); // Refresh data
+            } else {
+                const error = await response.json();
+                message.error(`Error ${isEditMode ? 'updating' : 'creating'} attendance: ${error.message}`);
+            }
+        } catch (error) {
+            console.error('Error with attendance:', error);
+            message.error(`Error ${isEditMode ? 'updating' : 'creating'} attendance record`);
+        }
+    };
+
+    const showEditModal = (attendance: AttendanceRecord) => {
+        setIsEditMode(true);
+        setSelectedAttendance(attendance);
+
+        // Pre-populate form with existing data
+        form.setFieldsValue({
+            employeeId: attendance.employeeId,
+            workingShiftId: attendance.workingShiftId,
+            date: dayjs(attendance.date),
+            checkIn: attendance.checkIn ? dayjs(attendance.checkIn, 'HH:mm') : null,
+            checkOut: attendance.checkOut ? dayjs(attendance.checkOut, 'HH:mm') : null,
+            status: attendance.status,
+            notes: attendance.notes
+        });
+
+        setIsModalVisible(true);
+    };
+
+    const handleDeleteAttendance = async (id: string) => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/attendance/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                }
+            });
+
+            if (response.ok) {
+                message.success('Attendance record deleted successfully!');
+                fetchAttendance(); // Refresh data
+            } else {
+                const error = await response.json();
+                message.error(`Error deleting attendance: ${error.message}`);
+            }
+        } catch (error) {
+            console.error('Error deleting attendance:', error);
+            message.error('Error deleting attendance record');
+        }
     };
 
     return (
@@ -173,39 +401,18 @@ export default function AttendancePage() {
                 <Col xs={24} sm={12} md={6}>
                     <Card>
                         <Statistic
-                            title="Half Day"
-                            value={halfDayCount}
-                            prefix={<ClockCircleOutlined style={{ color: '#1890ff' }} />}
-                            valueStyle={{ color: '#1890ff' }}
+                            title="Attendance Rate"
+                            value={attendancePercentage}
+                            precision={1}
+                            suffix="%"
+                            prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                            valueStyle={{ color: attendancePercentage >= 80 ? '#52c41a' : '#faad14' }}
                         />
                     </Card>
                 </Col>
             </Row>
 
-            {/* Working Hours Summary */}
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-                <Col xs={24} md={12}>
-                    <Card>
-                        <Statistic
-                            title="Total Working Hours"
-                            value={totalWorkingHours}
-                            suffix="hours"
-                            prefix={<ClockCircleOutlined />}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} md={12}>
-                    <Card>
-                        <Statistic
-                            title="Total Overtime"
-                            value={totalOvertime}
-                            suffix="hours"
-                            prefix={<ClockCircleOutlined />}
-                            valueStyle={{ color: totalOvertime > 0 ? '#faad14' : undefined }}
-                        />
-                    </Card>
-                </Col>
-            </Row>
+            {/* Working Hours Summary - Removed since not in new structure */}
 
             {/* Date Filter and Add Button */}
             <Card style={{ marginBottom: '24px' }}>
@@ -215,8 +422,19 @@ export default function AttendancePage() {
                             <CalendarOutlined />
                             <DatePicker
                                 value={selectedDate}
-                                onChange={(date) => setSelectedDate(date || dayjs())}
+                                onChange={(date) => {
+                                    console.log('DatePicker onChange:', date);
+                                    if (date) {
+                                        setSelectedDate(date);
+                                        console.log('Selected date updated to:', date.format('YYYY-MM-DD'));
+                                    } else {
+                                        setSelectedDate(dayjs());
+                                        console.log('Selected date reset to today');
+                                    }
+                                }}
                                 format="DD/MM/YYYY"
+                                allowClear={false}
+                                placeholder="Select date"
                             />
                         </Space>
                     </Col>
@@ -224,7 +442,12 @@ export default function AttendancePage() {
                         <Button
                             type="primary"
                             icon={<PlusOutlined />}
-                            onClick={() => setIsModalVisible(true)}
+                            onClick={() => {
+                                setIsEditMode(false);
+                                setSelectedAttendance(null);
+                                form.resetFields();
+                                setIsModalVisible(true);
+                            }}
                         >
                             Add Attendance
                         </Button>
@@ -249,10 +472,12 @@ export default function AttendancePage() {
 
             {/* Add Attendance Modal */}
             <Modal
-                title="Add Attendance Record"
+                title={isEditMode ? "Edit Attendance Record" : "Add Attendance Record"}
                 open={isModalVisible}
                 onCancel={() => {
                     setIsModalVisible(false);
+                    setIsEditMode(false);
+                    setSelectedAttendance(null);
                     form.resetFields();
                 }}
                 footer={null}
@@ -272,6 +497,19 @@ export default function AttendancePage() {
                             {employees.map(employee => (
                                 <Select.Option key={employee.id} value={employee.id}>
                                     {employee.fullName} - {employee.position}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Working Shift (Optional)"
+                        name="workingShiftId"
+                    >
+                        <Select placeholder="Select working shift (optional)" allowClear>
+                            {workingShifts.map(shift => (
+                                <Select.Option key={shift.id} value={shift.id}>
+                                    {shift.employeeName} - {shift.workingDate} ({shift.startTime} - {shift.endTime})
                                 </Select.Option>
                             ))}
                         </Select>
@@ -324,7 +562,7 @@ export default function AttendancePage() {
                         </Select>
                     </Form.Item>
 
-                    <Row gutter={16}>
+                    {/* <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item
                                 label="Working Hours"
@@ -341,7 +579,7 @@ export default function AttendancePage() {
                                 <Input type="number" min={0} max={12} step={0.5} />
                             </Form.Item>
                         </Col>
-                    </Row>
+                    </Row> */}
 
                     <Form.Item
                         label="Notes"
@@ -354,12 +592,14 @@ export default function AttendancePage() {
                         <Space>
                             <Button onClick={() => {
                                 setIsModalVisible(false);
+                                setIsEditMode(false);
+                                setSelectedAttendance(null);
                                 form.resetFields();
                             }}>
                                 Cancel
                             </Button>
                             <Button type="primary" htmlType="submit">
-                                Add Record
+                                {isEditMode ? "Update Record" : "Add Record"}
                             </Button>
                         </Space>
                     </Form.Item>

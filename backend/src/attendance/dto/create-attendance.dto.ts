@@ -1,10 +1,16 @@
-import { IsUUID, IsOptional, IsDateString, IsString, IsIn } from 'class-validator';
+import {
+  IsUUID,
+  IsOptional,
+  IsDateString,
+  IsString,
+  IsIn
+} from 'class-validator';
 
 export enum AttendanceStatus {
   PRESENT = 'present',
   ABSENT = 'absent',
   LATE = 'late',
-  HALF_DAY = 'half_day',
+  HALF_DAY = 'half_day'
 }
 
 export class CreateAttendanceDto {
@@ -15,6 +21,9 @@ export class CreateAttendanceDto {
   @IsUUID()
   workingShiftId?: string;
 
+  @IsDateString()
+  date: string;
+
   @IsOptional()
   @IsDateString()
   checkInTime?: string;
@@ -24,22 +33,8 @@ export class CreateAttendanceDto {
   checkOutTime?: string;
 
   @IsOptional()
-  @IsString()
-  notes?: string;
-}
-
-export class UpdateAttendanceDto {
-  @IsOptional()
-  @IsUUID()
-  workingShiftId?: string;
-
-  @IsOptional()
-  @IsDateString()
-  checkInTime?: string;
-
-  @IsOptional()
-  @IsDateString()
-  checkOutTime?: string;
+  @IsIn(['present', 'absent', 'late', 'half-day'])
+  status?: 'present' | 'absent' | 'late' | 'half-day';
 
   @IsOptional()
   @IsString()

@@ -34,24 +34,20 @@ export class EmployeeEvaluationsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('employeeId') employeeId?: string,
-    @Query('evaluatedBy') evaluatedBy?: string,
-    @Query('period') period?: string,
-    @Query('rateMin') rateMin?: string,
-    @Query('rateMax') rateMax?: string
+    @Query('evaluatorId') evaluatorId?: string,
+    @Query('status') status?: string,
+    @Query('evaluationPeriod') evaluationPeriod?: string
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    const rateMinNum = rateMin ? parseInt(rateMin, 10) : undefined;
-    const rateMaxNum = rateMax ? parseInt(rateMax, 10) : undefined;
 
     return this.employeeEvaluationsService.findAll(
       pageNum,
       limitNum,
       employeeId,
-      evaluatedBy,
-      period,
-      rateMinNum,
-      rateMaxNum
+      evaluatorId,
+      status,
+      evaluationPeriod
     );
   }
 
@@ -71,9 +67,9 @@ export class EmployeeEvaluationsController {
     );
   }
 
-  @Get('evaluator/:evaluatedBy')
+  @Get('evaluator/:evaluatorId')
   async findByEvaluator(
-    @Param('evaluatedBy', ParseUUIDPipe) evaluatedBy: string,
+    @Param('evaluatorId', ParseUUIDPipe) evaluatorId: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
@@ -81,15 +77,31 @@ export class EmployeeEvaluationsController {
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
     return this.employeeEvaluationsService.findByEvaluator(
-      evaluatedBy,
+      evaluatorId,
       pageNum,
       limitNum
     );
   }
 
-  @Get('period/:period')
+  @Get('status/:status')
+  async findByStatus(
+    @Param('status') status: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+
+    return this.employeeEvaluationsService.findByStatus(
+      status,
+      pageNum,
+      limitNum
+    );
+  }
+
+  @Get('period/:evaluationPeriod')
   async findByPeriod(
-    @Param('period') period: string,
+    @Param('evaluationPeriod') evaluationPeriod: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
@@ -97,42 +109,46 @@ export class EmployeeEvaluationsController {
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
     return this.employeeEvaluationsService.findByPeriod(
-      period,
-      pageNum,
-      limitNum
-    );
-  }
-
-  @Get('rate-range')
-  async findByRateRange(
-    @Query('rateMin') rateMin: string,
-    @Query('rateMax') rateMax: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string
-  ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
-    const rateMinNum = parseInt(rateMin, 10);
-    const rateMaxNum = parseInt(rateMax, 10);
-
-    return this.employeeEvaluationsService.findByRateRange(
-      rateMinNum,
-      rateMaxNum,
+      evaluationPeriod,
       pageNum,
       limitNum
     );
   }
 
   @Get('employee/:employeeId/average')
-  async getAverageRateByEmployee(
+  async getAverageScoreByEmployee(
     @Param('employeeId', ParseUUIDPipe) employeeId: string
   ) {
-    return this.employeeEvaluationsService.getAverageRateByEmployee(employeeId);
+    return this.employeeEvaluationsService.getAverageScoreByEmployee(
+      employeeId
+    );
   }
 
-  @Get('stats/period/:period')
-  async getEvaluationStatsByPeriod(@Param('period') period: string) {
-    return this.employeeEvaluationsService.getEvaluationStatsByPeriod(period);
+  @Get('stats/period/:evaluationPeriod')
+  async getEvaluationStatsByPeriod(
+    @Param('evaluationPeriod') evaluationPeriod: string
+  ) {
+    return this.employeeEvaluationsService.getEvaluationStatsByPeriod(
+      evaluationPeriod
+    );
+  }
+
+  @Post(':id/acknowledge')
+  async acknowledgeEvaluation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('employeeComments') employeeComments?: string
+  ) {
+    return this.employeeEvaluationsService.acknowledgeEvaluation(
+      id,
+      employeeComments
+    );
+  }
+
+  @Post(':id/calculate-score')
+  async calculateOverallScore(@Param('id', ParseUUIDPipe) id: string) {
+    const score =
+      await this.employeeEvaluationsService.calculateOverallScore(id);
+    return { overallScore: score };
   }
 
   @Get(':id')

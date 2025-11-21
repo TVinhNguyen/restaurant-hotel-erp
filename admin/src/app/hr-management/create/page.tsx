@@ -51,7 +51,11 @@ export default function CategoryCreate() {
           console.log('Created employee from API:', employeeData);
           message.success('Thêm nhân viên thành công!');
           router.push('/hr-management');
-          addMockEmployee(employeeData);
+          addMockEmployee({
+            ...employeeData,
+            email: values.email,
+            phone: values.phone
+          });
         } else {
           const errorData = await employeeResponse.json();
           console.error('Create employee API error:', errorData);
