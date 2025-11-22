@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Card, Row, Col, Statistic, Progress, List, Avatar, Tag, Typography } from 'antd';
+import React, { useEffect } from 'react';
+import { Card, Row, Col, Statistic, Progress, List, Avatar, Tag, Typography, message } from 'antd';
 import {
     UserOutlined,
     TeamOutlined,
@@ -14,15 +14,44 @@ import {
 import { getMockEmployees } from '../../../data/mockEmployees';
 
 const { Title, Text } = Typography;
+const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
 export default function HRDashboard() {
-    const employees = getMockEmployees();
+    const [employees, setEmployees] = React.useState(getMockEmployees());
     const activeEmployees = employees.filter(emp => emp.status === 'active');
     const inactiveEmployees = employees.filter(emp => emp.status === 'inactive');
+    console.log('Employees:', employees);
+    console.log('Active Employees:', activeEmployees);
+    console.log('Inactive Employees:', inactiveEmployees);
+
+    const fetchEmployees = async () => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/employees`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setEmployees(data.data || []);
+            } else {
+                message.error('Failed to fetch employees');
+            }
+        } catch (error) {
+            message.error('Error fetching employees');
+        }
+    };
+
+    useEffect(() => {
+        fetchEmployees();
+    }, [])
 
     // Statistics calculations
     const totalEmployees = employees.length;
-    const averageSalary = employees.reduce((sum, emp) => sum + emp.salary, 0) / employees.length;
+    const averageSalary = totalEmployees
+        ? employees.reduce((sum, emp) => sum + (emp?.salary ?? 0), 0) / totalEmployees
+        : 0;
 
     // Department breakdown
     const departments = employees.reduce((acc, emp) => {
@@ -35,7 +64,7 @@ export default function HRDashboard() {
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
     const recentEmployees = employees.filter(emp =>
-        new Date(emp.startDate) > threeMonthsAgo
+        new Date(emp.hireDate) > threeMonthsAgo
     ).slice(0, 5);
 
     return (
@@ -132,7 +161,7 @@ export default function HRDashboard() {
                                             <div>
                                                 <div>{employee.position}</div>
                                                 <div style={{ fontSize: '12px', color: '#666' }}>
-                                                    <CalendarOutlined /> Started: {employee.startDate}
+                                                    <CalendarOutlined /> Started: {employee?.hireDate}
                                                 </div>
                                             </div>
                                         }
@@ -199,8 +228,8 @@ export default function HRDashboard() {
                                             {employee.position}
                                         </div>
                                         <div style={{ fontSize: '12px' }}>
-                                            <div><MailOutlined /> {employee.email}</div>
-                                            <div><PhoneOutlined /> {employee.phone}</div>
+                                            <div><MailOutlined /> {employee?.user?.email}</div>
+                                            <div><PhoneOutlined /> {employee?.user?.phone}</div>
                                         </div>
                                     </Card>
                                 </Col>

@@ -35,6 +35,7 @@ export default function CategoryCreate() {
           fullName: values.fullName,
           position: values.position,
           department: values.department,
+          salary: values.salary,
           hireDate: values.hireDate.format('YYYY-MM-DD'),
           status: values.status,
         }
@@ -130,9 +131,15 @@ export default function CategoryCreate() {
         <Form.Item
           label={"Số điện thoại"}
           name="phone"
-          rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}
+          rules={[
+            { required: true, message: 'Vui lòng nhập số điện thoại!' },
+            {
+              pattern: /^[+]?[1-9][\d]{0,15}$/,
+              message: 'Số điện thoại không hợp lệ! (VD: +84901234567 hoặc 84901234567)'
+            }
+          ]}
         >
-          <Input placeholder="0901234567" />
+          <Input placeholder="+84901234567 hoặc 84901234567" />
         </Form.Item>
 
         <Form.Item

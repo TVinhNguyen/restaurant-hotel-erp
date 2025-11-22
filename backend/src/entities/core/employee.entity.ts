@@ -5,7 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   OneToOne,
-  JoinColumn,
+  JoinColumn
 } from 'typeorm';
 import { User } from '../auth/user.entity';
 import { EmployeeRole } from './employee-role.entity';
@@ -51,32 +51,35 @@ export class Employee {
   @Column({ name: 'termination_date', type: 'date', nullable: true })
   terminationDate: Date;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  salary: number;
+
   // Relations
   @OneToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @OneToMany(() => EmployeeRole, (employeeRole) => employeeRole.employee)
+  @OneToMany(() => EmployeeRole, employeeRole => employeeRole.employee)
   employeeRoles: EmployeeRole[];
 
-  @OneToMany(() => WorkingShift, (workingShift) => workingShift.employee)
+  @OneToMany(() => WorkingShift, workingShift => workingShift.employee)
   workingShifts: WorkingShift[];
 
-  @OneToMany(() => Attendance, (attendance) => attendance.employee)
+  @OneToMany(() => Attendance, attendance => attendance.employee)
   attendances: Attendance[];
 
-  @OneToMany(() => Leave, (leave) => leave.employee)
+  @OneToMany(() => Leave, leave => leave.employee)
   leaves: Leave[];
 
-  @OneToMany(() => EmployeeEvaluation, (evaluation) => evaluation.employee)
+  @OneToMany(() => EmployeeEvaluation, evaluation => evaluation.employee)
   evaluations: EmployeeEvaluation[];
 
-  @OneToMany(() => Payroll, (payroll) => payroll.employee)
+  @OneToMany(() => Payroll, payroll => payroll.employee)
   payrolls: Payroll[];
 
-  @OneToMany(() => Overtime, (overtime) => overtime.employee)
+  @OneToMany(() => Overtime, overtime => overtime.employee)
   overtimes: Overtime[];
 
-  @OneToMany(() => Deduction, (deduction) => deduction.employee)
+  @OneToMany(() => Deduction, deduction => deduction.employee)
   deductions: Deduction[];
 }

@@ -41,6 +41,11 @@ export class EmployeesController {
     });
   }
 
+  @Get('get-employee-by-user-id/:userId')
+  async getByUserId(@Param('userId') userId: string) {
+    return this.employeesService.getByUserId(userId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return await this.employeesService.findOne(id);
@@ -64,10 +69,5 @@ export class EmployeesController {
   async remove(@Param('id') id: string) {
     await this.employeesService.remove(id);
     return { message: 'Employee deleted successfully' };
-  }
-
-  @Get('get-employee-by-user-id/:userId')
-  async getByUserId(@Param('userId') userId: string) {
-    return this.employeesService.getByUserId(userId);
   }
 }

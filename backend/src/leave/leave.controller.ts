@@ -9,7 +9,7 @@ import {
   Query,
   ParseUUIDPipe,
   ParseIntPipe,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { LeaveService } from './leave.service';
@@ -18,7 +18,7 @@ import {
   UpdateLeaveDto,
   ApproveRejectLeaveDto,
   LeaveType,
-  LeaveStatus,
+  LeaveStatus
 } from './dto/create-leave.dto';
 
 @Controller('leaves')
@@ -39,7 +39,7 @@ export class LeaveController {
     @Query('status') status?: LeaveStatus,
     @Query('leaveType') leaveType?: LeaveType,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('endDate') endDate?: string
   ) {
     return this.leaveService.findAllLeaves(
       page,
@@ -48,7 +48,7 @@ export class LeaveController {
       status,
       leaveType,
       startDate,
-      endDate,
+      endDate
     );
   }
 
@@ -57,11 +57,19 @@ export class LeaveController {
     return this.leaveService.getPendingLeaves();
   }
 
+  @Get('by-employee/:employeeId')
+  async getLeavesByEmployeeId(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Query('period') period?: string
+  ) {
+    return this.leaveService.getLeavesByEmployeeId(employeeId, period);
+  }
+
   @Get('summary')
   async getLeaveSummary(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
-    @Query('employeeId') employeeId?: string,
+    @Query('employeeId') employeeId?: string
   ) {
     return this.leaveService.getLeaveSummary(startDate, endDate, employeeId);
   }
@@ -69,7 +77,7 @@ export class LeaveController {
   @Get('balance/:employeeId')
   async getEmployeeLeaveBalance(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
-    @Query('year', ParseIntPipe) year?: number,
+    @Query('year', ParseIntPipe) year?: number
   ) {
     return this.leaveService.getEmployeeLeaveBalance(employeeId, year);
   }
@@ -82,7 +90,7 @@ export class LeaveController {
   @Put(':id')
   async updateLeave(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateLeaveDto: UpdateLeaveDto,
+    @Body() updateLeaveDto: UpdateLeaveDto
   ) {
     return this.leaveService.updateLeave(id, updateLeaveDto);
   }
@@ -97,12 +105,12 @@ export class LeaveController {
   async approveRejectLeave(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() approveRejectDto: ApproveRejectLeaveDto,
-    @Query('approverId', ParseUUIDPipe) approverId: string,
+    @Query('approverId', ParseUUIDPipe) approverId: string
   ) {
     return this.leaveService.approveRejectLeave(
       id,
       approveRejectDto,
-      approverId,
+      approverId
     );
   }
 }

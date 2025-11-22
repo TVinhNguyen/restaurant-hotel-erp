@@ -153,37 +153,27 @@ export default function LeavePage() {
                 return;
             }
             const retrievedUserID = JSON.parse(localStorage.getItem('user') || '{}').id;
-            const responseUser = await fetch(`${API_ENDPOINT}/employees/get-employee-by-user-id/${retrievedUserID}`, {
-                method: 'GET',
+            console.log('Retrieved user ID for approval:', retrievedUserID);
+            const response = await fetch(`${API_ENDPOINT}/leaves/${id}/`, {
+                method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json',
-                }
+                },
+                body: JSON.stringify({
+                    status: 'approved',
+                    hrNote: hrNote,
+                    approvedBy: retrievedUserID.id,
+                    approvedDate: dayjs().format('YYYY-MM-DD')
+                })
             });
-            console.log('Fetched user details response:', responseUser);
-            if (responseUser.ok) {
-                console.log('Failed to fetch user details', responseUser);
-                const response = await fetch(`${API_ENDPOINT}/leaves/${id}/`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        status: 'approved',
-                        hrNote: hrNote,
-                        approvedBy: retrievedUserID.id,
-                        approvedDate: dayjs().format('YYYY-MM-DD')
-                    })
-                });
 
-                if (response.ok) {
-                    message.success('Leave request approved successfully!');
-                    fetchLeaveRequests();
-                } else {
-                    const error = await response.json();
-                    message.error(error.message || 'Failed to approve leave request');
-                }
+            if (response.ok) {
+                message.success('Leave request approved successfully!');
+                fetchLeaveRequests();
+            } else {
+                const error = await response.json();
+                message.error(error.message || 'Failed to approve leave request');
             }
         } catch (error) {
             console.error('Error approving leave:', error);
@@ -193,21 +183,29 @@ export default function LeavePage() {
 
     const handleRejectLeave = async (id: string, reason?: string) => {
         try {
-            const response = await fetch(`${API_ENDPOINT}/leaves/${id}/approve-reject?approverId=${localStorage.getItem('userId')}`, {
-                method: 'POST',
+            if (reason === undefined || reason.trim() === '') {
+                message.error('Please provide a note for rejection.');
+                return;
+            }
+            const retrievedUserID = JSON.parse(localStorage.getItem('user') || '{}').id;
+            console.log('Retrieved user ID for rejection:', retrievedUserID);
+            const response = await fetch(`${API_ENDPOINT}/leaves/${id}/`, {
+                method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     status: 'rejected',
-                    hrNote: reason || 'Rejected by HR'
+                    hrNote: reason,
+                    approvedBy: retrievedUserID.id,
+                    approvedDate: dayjs().format('YYYY-MM-DD')
                 })
             });
 
             if (response.ok) {
-                message.success('Leave request rejected!');
-                fetchLeaveRequests(); // Refresh data
+                message.success('Leave request rejected successfully!');
+                fetchLeaveRequests();
             } else {
                 const error = await response.json();
                 message.error(error.message || 'Failed to reject leave request');

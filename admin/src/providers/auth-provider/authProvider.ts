@@ -63,15 +63,19 @@ export const authProvider: AuthProvider = {
     }
     
     const token = localStorage.getItem('token');
-    console.log('Check auth, token:', token);
+    const user = localStorage.getItem('user');
+    
+    console.log('[Auth Check] Token exists:', !!token, 'User exists:', !!user);
+    
     if (!token) {
-      console.log('true');
+      console.log('[Auth Check] No token - redirecting to login');
       return {
         authenticated: false,
         redirectTo: '/login'
       };
     }
-    console.log('false');
+    
+    console.log('[Auth Check] Token found - user authenticated');
     return { authenticated: true };
 
     // Kiểm tra token còn hợp lệ không

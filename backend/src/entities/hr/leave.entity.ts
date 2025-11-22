@@ -8,6 +8,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { Employee } from '../core/employee.entity';
+import { User } from '../auth/user.entity';
 
 @Entity({ schema: 'hr', name: 'leaves' })
 export class Leave {
@@ -71,7 +72,7 @@ export class Leave {
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 
-  @ManyToOne(() => Employee, { nullable: true })
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'approved_by' })
-  approver: Employee;
+  approver: User;
 }

@@ -9,14 +9,14 @@ import {
   Query,
   ParseUUIDPipe,
   ParseIntPipe,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PayrollService } from './payroll.service';
 import {
   CreatePayrollDto,
   UpdatePayrollDto,
-  BulkPayrollDto,
+  BulkPayrollDto
 } from './dto/create-payroll.dto';
 
 @Controller('payroll')
@@ -37,11 +37,11 @@ export class PayrollController {
   @Post('generate/:period')
   async generatePayrollWithCalculations(
     @Param('period') period: string,
-    @Query('employeeId') employeeId?: string,
+    @Query('employeeId') employeeId?: string
   ) {
     return this.payrollService.generatePayrollWithCalculations(
       period,
-      employeeId,
+      employeeId
     );
   }
 
@@ -50,15 +50,20 @@ export class PayrollController {
     @Query('page', ParseIntPipe) page: number = 1,
     @Query('limit', ParseIntPipe) limit: number = 10,
     @Query('employeeId') employeeId?: string,
-    @Query('period') period?: string,
+    @Query('period') period?: string
   ) {
     return this.payrollService.findAllPayrolls(page, limit, employeeId, period);
+  }
+
+  @Get('get-all-payrolls')
+  async getAllPayrolls() {
+    return this.payrollService.getAllPayrolls();
   }
 
   @Get('summary/:period')
   async getPayrollSummary(
     @Param('period') period: string,
-    @Query('employeeId') employeeId?: string,
+    @Query('employeeId') employeeId?: string
   ) {
     return this.payrollService.getPayrollSummary(period, employeeId);
   }
@@ -71,7 +76,7 @@ export class PayrollController {
   @Put(':id')
   async updatePayroll(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updatePayrollDto: UpdatePayrollDto,
+    @Body() updatePayrollDto: UpdatePayrollDto
   ) {
     return this.payrollService.updatePayroll(id, updatePayrollDto);
   }
