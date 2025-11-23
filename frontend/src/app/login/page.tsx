@@ -9,15 +9,15 @@ import { useRouter } from "next/navigation"
 import { authService } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
+import { colors, shadows, borderRadius } from "@/lib/designTokens"
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Vui lòng nhập email hợp lệ"),
+  password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
@@ -46,121 +46,158 @@ export default function LoginPage() {
       router.push("/")
       router.refresh()
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Login failed")
+      setError(error instanceof Error ? error.message : "Đăng nhập thất bại")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div style={{ backgroundColor: colors.background }} className="min-h-screen">
       <Header />
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex items-center space-x-4 mb-6">
-          <Link href="/">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to home
-            </Button>
-          </Link>
-        </div>
-
-        <div className="max-w-md mx-auto">
-          <Card>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
-              <p className="text-sm text-muted-foreground text-center">
-                Sign in to your account to continue
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md">
+          <div className="bg-white p-8 rounded-3xl" style={{ boxShadow: shadows.cardHover }}>
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Đăng Nhập
+              </h2>
+              <p style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Chào mừng quay lại
               </p>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email address</FormLabel>
-                        <FormControl>
+            </div>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Email
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Mail
+                            className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5"
+                            style={{ color: colors.primary }}
+                          />
                           <Input
-                            placeholder="Enter your email"
+                            placeholder="Nhập email"
                             type="email"
+                            className="pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all"
+                            style={{
+                              borderColor: colors.border,
+                              boxShadow: shadows.input,
+                              borderRadius: borderRadius.input,
+                            }}
                             {...field}
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input
-                              placeholder="Enter your password"
-                              type={showPassword ? "text" : "password"}
-                              {...field}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowPassword(!showPassword)}
-                            >
-                              {showPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm">
-                      <Link href="/contact" className="text-primary hover:underline">
-                        Forgot password?
-                      </Link>
-                    </div>
-                  </div>
-
-                  {error && (
-                    <div className="text-sm text-destructive text-center">
-                      {error}
-                    </div>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
+                />
 
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    size="lg"
-                    disabled={isLoading}
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Mật khẩu
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Lock
+                            className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5"
+                            style={{ color: colors.primary }}
+                          />
+                          <Input
+                            placeholder="Nhập mật khẩu"
+                            type={showPassword ? "text" : "password"}
+                            className="pl-12 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all"
+                            style={{
+                              borderColor: colors.border,
+                              boxShadow: shadows.input,
+                              borderRadius: borderRadius.input,
+                            }}
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" style={{ color: colors.textSecondary }} />
+                            ) : (
+                              <Eye className="h-4 w-4" style={{ color: colors.textSecondary }} />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex items-center justify-end">
+                  <Link
+                    href="/contact"
+                    className="text-sm hover:opacity-70 transition-opacity"
+                    style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   >
-                    {isLoading ? "Signing in..." : "Sign in"}
-                  </Button>
+                    Quên mật khẩu?
+                  </Link>
+                </div>
 
-                  <div className="text-center text-sm text-muted-foreground">
-                    Don&apos;t have an account?{" "}
-                    <Link href="/register" className="text-primary hover:underline">
-                      Sign up
-                    </Link>
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-800">{error}</p>
                   </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3 text-white font-semibold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{
+                    backgroundColor: colors.primary,
+                    borderRadius: borderRadius.button,
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                  }}
+                >
+                  {isLoading ? (
+                    "Đang xử lý..."
+                  ) : (
+                    <>
+                      Đăng Nhập
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
+
+            <div className="mt-6 pt-6 border-t text-center" style={{ borderColor: colors.border }}>
+              <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Chưa có tài khoản?{" "}
+                <Link
+                  href="/register"
+                  className="font-semibold hover:opacity-70 transition-opacity"
+                  style={{ color: colors.primary }}
+                >
+                  Đăng ký ngay
+                </Link>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

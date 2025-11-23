@@ -1,305 +1,251 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Search, MapPin, Calendar, Users, Star, ArrowRight } from "lucide-react"
-import Link from "next/link"
+"use client"
+
+import { useState, useEffect, useRef } from "react"
+import { Award, Shield, TrendingUp } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
+import SearchHero from "@/components/SearchHero"
+import HotelCard from "@/components/HotelCard"
+import PropertiesListSkeleton from "@/components/skeletons/PropertiesListSkeleton"
+import { colors, shadows } from "@/lib/designTokens"
+import { propertiesService, type Property } from "@/lib/services/properties"
 
 export default function HomePage() {
+  const [featuredProperties, setFeaturedProperties] = useState<Property[]>([])
+  const sectionsRef = useRef<(HTMLDivElement | null)[]>([])
+
+  useEffect(() => {
+    // Load featured properties
+    const loadFeatured = async () => {
+      try {
+        const response = await propertiesService.getProperties({ page: 1, limit: 6 })
+        setFeaturedProperties(response.data || [])
+      } catch (err) {
+        console.error("Failed to load featured properties:", err)
+      }
+    }
+    loadFeatured()
+  }, [])
+
+  useEffect(() => {
+    // Scroll reveal animation - run after properties are loaded
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: "0px 0px -50px 0px",
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible")
+          entry.target.classList.remove("opacity-0", "translate-y-10")
+        }
+      })
+    }, observerOptions)
+
+    // Small delay to ensure DOM is updated
+    const timeoutId = setTimeout(() => {
+      // Observe all elements with scroll-reveal class
+      const scrollRevealElements = document.querySelectorAll('.scroll-reveal')
+      scrollRevealElements.forEach((element) => {
+        element.classList.add("transition-all", "duration-700", "ease-out")
+        observer.observe(element)
+      })
+
+      // Also observe refs
+      sectionsRef.current.forEach((section) => {
+        if (section) {
+          section.classList.add("transition-all", "duration-700", "ease-out")
+          observer.observe(section)
+        }
+      })
+    }, 100)
+
+    return () => {
+      clearTimeout(timeoutId)
+      observer.disconnect()
+    }
+  }, [featuredProperties])
+
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated Background Gradient */}
+      <div className="fixed inset-0 -z-10 gradient-bg" />
+      
+      <div className="relative z-10">
+        <Header />
+        <SearchHero />
 
-      {/* Hero Section */}
-      <section className="relative">
-        <div className="relative h-[500px] bg-gradient-to-r from-slate-900 to-slate-700 overflow-hidden">
-          <img
-            src="/luxury-hotel-room-with-modern-interior-design.jpg"
-            alt="Luxury hotel room"
-            className="absolute inset-0 w-full h-full object-cover opacity-60"
-          />
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative container mx-auto px-4 h-full flex flex-col justify-center">
-            <div className="max-w-2xl text-white">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-balance">Book your stay with Tripster</h2>
-              <p className="text-xl mb-8 text-white/90">1,480,086 rooms around the world are waiting for you!</p>
+      {/* Features Section */}
+      <div
+        ref={(el) => {
+          sectionsRef.current[0] = el
+        }}
+        className="max-w-7xl mx-auto px-6 py-16 scroll-reveal opacity-0 translate-y-10"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+          <div
+            className="group bg-white p-8 rounded-3xl text-center scroll-reveal opacity-0 translate-y-10 relative overflow-hidden transition-all duration-500 hover:scale-105 hover:-translate-y-2 cursor-pointer"
+            style={{ 
+              boxShadow: "0 4px 24px rgba(30, 64, 175, 0.08)",
+              animationDelay: "0.1s"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = "0 12px 40px rgba(30, 64, 175, 0.15)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = "0 4px 24px rgba(30, 64, 175, 0.08)"
+            }}
+          >
+            {/* Gradient overlay on hover */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/0 via-blue-50/0 to-blue-50/0 group-hover:from-blue-50/50 group-hover:via-blue-50/30 group-hover:to-blue-50/50 transition-all duration-500 rounded-3xl" />
+            
+            <div className="relative z-10">
+              <div
+                className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-lg"
+                style={{ 
+                  backgroundColor: colors.lightBlue,
+                  boxShadow: "0 4px 16px rgba(30, 64, 175, 0.1)"
+                }}
+              >
+                <Award className="w-10 h-10 transition-all duration-500 group-hover:scale-110" style={{ color: colors.primary }} />
+              </div>
+              <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-blue-600" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                1,000+ Khách sạn
+              </h3>
+              <p className="text-sm leading-relaxed transition-colors duration-300" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Đa dạng lựa chọn từ 3-5 sao
+              </p>
+            </div>
+          </div>
 
-              {/* Search Form */}
-              <Card className="bg-white/95 backdrop-blur">
-                <CardContent className="p-6">
-                  <form action="/properties" method="GET">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">Location</label>
-                        <div className="relative">
-                          <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input name="location" placeholder="Where are you going?" className="pl-10" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">Check-in</label>
-                        <div className="relative">
-                          <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input name="checkin" type="date" placeholder="Add date" className="pl-10" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">Check-out</label>
-                        <div className="relative">
-                          <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input name="checkout" type="date" placeholder="Add date" className="pl-10" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">Guests</label>
-                        <div className="relative">
-                          <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input name="guests" type="number" placeholder="Number of guests" className="pl-10" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-6 flex justify-end">
-                      <Button type="submit" size="lg" className="px-8">
-                        <Search className="mr-2 h-4 w-4" />
-                        Search
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
+          <div
+            className="group bg-white p-8 rounded-3xl text-center scroll-reveal opacity-0 translate-y-10 relative overflow-hidden transition-all duration-500 hover:scale-105 hover:-translate-y-2 cursor-pointer"
+            style={{ 
+              boxShadow: "0 4px 24px rgba(30, 64, 175, 0.08)",
+              animationDelay: "0.2s"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = "0 12px 40px rgba(30, 64, 175, 0.15)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = "0 4px 24px rgba(39, 73, 125, 0.08)"
+            }}
+          >
+            {/* Gradient overlay on hover */}
+            <div className="absolute inset-0 bg-gradient-to-br from-green-50/0 via-green-50/0 to-green-50/0 group-hover:from-green-50/50 group-hover:via-green-50/30 group-hover:to-green-50/50 transition-all duration-500 rounded-3xl" />
+            
+            <div className="relative z-10">
+              <div
+                className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-lg"
+                style={{ 
+                  backgroundColor: colors.lightBlue,
+                  boxShadow: "0 4px 16px rgba(30, 64, 175, 0.1)"
+                }}
+              >
+                <Shield className="w-10 h-10 transition-all duration-500 group-hover:scale-110" style={{ color: colors.primary }} />
+              </div>
+              <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-green-600" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Thanh toán an toàn
+              </h3>
+              <p className="text-sm leading-relaxed transition-colors duration-300" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Bảo mật thông tin 100%
+              </p>
+            </div>
+          </div>
+
+          <div
+            className="group bg-white p-8 rounded-3xl text-center scroll-reveal opacity-0 translate-y-10 relative overflow-hidden transition-all duration-500 hover:scale-105 hover:-translate-y-2 cursor-pointer"
+            style={{ 
+              boxShadow: "0 4px 24px rgba(30, 64, 175, 0.08)",
+              animationDelay: "0.3s"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = "0 12px 40px rgba(30, 64, 175, 0.15)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = "0 4px 24px rgba(39, 73, 125, 0.08)"
+            }}
+          >
+            {/* Gradient overlay on hover */}
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-50/0 via-orange-50/0 to-orange-50/0 group-hover:from-orange-50/50 group-hover:via-orange-50/30 group-hover:to-orange-50/50 transition-all duration-500 rounded-3xl" />
+            
+            <div className="relative z-10">
+              <div
+                className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-lg"
+                style={{ 
+                  backgroundColor: colors.lightBlue,
+                  boxShadow: "0 4px 16px rgba(30, 64, 175, 0.1)"
+                }}
+              >
+                <TrendingUp className="w-10 h-10 transition-all duration-500 group-hover:scale-110" style={{ color: colors.primary }} />
+              </div>
+              <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-orange-600" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Giá tốt nhất
+              </h3>
+              <p className="text-sm leading-relaxed transition-colors duration-300" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Cam kết hoàn tiền nếu chênh lệch
+              </p>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Popular Destinations */}
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold mb-8 text-foreground">Popular destinations</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Link href="/properties?location=Barcelona">
-              <Card className="group cursor-pointer overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative h-48">
-                  <img
-                    src="/barcelona-spain-cityscape-with-sagrada-familia.jpg"
-                    alt="Barcelona"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4">
-                    <h4 className="text-white text-xl font-semibold">Barcelona</h4>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-
-            <Link href="/properties?location=London">
-              <Card className="group cursor-pointer overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative h-48">
-                  <img
-                    src="/london-england-red-double-decker-bus-and-big-ben.jpg"
-                    alt="London"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4">
-                    <h4 className="text-white text-xl font-semibold">London</h4>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-
-            <Link href="/properties?location=Croatia">
-              <Card className="group cursor-pointer overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative h-48">
-                  <img
-                    src="/croatia-coastal-town-with-blue-waters-and-red-roof.jpg"
-                    alt="Croatia"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4">
-                    <h4 className="text-white text-xl font-semibold">Croatia</h4>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-
-            <Link href="/properties?location=Copenhagen">
-              <Card className="group cursor-pointer overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative h-48">
-                  <img
-                    src="/copenhagen-denmark-colorful-buildings-and-harbor.jpg"
-                    alt="Copenhagen"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4">
-                    <h4 className="text-white text-xl font-semibold">Copenhagen</h4>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          </div>
+        {/* Featured Properties */}
+        <div className="mb-12 scroll-reveal opacity-0 translate-y-10">
+          <h2 className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary }}>
+            Ưu Đãi Hot
+          </h2>
+          <p className="text-lg" style={{ color: colors.textSecondary }}>
+            Các resort được yêu thích nhất với giá đặc biệt
+          </p>
         </div>
-      </section>
 
-      {/* Hotels Loved by Guests */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold mb-8 text-foreground">Hotels loved by guests</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            <Link href="/property/1">
-              <Card className="group cursor-pointer hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  <img
-                    src="/modern-hotel-room-with-city-view-london.jpg"
-                    alt="Soho Hotel London"
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
-                  <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground">9.6</Badge>
-                </div>
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-foreground mb-1">Soho Hotel London</h4>
-                  <p className="text-sm text-muted-foreground mb-2">from $390/night</p>
-                  <div className="flex items-center">
-                    <div className="flex text-yellow-400">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-3 w-3 fill-current" />
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link href="/property/2">
-              <Card className="group cursor-pointer hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  <img
-                    src="/luxury-hotel-room-with-blue-accents-and-modern-des.jpg"
-                    alt="Hotel Norrebro"
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
-                  <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground">9.2</Badge>
-                </div>
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-foreground mb-1">Hotel Norrebro</h4>
-                  <p className="text-sm text-muted-foreground mb-2">from $180/night</p>
-                  <div className="flex items-center">
-                    <div className="flex text-yellow-400">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-3 w-3 fill-current" />
-                      ))}
-                    </div>
-        </div>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link href="/property/3">
-              <Card className="group cursor-pointer hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  <img
-                    src="/modern-green-hotel-building-exterior.jpg"
-                    alt="Sunset Plaza Hotel"
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
-                  <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground">8.8</Badge>
-                </div>
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-foreground mb-1">Sunset Plaza Hotel</h4>
-                  <p className="text-sm text-muted-foreground mb-2">from $120/night</p>
-                  <div className="flex items-center">
-                    <div className="flex text-yellow-400">
-                      {[...Array(4)].map((_, i) => (
-                        <Star key={i} className="h-3 w-3 fill-current" />
-                      ))}
-                      <Star className="h-3 w-3 text-gray-300" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link href="/property/4">
-              <Card className="group cursor-pointer hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  <img
-                    src="/dark-modern-hotel-room-with-ambient-lighting.jpg"
-                    alt="Three Quarters Hotel"
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
-                  <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground">9.0</Badge>
-                </div>
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-foreground mb-1">Three Quarters Hotel</h4>
-                  <p className="text-sm text-muted-foreground mb-2">from $150/night</p>
-                  <div className="flex items-center">
-                    <div className="flex text-yellow-400">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-3 w-3 fill-current" />
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link href="/property/5">
-              <Card className="group cursor-pointer hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  <img
-                    src="/luxury-hotel-suite-with-marble-bathroom.jpg"
-                    alt="SurfnTurf Suites"
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
-                  <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground">9.4</Badge>
-                </div>
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-foreground mb-1">SurfnTurf Suites</h4>
-                  <p className="text-sm text-muted-foreground mb-2">from $70/night</p>
-                  <div className="flex items-center">
-                    <div className="flex text-yellow-400">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-3 w-3 fill-current" />
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter Section */}
-      <section className="py-16 bg-card">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between bg-background rounded-lg p-8">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">P</span>
+        {featuredProperties.length === 0 ? (
+          <PropertiesListSkeleton count={6} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+            {featuredProperties.slice(0, 6).map((property, index) => (
+              <div
+                key={property.id}
+                className="scroll-reveal opacity-0 translate-y-10"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <HotelCard property={property} />
               </div>
-              <div>
-                <h4 className="font-semibold text-foreground">Psst!</h4>
-                <p className="text-muted-foreground">
-                  Do you want to get special offers and best prices for amazing stays?
-                </p>
-                <p className="text-sm text-muted-foreground">Sign up to join our Travel Club!</p>
-              </div>
-            </div>
-            <Button>
-              Sign up for newsletter
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            ))}
           </div>
-        </div>
-      </section>
+        )}
 
-      <Footer />
+        {/* Popular Destinations */}
+        <div className="mb-12 scroll-reveal opacity-0 translate-y-10">
+          <h2 className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary }}>
+            Điểm Đến Phổ Biến
+          </h2>
+          <p className="text-lg" style={{ color: colors.textSecondary }}>
+            Khám phá những resort & khách sạn hàng đầu Việt Nam
+          </p>
+        </div>
+
+        {featuredProperties.length === 0 ? (
+          <PropertiesListSkeleton count={6} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {featuredProperties.map((property, index) => (
+              <div
+                key={property.id}
+                className="scroll-reveal opacity-0 translate-y-10"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <HotelCard property={property} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+        <Footer />
+      </div>
     </div>
   )
 }
