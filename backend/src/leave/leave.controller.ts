@@ -52,6 +52,11 @@ export class LeaveController {
     );
   }
 
+  @Get('get-all-leaves')
+  async getAllLeaves() {
+    return this.leaveService.getAllLeaves();
+  }
+
   @Get('pending')
   async getPendingLeaves() {
     return this.leaveService.getPendingLeaves();

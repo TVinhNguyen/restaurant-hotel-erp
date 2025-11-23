@@ -267,6 +267,18 @@ export class AttendanceService {
     return await this.attendanceRepository.save(attendanceEntities);
   }
 
+  async getAllAttendances() {
+    const attendances = await this.attendanceRepository.find({
+      relations: ['employee', 'workingShift'],
+      order: { date: 'DESC', checkInTime: 'DESC' }
+    });
+
+    return {
+      data: attendances,
+      total: attendances.length
+    };
+  }
+
   async getAttendanceSummary(
     startDate: string,
     endDate: string,

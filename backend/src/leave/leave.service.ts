@@ -234,6 +234,18 @@ export class LeaveService {
     };
   }
 
+  async getAllLeaves() {
+    const leaves = await this.leaveRepository.find({
+      relations: ['employee', 'approver'],
+      order: { createdAt: 'DESC' }
+    });
+
+    return {
+      data: leaves,
+      total: leaves.length
+    };
+  }
+
   async getPendingLeaves(): Promise<Leave[]> {
     return await this.leaveRepository.find({
       where: { status: LeaveStatus.PENDING },

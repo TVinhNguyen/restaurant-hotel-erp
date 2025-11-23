@@ -49,9 +49,7 @@ export default function HRDashboard() {
 
     // Statistics calculations
     const totalEmployees = employees.length;
-    const averageSalary = totalEmployees
-        ? employees.reduce((sum, emp) => sum + (emp?.salary ?? 0), 0) / totalEmployees
-        : 0;
+    const averageSalary = totalEmployees ? employees.reduce((sum, emp) => sum + (Number(emp?.salary) ?? 0), 0) / totalEmployees : 0;
 
     // Department breakdown
     const departments = employees.reduce((acc, emp) => {
