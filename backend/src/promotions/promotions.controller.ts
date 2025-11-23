@@ -28,7 +28,7 @@ import { UpdatePromotionDto } from './dto/update-promotion.dto';
 @ApiTags('Promotions')
 @Controller('promotions')
 export class PromotionsController {
-  constructor(private readonly promotionsService: PromotionsService) { }
+  constructor(private readonly promotionsService: PromotionsService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all promotions' })

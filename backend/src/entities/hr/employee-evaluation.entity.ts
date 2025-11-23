@@ -13,7 +13,7 @@ export enum EvaluationStatus {
   DRAFT = 'draft',
   COMPLETED = 'completed',
   REVIEWED = 'reviewed',
-  APPROVED = 'approved'
+  APPROVED = 'approved',
 }
 
 export enum RecommendedAction {
@@ -22,7 +22,7 @@ export enum RecommendedAction {
   TRAINING = 'training',
   MAINTAIN = 'maintain',
   IMPROVEMENT_PLAN = 'improvement_plan',
-  WARNING = 'warning'
+  WARNING = 'warning',
 }
 
 @Entity({ schema: 'hr', name: 'employee_evaluations' })
@@ -51,7 +51,7 @@ export class EmployeeEvaluation {
   @Column({
     type: 'enum',
     enum: EvaluationStatus,
-    default: EvaluationStatus.DRAFT
+    default: EvaluationStatus.DRAFT,
   })
   status: EvaluationStatus;
 
@@ -61,7 +61,7 @@ export class EmployeeEvaluation {
     type: 'decimal',
     precision: 2,
     scale: 1,
-    nullable: true
+    nullable: true,
   })
   workQualityScore: number;
 
@@ -73,7 +73,7 @@ export class EmployeeEvaluation {
     type: 'decimal',
     precision: 2,
     scale: 1,
-    nullable: true
+    nullable: true,
   })
   productivityScore: number;
 
@@ -85,7 +85,7 @@ export class EmployeeEvaluation {
     type: 'decimal',
     precision: 2,
     scale: 1,
-    nullable: true
+    nullable: true,
   })
   communicationScore: number;
 
@@ -97,7 +97,7 @@ export class EmployeeEvaluation {
     type: 'decimal',
     precision: 2,
     scale: 1,
-    nullable: true
+    nullable: true,
   })
   teamworkScore: number;
 
@@ -109,7 +109,7 @@ export class EmployeeEvaluation {
     type: 'decimal',
     precision: 2,
     scale: 1,
-    nullable: true
+    nullable: true,
   })
   problemSolvingScore: number;
 
@@ -121,7 +121,7 @@ export class EmployeeEvaluation {
     type: 'decimal',
     precision: 2,
     scale: 1,
-    nullable: true
+    nullable: true,
   })
   punctualityScore: number;
 
@@ -133,7 +133,7 @@ export class EmployeeEvaluation {
     type: 'decimal',
     precision: 2,
     scale: 1,
-    nullable: true
+    nullable: true,
   })
   initiativeScore: number;
 
@@ -146,7 +146,7 @@ export class EmployeeEvaluation {
     type: 'decimal',
     precision: 3,
     scale: 2,
-    nullable: true
+    nullable: true,
   })
   overallScore: number;
 
@@ -160,7 +160,7 @@ export class EmployeeEvaluation {
     name: 'areas_for_improvement',
     type: 'text',
     array: true,
-    nullable: true
+    nullable: true,
   })
   areasForImprovement: string[];
 
@@ -175,7 +175,7 @@ export class EmployeeEvaluation {
     name: 'recommended_action',
     type: 'enum',
     enum: RecommendedAction,
-    nullable: true
+    nullable: true,
   })
   recommendedAction: RecommendedAction;
 
@@ -184,7 +184,7 @@ export class EmployeeEvaluation {
     type: 'decimal',
     precision: 12,
     scale: 2,
-    nullable: true
+    nullable: true,
   })
   salaryRecommendation: number;
 
@@ -192,7 +192,7 @@ export class EmployeeEvaluation {
     name: 'training_recommendations',
     type: 'text',
     array: true,
-    nullable: true
+    nullable: true,
   })
   trainingRecommendations: string[];
 

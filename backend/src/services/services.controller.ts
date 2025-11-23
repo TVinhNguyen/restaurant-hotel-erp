@@ -28,7 +28,7 @@ import { UpdateServiceDto } from './dto/update-service.dto';
 @ApiTags('Services')
 @Controller('services')
 export class ServicesController {
-  constructor(private readonly servicesService: ServicesService) { }
+  constructor(private readonly servicesService: ServicesService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all services' })

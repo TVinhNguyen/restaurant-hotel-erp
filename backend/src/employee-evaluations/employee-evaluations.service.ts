@@ -9,11 +9,11 @@ import { UpdateEmployeeEvaluationDto } from './dto/update-employee-evaluation.dt
 export class EmployeeEvaluationsService {
   constructor(
     @InjectRepository(EmployeeEvaluation)
-    private employeeEvaluationRepository: Repository<EmployeeEvaluation>
+    private employeeEvaluationRepository: Repository<EmployeeEvaluation>,
   ) {}
 
   async create(
-    createEmployeeEvaluationDto: CreateEmployeeEvaluationDto
+    createEmployeeEvaluationDto: CreateEmployeeEvaluationDto,
   ): Promise<EmployeeEvaluation> {
     // Calculate overall score from category scores
     const overallScore =
@@ -28,7 +28,7 @@ export class EmployeeEvaluationsService {
 
     const evaluation = this.employeeEvaluationRepository.create({
       ...createEmployeeEvaluationDto,
-      overallScore: Math.round(overallScore * 100) / 100 // Round to 2 decimal places
+      overallScore: Math.round(overallScore * 100) / 100, // Round to 2 decimal places
     });
     return await this.employeeEvaluationRepository.save(evaluation);
   }
@@ -39,7 +39,7 @@ export class EmployeeEvaluationsService {
     employeeId?: string,
     evaluatorId?: string,
     status?: string,
-    evaluationPeriod?: string
+    evaluationPeriod?: string,
   ) {
     const queryBuilder = this.employeeEvaluationRepository
       .createQueryBuilder('evaluation')
@@ -49,13 +49,13 @@ export class EmployeeEvaluationsService {
     // Apply filters
     if (employeeId) {
       queryBuilder.andWhere('evaluation.employeeId = :employeeId', {
-        employeeId
+        employeeId,
       });
     }
 
     if (evaluatorId) {
       queryBuilder.andWhere('evaluation.evaluatorId = :evaluatorId', {
-        evaluatorId
+        evaluatorId,
       });
     }
 
@@ -65,7 +65,7 @@ export class EmployeeEvaluationsService {
 
     if (evaluationPeriod) {
       queryBuilder.andWhere('evaluation.evaluationPeriod = :evaluationPeriod', {
-        evaluationPeriod
+        evaluationPeriod,
       });
     }
 
@@ -83,19 +83,19 @@ export class EmployeeEvaluationsService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
   async findOne(id: string): Promise<EmployeeEvaluation> {
     const evaluation = await this.employeeEvaluationRepository.findOne({
       where: { id },
-      relations: ['employee', 'evaluator', 'evaluatedByEmployee']
+      relations: ['employee', 'evaluator', 'evaluatedByEmployee'],
     });
 
     if (!evaluation) {
       throw new NotFoundException(
-        `Employee evaluation with ID ${id} not found`
+        `Employee evaluation with ID ${id} not found`,
       );
     }
 
@@ -104,7 +104,7 @@ export class EmployeeEvaluationsService {
 
   async update(
     id: string,
-    updateEmployeeEvaluationDto: UpdateEmployeeEvaluationDto
+    updateEmployeeEvaluationDto: UpdateEmployeeEvaluationDto,
   ): Promise<EmployeeEvaluation> {
     const evaluation = await this.findOne(id);
 
@@ -118,8 +118,10 @@ export class EmployeeEvaluationsService {
       'teamworkScore',
       'problemSolvingScore',
       'punctualityScore',
-      'initiativeScore'
-    ].some(field => (updateEmployeeEvaluationDto as any)[field] !== undefined);
+      'initiativeScore',
+    ].some(
+      (field) => (updateEmployeeEvaluationDto as any)[field] !== undefined,
+    );
 
     if (hasScoreUpdates) {
       const overallScore =
@@ -147,7 +149,7 @@ export class EmployeeEvaluationsService {
   async findByEmployee(
     employeeId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, employeeId);
   }
@@ -155,7 +157,7 @@ export class EmployeeEvaluationsService {
   async findByEvaluator(
     evaluatorId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(page, limit, undefined, evaluatorId);
   }
@@ -167,7 +169,7 @@ export class EmployeeEvaluationsService {
   async findByPeriod(
     evaluationPeriod: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ) {
     return this.findAll(
       page,
@@ -175,7 +177,7 @@ export class EmployeeEvaluationsService {
       undefined,
       undefined,
       undefined,
-      evaluationPeriod
+      evaluationPeriod,
     );
   }
 
@@ -191,7 +193,7 @@ export class EmployeeEvaluationsService {
     return {
       employeeId,
       averageScore: parseFloat(result.averageScore) || 0,
-      totalEvaluations: parseInt(result.totalEvaluations) || 0
+      totalEvaluations: parseInt(result.totalEvaluations) || 0,
     };
   }
 
@@ -203,7 +205,7 @@ export class EmployeeEvaluationsService {
       .addSelect('MIN(evaluation.overallScore)', 'minScore')
       .addSelect('MAX(evaluation.overallScore)', 'maxScore')
       .where('evaluation.evaluationPeriod = :evaluationPeriod', {
-        evaluationPeriod
+        evaluationPeriod,
       })
       .andWhere('evaluation.overallScore IS NOT NULL')
       .getRawOne();
@@ -213,13 +215,13 @@ export class EmployeeEvaluationsService {
       averageScore: parseFloat(result.averageScore) || 0,
       totalEvaluations: parseInt(result.totalEvaluations) || 0,
       minScore: parseFloat(result.minScore) || 0,
-      maxScore: parseFloat(result.maxScore) || 0
+      maxScore: parseFloat(result.maxScore) || 0,
     };
   }
 
   async acknowledgeEvaluation(
     id: string,
-    employeeComments?: string
+    employeeComments?: string,
   ): Promise<EmployeeEvaluation> {
     const evaluation = await this.findOne(id);
 
@@ -242,8 +244,8 @@ export class EmployeeEvaluationsService {
       evaluation.teamworkScore,
       evaluation.problemSolvingScore,
       evaluation.punctualityScore,
-      evaluation.initiativeScore
-    ].filter(score => score !== null && score !== undefined);
+      evaluation.initiativeScore,
+    ].filter((score) => score !== null && score !== undefined);
 
     if (scores.length === 0) return 0;
 

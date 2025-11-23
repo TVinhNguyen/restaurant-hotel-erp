@@ -28,7 +28,7 @@ import { UpdateTaxRuleDto } from './dto/update-tax-rule.dto';
 @ApiTags('Tax Rules')
 @Controller('tax-rules')
 export class TaxRulesController {
-  constructor(private readonly taxRulesService: TaxRulesService) { }
+  constructor(private readonly taxRulesService: TaxRulesService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all tax rules' })

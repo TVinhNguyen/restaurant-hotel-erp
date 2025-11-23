@@ -26,7 +26,7 @@ import { UpdatePropertyDto } from './dto/update-property.dto';
 @ApiTags('Properties')
 @Controller('properties')
 export class PropertiesController {
-  constructor(private readonly propertiesService: PropertiesService) { }
+  constructor(private readonly propertiesService: PropertiesService) {}
 
   @Get()
   @ApiOperation({

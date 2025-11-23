@@ -12,7 +12,10 @@ export class Amenity {
   @Column({ length: 100 })
   name: string;
 
-  @ApiProperty({ description: 'Category of the amenity', enum: ['room', 'facility'] })
+  @ApiProperty({
+    description: 'Category of the amenity',
+    enum: ['room', 'facility'],
+  })
   @Column({ length: 50 })
   category: 'room' | 'facility';
 

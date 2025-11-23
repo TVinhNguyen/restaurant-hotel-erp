@@ -9,7 +9,9 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateRoomTypeDto {
-  @ApiProperty({ description: 'The ID of the property this room type belongs to' })
+  @ApiProperty({
+    description: 'The ID of the property this room type belongs to',
+  })
   @IsUUID()
   propertyId: string;
 
@@ -17,24 +19,39 @@ export class CreateRoomTypeDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ description: 'The description of the room type', required: false })
+  @ApiProperty({
+    description: 'The description of the room type',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'Maximum number of adults', required: false, minimum: 1 })
+  @ApiProperty({
+    description: 'Maximum number of adults',
+    required: false,
+    minimum: 1,
+  })
   @IsOptional()
   @IsNumber()
   @Min(1)
   maxAdults?: number;
 
-  @ApiProperty({ description: 'Maximum number of children', required: false, minimum: 0 })
+  @ApiProperty({
+    description: 'Maximum number of children',
+    required: false,
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   maxChildren?: number;
 
-  @ApiProperty({ description: 'Base price for the room type', required: false, minimum: 0 })
+  @ApiProperty({
+    description: 'Base price for the room type',
+    required: false,
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -45,7 +62,11 @@ export class CreateRoomTypeDto {
   @IsString()
   bedType?: string;
 
-  @ApiProperty({ description: 'List of amenity IDs associated with this room type', required: false, type: [String] })
+  @ApiProperty({
+    description: 'List of amenity IDs associated with this room type',
+    required: false,
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
@@ -71,7 +92,10 @@ export class RoomTypeQueryDto {
   @IsUUID()
   propertyId?: string;
 
-  @ApiProperty({ description: 'Search term for room type name or description', required: false })
+  @ApiProperty({
+    description: 'Search term for room type name or description',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   search?: string;

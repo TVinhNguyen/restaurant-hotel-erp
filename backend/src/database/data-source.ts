@@ -42,7 +42,7 @@ export const AppDataSource = new DataSource({
   ssl:
     process.env.DB_SSL === 'true'
       ? {
-        rejectUnauthorized: false,
-      }
+          rejectUnauthorized: false,
+        }
       : false,
 });

@@ -11,7 +11,10 @@ export class CreateAmenityDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ description: 'The category of the amenity', enum: AmenityCategory })
+  @ApiProperty({
+    description: 'The category of the amenity',
+    enum: AmenityCategory,
+  })
   @IsEnum(AmenityCategory)
   category: AmenityCategory;
 }
@@ -22,14 +25,22 @@ export class UpdateAmenityDto {
   @IsString()
   name?: string;
 
-  @ApiProperty({ description: 'The category of the amenity', enum: AmenityCategory, required: false })
+  @ApiProperty({
+    description: 'The category of the amenity',
+    enum: AmenityCategory,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(AmenityCategory)
   category?: AmenityCategory;
 }
 
 export class AmenityQueryDto {
-  @ApiProperty({ description: 'Filter by category', enum: AmenityCategory, required: false })
+  @ApiProperty({
+    description: 'Filter by category',
+    enum: AmenityCategory,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(AmenityCategory)
   category?: AmenityCategory;

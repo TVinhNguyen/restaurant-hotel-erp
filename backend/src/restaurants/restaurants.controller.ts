@@ -40,7 +40,7 @@ import {
 @ApiTags('Restaurants')
 @Controller('restaurants')
 export class RestaurantsController {
-  constructor(private readonly restaurantsService: RestaurantsService) { }
+  constructor(private readonly restaurantsService: RestaurantsService) {}
 
   // Restaurant Management Endpoints
   @Post()
@@ -78,7 +78,10 @@ export class RestaurantsController {
     type: String,
     description: 'Filter by cuisine type',
   })
-  @ApiResponse({ status: 200, description: 'Restaurants retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Restaurants retrieved successfully',
+  })
   async findAllRestaurants(
     @Query('page', ParseIntPipe) page: number = 1,
     @Query('limit', ParseIntPipe) limit: number = 10,
@@ -138,7 +141,11 @@ export class RestaurantsController {
 
   @Get(':restaurantId/areas')
   @ApiOperation({ summary: 'Get all areas for a restaurant' })
-  @ApiParam({ name: 'restaurantId', type: String, description: 'Restaurant ID' })
+  @ApiParam({
+    name: 'restaurantId',
+    type: String,
+    description: 'Restaurant ID',
+  })
   @ApiResponse({ status: 200, description: 'Areas retrieved successfully' })
   async findAreasByRestaurant(
     @Param('restaurantId', ParseUUIDPipe) restaurantId: string,
@@ -309,7 +316,10 @@ export class RestaurantsController {
   @ApiOperation({ summary: 'Create a new table booking' })
   @ApiBody({ type: CreateTableBookingDto })
   @ApiResponse({ status: 201, description: 'Booking created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid input data or no tables available' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data or no tables available',
+  })
   async createTableBooking(@Body() createBookingDto: CreateTableBookingDto) {
     return this.restaurantsService.createTableBooking(createBookingDto);
   }
@@ -327,7 +337,14 @@ export class RestaurantsController {
   @ApiQuery({
     name: 'status',
     required: false,
-    enum: ['pending', 'confirmed', 'seated', 'completed', 'no_show', 'cancelled'],
+    enum: [
+      'pending',
+      'confirmed',
+      'seated',
+      'completed',
+      'no_show',
+      'cancelled',
+    ],
     description: 'Filter by booking status',
   })
   @ApiQuery({
@@ -412,7 +429,11 @@ export class RestaurantsController {
     schema: {
       type: 'object',
       properties: {
-        tableId: { type: 'string', format: 'uuid', description: 'Table ID to assign' },
+        tableId: {
+          type: 'string',
+          format: 'uuid',
+          description: 'Table ID to assign',
+        },
       },
       required: ['tableId'],
     },

@@ -8,7 +8,7 @@ import {
   IsDateString,
   IsArray,
   Min,
-  Max
+  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -16,7 +16,7 @@ export enum EvaluationStatus {
   DRAFT = 'draft',
   COMPLETED = 'completed',
   REVIEWED = 'reviewed',
-  APPROVED = 'approved'
+  APPROVED = 'approved',
 }
 
 export enum RecommendedAction {
@@ -25,7 +25,7 @@ export enum RecommendedAction {
   TRAINING = 'training',
   MAINTAIN = 'maintain',
   IMPROVEMENT_PLAN = 'improvement_plan',
-  WARNING = 'warning'
+  WARNING = 'warning',
 }
 
 export class CreateEmployeeEvaluationDto {

@@ -28,7 +28,7 @@ import { UpdateRatePlanDto } from './dto/update-rate-plan.dto';
 @ApiTags('Rate Plans')
 @Controller('rate-plans')
 export class RatePlansController {
-  constructor(private readonly ratePlansService: RatePlansService) { }
+  constructor(private readonly ratePlansService: RatePlansService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all rate plans with pagination and filters' })

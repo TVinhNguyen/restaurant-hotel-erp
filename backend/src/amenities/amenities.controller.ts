@@ -9,7 +9,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AmenitiesService } from './amenities.service';
 import {
   CreateAmenityDto,
@@ -21,11 +26,14 @@ import { AuthGuard } from '@nestjs/passport';
 @ApiTags('Amenities')
 @Controller('amenities')
 export class AmenitiesController {
-  constructor(private readonly amenitiesService: AmenitiesService) { }
+  constructor(private readonly amenitiesService: AmenitiesService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new amenity' })
-  @ApiResponse({ status: 201, description: 'The amenity has been successfully created.' })
+  @ApiResponse({
+    status: 201,
+    description: 'The amenity has been successfully created.',
+  })
   create(@Body() createAmenityDto: CreateAmenityDto) {
     return this.amenitiesService.create(createAmenityDto);
   }
@@ -47,7 +55,10 @@ export class AmenitiesController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update an amenity' })
-  @ApiResponse({ status: 200, description: 'The amenity has been successfully updated.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The amenity has been successfully updated.',
+  })
   @ApiResponse({ status: 404, description: 'Amenity not found.' })
   update(@Param('id') id: string, @Body() updateAmenityDto: UpdateAmenityDto) {
     return this.amenitiesService.update(id, updateAmenityDto);
@@ -55,7 +66,10 @@ export class AmenitiesController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete an amenity' })
-  @ApiResponse({ status: 200, description: 'The amenity has been successfully deleted.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The amenity has been successfully deleted.',
+  })
   @ApiResponse({ status: 404, description: 'Amenity not found.' })
   remove(@Param('id') id: string) {
     return this.amenitiesService.remove(id);

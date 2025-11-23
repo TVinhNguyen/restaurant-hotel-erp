@@ -42,12 +42,22 @@ export class CreateRoomDto {
   @IsString()
   viewType?: string;
 
-  @ApiProperty({ description: 'Operational status', enum: OperationalStatus, required: false, default: OperationalStatus.AVAILABLE })
+  @ApiProperty({
+    description: 'Operational status',
+    enum: OperationalStatus,
+    required: false,
+    default: OperationalStatus.AVAILABLE,
+  })
   @IsOptional()
   @IsEnum(OperationalStatus)
   operationalStatus?: OperationalStatus = OperationalStatus.AVAILABLE;
 
-  @ApiProperty({ description: 'Housekeeping status', enum: HousekeepingStatus, required: false, default: HousekeepingStatus.CLEAN })
+  @ApiProperty({
+    description: 'Housekeeping status',
+    enum: HousekeepingStatus,
+    required: false,
+    default: HousekeepingStatus.CLEAN,
+  })
   @IsOptional()
   @IsEnum(HousekeepingStatus)
   housekeepingStatus?: HousekeepingStatus = HousekeepingStatus.CLEAN;
@@ -59,12 +69,20 @@ export class CreateRoomDto {
 }
 
 export class UpdateRoomStatusDto {
-  @ApiProperty({ description: 'Operational status', enum: OperationalStatus, required: false })
+  @ApiProperty({
+    description: 'Operational status',
+    enum: OperationalStatus,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(OperationalStatus)
   operationalStatus?: OperationalStatus;
 
-  @ApiProperty({ description: 'Housekeeping status', enum: HousekeepingStatus, required: false })
+  @ApiProperty({
+    description: 'Housekeeping status',
+    enum: HousekeepingStatus,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(HousekeepingStatus)
   housekeepingStatus?: HousekeepingStatus;
@@ -74,7 +92,10 @@ export class UpdateRoomStatusDto {
   @IsString()
   notes?: string;
 
-  @ApiProperty({ description: 'ID of the user changing the status', required: false })
+  @ApiProperty({
+    description: 'ID of the user changing the status',
+    required: false,
+  })
   @IsOptional()
   @IsUUID()
   changedBy?: string;
@@ -96,12 +117,20 @@ export class RoomQueryDto {
   @IsString()
   floor?: string;
 
-  @ApiProperty({ description: 'Filter by operational status', enum: OperationalStatus, required: false })
+  @ApiProperty({
+    description: 'Filter by operational status',
+    enum: OperationalStatus,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(OperationalStatus)
   operationalStatus?: OperationalStatus;
 
-  @ApiProperty({ description: 'Filter by housekeeping status', enum: HousekeepingStatus, required: false })
+  @ApiProperty({
+    description: 'Filter by housekeeping status',
+    enum: HousekeepingStatus,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(HousekeepingStatus)
   housekeepingStatus?: HousekeepingStatus;
@@ -161,12 +190,20 @@ export class BulkUpdateRoomsStatusDto {
   @IsUUID('4', { each: true })
   roomIds: string[];
 
-  @ApiProperty({ description: 'Operational status', enum: OperationalStatus, required: false })
+  @ApiProperty({
+    description: 'Operational status',
+    enum: OperationalStatus,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(OperationalStatus)
   operationalStatus?: OperationalStatus;
 
-  @ApiProperty({ description: 'Housekeeping status', enum: HousekeepingStatus, required: false })
+  @ApiProperty({
+    description: 'Housekeeping status',
+    enum: HousekeepingStatus,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(HousekeepingStatus)
   housekeepingStatus?: HousekeepingStatus;

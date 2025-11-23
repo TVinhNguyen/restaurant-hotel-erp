@@ -3,7 +3,7 @@ import {
   IsOptional,
   IsDateString,
   IsString,
-  IsIn
+  IsIn,
 } from 'class-validator';
 
 export class UpdateAttendanceDto {
