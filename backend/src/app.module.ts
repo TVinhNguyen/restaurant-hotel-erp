@@ -17,7 +17,7 @@ import { GuestsModule } from './guests/guests.module';
 import { RoomTypesModule } from './room-types/room-types.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { AmenitiesModule } from './amenities/amenities.module';
-// import { PhotosModule } from './photos/photos.module';
+import { PhotosModule } from './photos/photos.module';
 // import { RoomStatusHistoryModule } from './room-status-history/room-status-history.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { PaymentsModule } from './payments/payments.module';
@@ -108,7 +108,7 @@ import { MessagingModule } from './infra.messaging';
     RoomTypesModule,
     RoomsModule,
     AmenitiesModule,
-    // PhotosModule, // Disabled due to compilation errors
+    PhotosModule,
     // RoomStatusHistoryModule, // Disabled due to compilation errors
     // Other modules
     ReservationsModule,

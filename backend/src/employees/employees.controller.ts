@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
   HttpCode,
-  HttpStatus
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { EmployeesService } from './employees.service';
@@ -27,7 +27,7 @@ export class EmployeesController {
     @Query('limit') limit?: string,
     @Query('department') department?: string,
     @Query('status') status?: string,
-    @Query('search') search?: string
+    @Query('search') search?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
@@ -37,7 +37,7 @@ export class EmployeesController {
       limit: limitNum,
       department,
       status,
-      search
+      search,
     });
   }
 
@@ -59,7 +59,7 @@ export class EmployeesController {
   @Put(':id')
   async update(
     @Param('id') id: string,
-    @Body() updateEmployeeDto: UpdateEmployeeDto
+    @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
     return await this.employeesService.update(id, updateEmployeeDto);
   }

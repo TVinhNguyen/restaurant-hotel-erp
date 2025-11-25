@@ -3,7 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
-  JoinColumn
+  JoinColumn,
 } from 'typeorm';
 import { Employee } from '../core/employee.entity';
 import { WorkingShift } from './working-shift.entity';
@@ -35,12 +35,12 @@ export class Attendance {
   notes: string;
 
   // Relations
-  @ManyToOne(() => Employee, employee => employee.attendances)
+  @ManyToOne(() => Employee, (employee) => employee.attendances)
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 
-  @ManyToOne(() => WorkingShift, workingShift => workingShift.attendances, {
-    nullable: true
+  @ManyToOne(() => WorkingShift, (workingShift) => workingShift.attendances, {
+    nullable: true,
   })
   @JoinColumn({ name: 'working_shift_id' })
   workingShift: WorkingShift;

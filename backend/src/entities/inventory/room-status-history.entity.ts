@@ -20,7 +20,10 @@ export class RoomStatusHistory {
   @Column({ name: 'room_id', type: 'uuid' })
   roomId: string;
 
-  @ApiProperty({ description: 'Type of status change', enum: ['operational', 'housekeeping'] })
+  @ApiProperty({
+    description: 'Type of status change',
+    enum: ['operational', 'housekeeping'],
+  })
   @Column({ name: 'status_type', length: 20 })
   statusType: 'operational' | 'housekeeping';
 
@@ -32,7 +35,10 @@ export class RoomStatusHistory {
   @CreateDateColumn({ name: 'changed_at' })
   changedAt: Date;
 
-  @ApiProperty({ description: 'ID of the user who made the change', required: false })
+  @ApiProperty({
+    description: 'ID of the user who made the change',
+    required: false,
+  })
   @Column({ name: 'changed_by', type: 'uuid', nullable: true })
   changedBy: string;
 

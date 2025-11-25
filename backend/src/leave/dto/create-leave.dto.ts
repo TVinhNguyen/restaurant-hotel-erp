@@ -4,7 +4,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
-  IsNumber
+  IsNumber,
 } from 'class-validator';
 
 export enum LeaveType {
@@ -14,13 +14,13 @@ export enum LeaveType {
   PERSONAL = 'personal',
   MATERNITY = 'maternity',
   EMERGENCY = 'emergency',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 export enum LeaveStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
-  REJECTED = 'rejected'
+  REJECTED = 'rejected',
 }
 
 export class CreateLeaveDto {

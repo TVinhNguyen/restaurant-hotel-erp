@@ -40,11 +40,17 @@ export class Room {
   @Column({ name: 'view_type', length: 50, nullable: true })
   viewType: string;
 
-  @ApiProperty({ description: 'Operational status', enum: ['available', 'out_of_service'] })
+  @ApiProperty({
+    description: 'Operational status',
+    enum: ['available', 'out_of_service'],
+  })
   @Column({ name: 'operational_status', length: 20, default: 'available' })
   operationalStatus: 'available' | 'out_of_service';
 
-  @ApiProperty({ description: 'Housekeeping status', enum: ['clean', 'dirty', 'inspected'] })
+  @ApiProperty({
+    description: 'Housekeeping status',
+    enum: ['clean', 'dirty', 'inspected'],
+  })
   @Column({ name: 'housekeeping_status', length: 20, default: 'clean' })
   housekeepingStatus: 'clean' | 'dirty' | 'inspected';
 

@@ -1,7 +1,7 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
@@ -12,7 +12,7 @@ import {
   UpdateLeaveDto,
   ApproveRejectLeaveDto,
   LeaveType,
-  LeaveStatus
+  LeaveStatus,
 } from './dto/create-leave.dto';
 
 @Injectable()
@@ -21,17 +21,17 @@ export class LeaveService {
     @InjectRepository(Leave)
     private leaveRepository: Repository<Leave>,
     @InjectRepository(Employee)
-    private employeeRepository: Repository<Employee>
+    private employeeRepository: Repository<Employee>,
   ) {}
 
   async createLeave(createLeaveDto: CreateLeaveDto): Promise<Leave> {
     // Check if employee exists
     const employee = await this.employeeRepository.findOne({
-      where: { id: createLeaveDto.employeeId }
+      where: { id: createLeaveDto.employeeId },
     });
     if (!employee) {
       throw new NotFoundException(
-        `Employee with ID ${createLeaveDto.employeeId} not found`
+        `Employee with ID ${createLeaveDto.employeeId} not found`,
       );
     }
 
@@ -44,7 +44,7 @@ export class LeaveService {
         : new Date(),
       startDate: new Date(createLeaveDto.startDate),
       endDate: new Date(createLeaveDto.endDate),
-      leaveDate: new Date(createLeaveDto.leaveDate)
+      leaveDate: new Date(createLeaveDto.leaveDate),
     });
 
     return await this.leaveRepository.save(leave);
@@ -57,7 +57,7 @@ export class LeaveService {
     status?: LeaveStatus,
     leaveType?: LeaveType,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ) {
     const queryBuilder = this.leaveRepository
       .createQueryBuilder('leave')
@@ -79,7 +79,7 @@ export class LeaveService {
     if (startDate && endDate) {
       queryBuilder.andWhere('leave.leaveDate BETWEEN :startDate AND :endDate', {
         startDate,
-        endDate
+        endDate,
       });
     }
 
@@ -94,14 +94,14 @@ export class LeaveService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
   async findLeaveById(id: string): Promise<Leave> {
     const leave = await this.leaveRepository.findOne({
       where: { id },
-      relations: ['employee', 'approver']
+      relations: ['employee', 'approver'],
     });
 
     if (!leave) {
@@ -142,7 +142,7 @@ export class LeaveService {
 
   async updateLeave(
     id: string,
-    updateLeaveDto: UpdateLeaveDto
+    updateLeaveDto: UpdateLeaveDto,
   ): Promise<Leave> {
     const leave = await this.findLeaveById(id);
 
@@ -151,7 +151,7 @@ export class LeaveService {
       leave.status === LeaveStatus.REJECTED
     ) {
       throw new BadRequestException(
-        `Cannot update leave with status: ${leave.status}`
+        `Cannot update leave with status: ${leave.status}`,
       );
     }
 
@@ -172,20 +172,20 @@ export class LeaveService {
   async approveRejectLeave(
     id: string,
     approveRejectDto: ApproveRejectLeaveDto,
-    approverId: string
+    approverId: string,
   ): Promise<Leave> {
     const leave = await this.findLeaveById(id);
 
     if (leave.status !== LeaveStatus.PENDING) {
       throw new BadRequestException(
-        `Cannot review leave with status: ${leave.status}`
+        `Cannot review leave with status: ${leave.status}`,
       );
     }
 
     await this.leaveRepository.update(id, {
       status: approveRejectDto.status,
       hrNote: approveRejectDto.hrNote,
-      approvedBy: approverId
+      approvedBy: approverId,
     });
 
     return this.findLeaveById(id);
@@ -194,14 +194,14 @@ export class LeaveService {
   async getLeaveSummary(
     startDate: string,
     endDate: string,
-    employeeId?: string
+    employeeId?: string,
   ) {
     const queryBuilder = this.leaveRepository
       .createQueryBuilder('leave')
       .leftJoin('leave.employee', 'employee')
       .where('leave.leaveDate BETWEEN :startDate AND :endDate', {
         startDate,
-        endDate
+        endDate,
       });
 
     if (employeeId) {
@@ -213,7 +213,7 @@ export class LeaveService {
     const statusBreakdown: { [key: string]: number } = {};
     const typeBreakdown: { [key: string]: number } = {};
 
-    leaves.forEach(leave => {
+    leaves.forEach((leave) => {
       statusBreakdown[leave.status] = (statusBreakdown[leave.status] || 0) + 1;
       typeBreakdown[leave.leaveType] =
         (typeBreakdown[leave.leaveType] || 0) + 1;
@@ -226,11 +226,11 @@ export class LeaveService {
       typeBreakdown,
       totalDaysRequested: leaves.reduce(
         (sum, leave) => sum + leave.numberOfDays,
-        0
+        0,
       ),
       approvedDays: leaves
-        .filter(leave => leave.status === LeaveStatus.APPROVED)
-        .reduce((sum, leave) => sum + leave.numberOfDays, 0)
+        .filter((leave) => leave.status === LeaveStatus.APPROVED)
+        .reduce((sum, leave) => sum + leave.numberOfDays, 0),
     };
   }
 
@@ -250,13 +250,13 @@ export class LeaveService {
     return await this.leaveRepository.find({
       where: { status: LeaveStatus.PENDING },
       relations: ['employee'],
-      order: { createdAt: 'ASC' }
+      order: { createdAt: 'ASC' },
     });
   }
 
   async getEmployeeLeaveBalance(
     employeeId: string,
-    year?: number
+    year?: number,
   ): Promise<any> {
     const currentYear = year || new Date().getFullYear();
     const startDate = `${currentYear}-01-01`;
@@ -266,12 +266,12 @@ export class LeaveService {
       where: {
         employeeId,
         status: LeaveStatus.APPROVED,
-        leaveDate: Between(new Date(startDate), new Date(endDate))
-      }
+        leaveDate: Between(new Date(startDate), new Date(endDate)),
+      },
     });
 
     const leaveByType: { [key: string]: number } = {};
-    leaves.forEach(leave => {
+    leaves.forEach((leave) => {
       leaveByType[leave.leaveType] =
         (leaveByType[leave.leaveType] || 0) + leave.numberOfDays;
     });
@@ -279,17 +279,17 @@ export class LeaveService {
     // Standard entitlements (can be made configurable)
     const entitlements: { [key: string]: number } = {
       [LeaveType.ANNUAL]: 20, // 20 days annual leave
-      [LeaveType.SICK]: 10 // 10 days sick leave
+      [LeaveType.SICK]: 10, // 10 days sick leave
     };
 
     const balance: { [key: string]: any } = {};
-    Object.keys(entitlements).forEach(type => {
+    Object.keys(entitlements).forEach((type) => {
       const used = leaveByType[type] || 0;
       const entitled = entitlements[type];
       balance[type] = {
         entitled,
         used,
-        remaining: entitled - used
+        remaining: entitled - used,
       };
     });
 
@@ -299,8 +299,8 @@ export class LeaveService {
       balance,
       totalLeavesTaken: Object.values(leaveByType).reduce(
         (sum: number, days: number) => sum + days,
-        0
-      )
+        0,
+      ),
     };
   }
 }

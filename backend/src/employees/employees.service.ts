@@ -96,8 +96,8 @@ export class EmployeesService {
         'attendances',
         'leaves',
         'evaluations',
-        'payrolls'
-      ]
+        'payrolls',
+      ],
     });
 
     if (!employee) {

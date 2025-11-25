@@ -11,7 +11,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { RoomTypesService } from './room-types.service';
 import {
@@ -25,7 +30,7 @@ import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 @ApiTags('Room Types')
 @Controller('room-types')
 export class RoomTypesController {
-  constructor(private readonly roomTypesService: RoomTypesService) { }
+  constructor(private readonly roomTypesService: RoomTypesService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all room types' })
@@ -44,14 +49,20 @@ export class RoomTypesController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new room type' })
-  @ApiResponse({ status: 201, description: 'The room type has been successfully created.' })
+  @ApiResponse({
+    status: 201,
+    description: 'The room type has been successfully created.',
+  })
   async create(@Body() createRoomTypeDto: CreateRoomTypeDto) {
     return await this.roomTypesService.create(createRoomTypeDto);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a room type' })
-  @ApiResponse({ status: 200, description: 'The room type has been successfully updated.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The room type has been successfully updated.',
+  })
   @ApiResponse({ status: 404, description: 'Room type not found.' })
   async update(
     @Param('id') id: string,
@@ -63,7 +74,10 @@ export class RoomTypesController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a room type' })
-  @ApiResponse({ status: 200, description: 'The room type has been successfully deleted.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The room type has been successfully deleted.',
+  })
   @ApiResponse({ status: 404, description: 'Room type not found.' })
   async remove(@Param('id') id: string) {
     await this.roomTypesService.remove(id);
@@ -73,7 +87,10 @@ export class RoomTypesController {
   // Amenity management endpoints
   @Post(':id/amenities')
   @ApiOperation({ summary: 'Add an amenity to a room type' })
-  @ApiResponse({ status: 201, description: 'The amenity has been successfully added to the room type.' })
+  @ApiResponse({
+    status: 201,
+    description: 'The amenity has been successfully added to the room type.',
+  })
   async addAmenity(
     @Param('id') roomTypeId: string,
     @Body() addAmenityDto: AddAmenityToRoomTypeDto,
@@ -87,7 +104,11 @@ export class RoomTypesController {
   @Delete(':roomTypeId/amenities/:amenityId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove an amenity from a room type' })
-  @ApiResponse({ status: 200, description: 'The amenity has been successfully removed from the room type.' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'The amenity has been successfully removed from the room type.',
+  })
   async removeAmenity(
     @Param('roomTypeId') roomTypeId: string,
     @Param('amenityId') amenityId: string,
@@ -98,7 +119,10 @@ export class RoomTypesController {
 
   @Post(':id/amenities/bulk')
   @ApiOperation({ summary: 'Add multiple amenities to a room type' })
-  @ApiResponse({ status: 201, description: 'The amenities have been successfully added to the room type.' })
+  @ApiResponse({
+    status: 201,
+    description: 'The amenities have been successfully added to the room type.',
+  })
   async addMultipleAmenities(
     @Param('id') roomTypeId: string,
     @Body() bulkAddDto: BulkAddAmenitiesToRoomTypeDto,

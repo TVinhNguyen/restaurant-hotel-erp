@@ -10,6 +10,6 @@ import { WorkingShift } from '../entities/hr/working-shift.entity';
   imports: [TypeOrmModule.forFeature([Attendance, Employee, WorkingShift])],
   controllers: [AttendanceController],
   providers: [AttendanceService],
-  exports: [AttendanceService]
+  exports: [AttendanceService],
 })
 export class AttendanceModule {}
