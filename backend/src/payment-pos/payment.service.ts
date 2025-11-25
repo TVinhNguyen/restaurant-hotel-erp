@@ -3,6 +3,7 @@ import type { CreatePaymentDto } from './types/dto';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { AxiosResponse } from 'axios';
 import { PayosRequestPaymentPayload } from './dto/payos-request-payment.payload';
 import { generateSignature } from './payos-utils';
 
@@ -36,7 +37,7 @@ export class PaymentService {
       ...dataForSignature,
       signature
     };
-    const response = await firstValueFrom(
+    const response: AxiosResponse<any> = await firstValueFrom(
       this.httpService.post<any>(url, payload, config)
     );
     return response.data;
