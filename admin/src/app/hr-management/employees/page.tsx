@@ -8,31 +8,97 @@ import {
 } from "@refinedev/antd";
 import type { BaseRecord } from "@refinedev/core";
 import { Space, Table, message, Button, Card, Row, Col, Input, Select, Typography, Tag } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getMockEmployees, deleteMockEmployee, type Employee } from "../../../data/mockEmployees";
-import { PlusOutlined, SearchOutlined, UserOutlined } from "@ant-design/icons";
+import { PlusOutlined, SearchOutlined, UserOutlined, StarOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import dayjs from "dayjs";
 
 const { Title } = Typography;
 const { Search } = Input;
 
 export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>(getMockEmployees());
+    const [employees2, setEmployees2] = useState<Employee[]>([]);
     const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>(getMockEmployees());
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [departmentFilter, setDepartmentFilter] = useState('all');
     const router = useRouter();
+    const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
-    const handleDelete = (id: string) => {
-        if (deleteMockEmployee(id)) {
-            const updatedEmployees = getMockEmployees();
-            setEmployees(updatedEmployees);
-            setFilteredEmployees(updatedEmployees);
+    useEffect(() => {
+        const getAllEmployees = async () => {
+            const employeesResponse = await fetch(`${API_ENDPOINT}/employees`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                }
+            }).then()
+            if (employeesResponse.ok) {
+                const employeesData = await employeesResponse.json();
+                const formattedEmployees = employeesData.data.map((employee: any, index: number) => {
+                    console.log(`Employee ${index + 1}:`, employee);
+                    return {
+                        id: employee.id || `emp-${index}`,
+                        userId: employeesData.userId || employeesData.data?.userId || 'Unknown',
+                        fullName: employee.fullName || employee.full_name || 'Unknown',
+                        email: employee.email || employee.user?.email || 'No email',
+                        position: employee.position || 'Not specified',
+                        department: employee.department || 'Unassigned',
+                        phone: employee.phone || employee.user?.phone || 'No phone',
+                        hireDate: employee.hireDate || employee.hire_date || dayjs().format('YYYY-MM-DD'),
+                        salary: employee.salary || 0,
+                        status: employee.status || 'active',
+                        employeeCode: employee.employeeCode || employee.employee_code,
+                        terminationDate: employee.terminationDate || employee.termination_date,
+                    };
+                });
+                console.log(formattedEmployees);
+                setEmployees2(formattedEmployees);
+                setFilteredEmployees(formattedEmployees);
+            }
+        }
+        getAllEmployees();
+    }, [])
+
+    const handleDelete = async (id: string, userId: string) => {
+        console.log(id, userId);
+        try {
+            if (id) {
+                await fetch(`${API_ENDPOINT}/employees/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                });
+                if (userId !== 'Unknown') {
+                    await fetch(`${API_ENDPOINT}/users/${userId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        }
+                    });
+                }
+            }
             message.success('Employee deleted successfully!');
-        } else {
+            const updatedEmployees = employees2.filter(emp => emp.id !== id);
+            setEmployees2(updatedEmployees);
+            setFilteredEmployees(updatedEmployees);
+        } catch (error) {
             message.error('Error deleting employee!');
         }
+        // if (deleteMockEmployee(id)) {
+        //     const updatedEmployees = getMockEmployees();
+        //     setEmployees(updatedEmployees);
+        //     setFilteredEmployees(updatedEmployees);
+        //     message.success('Employee deleted successfully!');
+        // } else {
+        //     message.error('Error deleting employee!');
+        // }
     };
 
     const handleSearch = (value: string) => {
@@ -51,7 +117,9 @@ export default function EmployeesPage() {
     };
 
     const filterEmployees = (search: string, status: string, department: string) => {
-        let filtered = employees;
+        // let filtered = employees;
+        console.log('come here to filter!');
+        let filtered = employees2;
 
         if (search) {
             filtered = filtered.filter(emp =>
@@ -160,15 +228,16 @@ export default function EmployeesPage() {
                             dataIndex="id"
                             title="ID"
                             width={60}
+                            render={(_, record, index) => index + 1}
                             sorter={(a: Employee, b: Employee) => parseInt(a.id) - parseInt(b.id)}
                         />
                         <Table.Column
                             dataIndex="fullName"
-                            title="Full Name"
+                            title="Name"
                             sorter={(a: Employee, b: Employee) => a.fullName.localeCompare(b.fullName)}
-                            render={(name: string, record: Employee) => (
+                            render={(fullName: string, record: Employee) => (
                                 <div>
-                                    <div style={{ fontWeight: 'bold' }}>{name}</div>
+                                    <div style={{ fontWeight: 'bold' }}>{fullName}</div>
                                     <div style={{ fontSize: '12px', color: '#666' }}>{record.email}</div>
                                 </div>
                             )}
@@ -193,15 +262,15 @@ export default function EmployeesPage() {
                             dataIndex="startDate"
                             title="Start Date"
                             responsive={['lg']}
-                            sorter={(a: Employee, b: Employee) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()}
-                            render={(date: string) => new Date(date).toLocaleDateString()}
+                            sorter={(a: Employee, b: Employee) => new Date(a.hireDate).getTime() - new Date(b.hireDate).getTime()}
+                            render={(date: string) => dayjs(date).format('DD/MM/YYYY')}
                         />
                         <Table.Column
                             dataIndex="salary"
                             title="Salary"
                             responsive={['lg']}
-                            sorter={(a: Employee, b: Employee) => a.salary - b.salary}
-                            render={(salary: number) => `${salary.toLocaleString()} VNĐ`}
+                            sorter={(a: Employee, b: Employee) => (a.salary || 0) - (b.salary || 0)}
+                            render={(salary: number) => `${salary?.toLocaleString() || 0} VNĐ`}
                         />
                         <Table.Column
                             dataIndex="status"
@@ -221,17 +290,28 @@ export default function EmployeesPage() {
                             title="Actions"
                             dataIndex="actions"
                             fixed="right"
-                            width={120}
+                            width={160}
                             render={(_, record: BaseRecord) => (
-                                <Space>
-                                    <ShowButton hideText size="small" recordItemId={record.id} />
-                                    <EditButton hideText size="small" recordItemId={record.id} />
-                                    <DeleteButton
-                                        hideText
+                                <Space direction="vertical" size="small">
+                                    <Space size="small">
+                                        <ShowButton hideText size="small" recordItemId={record.id} />
+                                        <EditButton hideText size="small" recordItemId={record.id} />
+                                        <DeleteButton
+                                            hideText
+                                            size="small"
+                                            recordItemId={record.id}
+                                            onSuccess={() => handleDelete(String(record.id), String(record.userId))}
+                                        />
+                                    </Space>
+                                    <Button
                                         size="small"
-                                        recordItemId={record.id}
-                                        onSuccess={() => handleDelete(String(record.id))}
-                                    />
+                                        type="link"
+                                        icon={<StarOutlined />}
+                                        onClick={() => router.push(`/hr-management/evaluations?employee=${record.id}`)}
+                                        style={{ padding: '0', height: 'auto' }}
+                                    >
+                                        Evaluate
+                                    </Button>
                                 </Space>
                             )}
                         />

@@ -13,22 +13,62 @@ export default function CategoryCreate() {
 
   const handleSubmit = async (values: any) => {
     setLoading(true);
+    const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
     try {
-      const newEmployee = addMockEmployee({
-        title: values.position, // Sử dụng position làm title
-        fullName: values.fullName,
-        position: values.position,
-        department: values.department,
-        email: values.email,
-        phone: values.phone,
-        startDate: values.startDate.format('YYYY-MM-DD'),
-        salary: values.salary,
-        status: values.status,
+      const userResponse = await fetch(`${API_ENDPOINT}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: values.email,
+          password: 'defaultPassword123!',
+          name: values.fullName,
+          phone: values.phone,
+        }),
       });
-
-      message.success('Thêm nhân viên thành công!');
-      router.push('/hr-management');
+      if (userResponse.ok) {
+        const registerData = await userResponse.json();
+        const apiUser = registerData.user || registerData;
+        console.log('Registered user from API:', apiUser);
+        const savedEmployee = {
+          userId: apiUser.id,
+          employeeCode: `EMP-${Date.now()}`,
+          fullName: values.fullName,
+          position: values.position,
+          department: values.department,
+          salary: values.salary,
+          hireDate: values.hireDate.format('YYYY-MM-DD'),
+          status: values.status,
+        }
+        const employeeResponse = await fetch(`${API_ENDPOINT}/employees`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify(savedEmployee)
+        });
+        if (employeeResponse.ok) {
+          const employeeData = await employeeResponse.json();
+          console.log('Created employee from API:', employeeData);
+          message.success('Thêm nhân viên thành công!');
+          router.push('/hr-management');
+          addMockEmployee({
+            ...employeeData,
+            email: values.email,
+            phone: values.phone
+          });
+        } else {
+          const errorData = await employeeResponse.json();
+          console.error('Create employee API error:', errorData);
+          message.error(errorData.message || 'Có lỗi xảy ra khi thêm nhân viên!');
+        }
+      } else {
+        const errorData = await userResponse.json();
+        console.error('Register API error:', errorData);
+        message.error(errorData.message || 'Có lỗi xảy ra khi đăng ký tài khoản!');
+      }
     } catch (error) {
+      console.error('Network or other error:', error);
       message.error('Có lỗi xảy ra khi thêm nhân viên!');
     } finally {
       setLoading(false);
@@ -91,14 +131,20 @@ export default function CategoryCreate() {
         <Form.Item
           label={"Số điện thoại"}
           name="phone"
-          rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}
+          rules={[
+            { required: true, message: 'Vui lòng nhập số điện thoại!' },
+            {
+              pattern: /^[+]?[1-9][\d]{0,15}$/,
+              message: 'Số điện thoại không hợp lệ! (VD: +84901234567 hoặc 84901234567)'
+            }
+          ]}
         >
-          <Input placeholder="0901234567" />
+          <Input placeholder="+84901234567 hoặc 84901234567" />
         </Form.Item>
 
         <Form.Item
           label={"Ngày bắt đầu làm việc"}
-          name="startDate"
+          name="hireDate"
           rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu!' }]}
         >
           <DatePicker
@@ -128,7 +174,7 @@ export default function CategoryCreate() {
         >
           <Select>
             <Select.Option value="active">Đang làm việc</Select.Option>
-            <Select.Option value="inactive">Nghỉ việc</Select.Option>
+            <Select.Option value="terminated">Nghỉ việc</Select.Option>
           </Select>
         </Form.Item>
       </Form>

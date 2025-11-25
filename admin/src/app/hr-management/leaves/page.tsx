@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Card,
     Table,
@@ -8,6 +8,7 @@ import {
     Modal,
     Form,
     Input,
+    Descriptions,
     Select,
     DatePicker,
     message,
@@ -18,7 +19,8 @@ import {
     Statistic,
     Typography,
     Popconfirm,
-    Tooltip
+    Tooltip,
+    Spin
 } from 'antd';
 import {
     PlusOutlined,
@@ -26,22 +28,114 @@ import {
     CloseOutlined,
     CalendarOutlined,
     ClockCircleOutlined,
-    UserOutlined
+    UserOutlined,
+    DeleteOutlined
 } from '@ant-design/icons';
-import { getMockLeaveRequests, updateMockLeaveRequest, type LeaveRequest } from '../../../data/mockAttendance';
-import { getMockEmployees } from '../../../data/mockEmployees';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
 
+// API Base URL
+const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+
+// Types
+interface LeaveRequest {
+    id: string;
+    employeeId: string;
+    employee?: {
+        id: string;
+        fullName: string;
+        employeeCode: string;
+    };
+    leaveDate: string;
+    startDate: string;
+    endDate: string;
+    numberOfDays: number;
+    leaveType: string;
+    status: string;
+    reason: string;
+    appliedDate?: string;
+    approvedBy?: string;
+    approvedDate?: string;
+    hrNote?: string;
+    rejectionReason?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface Employee {
+    id: string;
+    fullName: string;
+    position: string;
+    status: string;
+}
+
 export default function LeavePage() {
     const [isModalVisible, setIsModalVisible] = useState(false);
+    // Action modal state for approve/reject with note
+    const [isActionModalVisible, setIsActionModalVisible] = useState(false);
+    const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
+    const [actionRecordId, setActionRecordId] = useState<string | null>(null);
+    const [actionNote, setActionNote] = useState<string>('');
+    const [actionSubmitting, setActionSubmitting] = useState(false);
     const [form] = Form.useForm();
-    const [leaveRequests, setLeaveRequests] = useState(getMockLeaveRequests());
+    const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
-    const employees = getMockEmployees();
+    // Fetch data from API
+    const fetchLeaveRequests = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${API_ENDPOINT}/leaves?page=1&limit=100`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Fetched leave requests:', data.data);
+                setLeaveRequests(data.data || []);
+            } else {
+                message.error('Failed to fetch leave requests');
+            }
+        } catch (error) {
+            console.error('Error fetching leave requests:', error);
+            message.error('Error fetching leave requests');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchEmployees = async () => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/employees`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Fetched employees:', data.data);
+                setEmployees(data.data || []);
+            } else {
+                message.error('Failed to fetch employees');
+            }
+        } catch (error) {
+            console.error('Error fetching employees:', error);
+            message.error('Error fetching employees');
+        }
+    };
+
+    useEffect(() => {
+        fetchLeaveRequests();
+        fetchEmployees();
+    }, []);
 
     // Calculate statistics
     const pendingRequests = leaveRequests.filter(req => req.status === 'pending').length;
@@ -49,63 +143,161 @@ export default function LeavePage() {
     const rejectedRequests = leaveRequests.filter(req => req.status === 'rejected').length;
     const totalRequests = leaveRequests.length;
 
-    const handleApproveLeave = (id: string) => {
-        const updated = updateMockLeaveRequest(id, {
-            status: 'approved',
-            approvedBy: 'HR Manager',
-            approvedDate: dayjs().format('YYYY-MM-DD'),
-        });
+    // selected record for action modal
+    const selectedRecord = actionRecordId ? leaveRequests.find(r => r.id === actionRecordId) ?? null : null;
 
-        if (updated) {
-            setLeaveRequests([...getMockLeaveRequests()]);
-            message.success('Leave request approved successfully!');
+    const handleApproveLeave = async (id: string, hrNote?: string) => {
+        try {
+            if (hrNote === undefined || hrNote.trim() === '') {
+                message.error('Please provide a note for approval.');
+                return;
+            }
+            const retrievedUserID = JSON.parse(localStorage.getItem('user') || '{}').id;
+            console.log('Retrieved user ID for approval:', retrievedUserID);
+            const response = await fetch(`${API_ENDPOINT}/leaves/${id}/`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: 'approved',
+                    hrNote: hrNote,
+                    approvedBy: retrievedUserID.id,
+                    approvedDate: dayjs().format('YYYY-MM-DD')
+                })
+            });
+
+            if (response.ok) {
+                message.success('Leave request approved successfully!');
+                fetchLeaveRequests();
+            } else {
+                const error = await response.json();
+                message.error(error.message || 'Failed to approve leave request');
+            }
+        } catch (error) {
+            console.error('Error approving leave:', error);
+            message.error('Error approving leave request');
         }
     };
 
-    const handleRejectLeave = (id: string, reason?: string) => {
-        const updated = updateMockLeaveRequest(id, {
-            status: 'rejected',
-            approvedBy: 'HR Manager',
-            approvedDate: dayjs().format('YYYY-MM-DD'),
-            rejectionReason: reason || 'No reason provided',
-        });
+    const handleRejectLeave = async (id: string, reason?: string) => {
+        try {
+            if (reason === undefined || reason.trim() === '') {
+                message.error('Please provide a note for rejection.');
+                return;
+            }
+            const retrievedUserID = JSON.parse(localStorage.getItem('user') || '{}').id;
+            console.log('Retrieved user ID for rejection:', retrievedUserID);
+            const response = await fetch(`${API_ENDPOINT}/leaves/${id}/`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: 'rejected',
+                    hrNote: reason,
+                    approvedBy: retrievedUserID.id,
+                    approvedDate: dayjs().format('YYYY-MM-DD')
+                })
+            });
 
-        if (updated) {
-            setLeaveRequests([...getMockLeaveRequests()]);
-            message.success('Leave request rejected!');
+            if (response.ok) {
+                message.success('Leave request rejected successfully!');
+                fetchLeaveRequests();
+            } else {
+                const error = await response.json();
+                message.error(error.message || 'Failed to reject leave request');
+            }
+        } catch (error) {
+            console.error('Error rejecting leave:', error);
+            message.error('Error rejecting leave request');
         }
     };
 
-    const handleAddLeaveRequest = (values: any) => {
-        const startDate = values.dateRange[0];
-        const endDate = values.dateRange[1];
-        const days = endDate.diff(startDate, 'day') + 1;
+    const handleDeleteLeave = async (id: string) => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/leaves/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+            });
 
-        const newRequest: LeaveRequest = {
-            id: (leaveRequests.length + 1).toString(),
-            employeeId: values.employeeId,
-            employeeName: employees.find(emp => emp.id === values.employeeId)?.fullName || '',
-            leaveType: values.leaveType,
-            startDate: startDate.format('YYYY-MM-DD'),
-            endDate: endDate.format('YYYY-MM-DD'),
-            days: days,
-            reason: values.reason,
-            status: 'pending',
-            appliedDate: dayjs().format('YYYY-MM-DD'),
-        };
+            if (response.ok) {
+                message.success('Leave request deleted successfully!');
+                fetchLeaveRequests(); // Refresh data
+            } else {
+                const error = await response.json();
+                message.error(error.message || 'Failed to delete leave request');
+            }
+        } catch (error) {
+            console.error('Error deleting leave:', error);
+            message.error('Error deleting leave request');
+        }
+    };
 
-        setLeaveRequests([...leaveRequests, newRequest]);
-        message.success('Leave request submitted successfully!');
-        setIsModalVisible(false);
-        form.resetFields();
+    const handleAddLeaveRequest = async (values: any) => {
+        setSubmitting(true);
+        try {
+            const startDate = values.dateRange[0];
+            const endDate = values.dateRange[1];
+            const numberOfDays = endDate.diff(startDate, 'day') + 1;
+
+            const leaveData = {
+                employeeId: values.employeeId,
+                leaveDate: startDate.format('YYYY-MM-DD'),
+                startDate: startDate.format('YYYY-MM-DD'),
+                endDate: endDate.format('YYYY-MM-DD'),
+                numberOfDays: numberOfDays,
+                leaveType: values.leaveType,
+                reason: values.reason,
+                status: 'pending',
+                appliedDate: dayjs().format('YYYY-MM-DD')
+            };
+
+            const response = await fetch(`${API_ENDPOINT}/leaves`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(leaveData)
+            });
+
+            if (response.ok) {
+                message.success('Leave request submitted successfully!');
+                setIsModalVisible(false);
+                form.resetFields();
+                fetchLeaveRequests(); // Refresh data
+            } else {
+                const error = await response.json();
+                message.error(error.message || 'Failed to submit leave request');
+            }
+        } catch (error) {
+            console.error('Error submitting leave request:', error);
+            message.error('Error submitting leave request');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const columns = [
         {
             title: 'Employee',
-            dataIndex: 'employeeName',
-            key: 'employeeName',
-            sorter: (a: LeaveRequest, b: LeaveRequest) => a.employeeName.localeCompare(b.employeeName),
+            dataIndex: 'employee',
+            key: 'employee',
+            render: (employee: any, record: LeaveRequest) => {
+                const empName = employee?.fullName || `Employee ${record.employeeId}`;
+                return empName;
+            },
+            sorter: (a: LeaveRequest, b: LeaveRequest) => {
+                const nameA = a.employee?.fullName || '';
+                const nameB = b.employee?.fullName || '';
+                return nameA.localeCompare(nameB);
+            },
         },
         {
             title: 'Leave Type',
@@ -118,6 +310,8 @@ export default function LeavePage() {
                     personal: { color: 'orange', text: 'Personal Leave' },
                     maternity: { color: 'pink', text: 'Maternity Leave' },
                     emergency: { color: 'volcano', text: 'Emergency Leave' },
+                    unpaid: { color: 'gray', text: 'Unpaid Leave' },
+                    other: { color: 'default', text: 'Other Leave' },
                 };
                 const config = typeConfig[type as keyof typeof typeConfig];
                 return <Tag color={config.color}>{config.text}</Tag>;
@@ -128,7 +322,6 @@ export default function LeavePage() {
             dataIndex: 'startDate',
             key: 'startDate',
             render: (date: string) => dayjs(date).format('DD/MM/YYYY'),
-            sorter: (a: LeaveRequest, b: LeaveRequest) => dayjs(a.startDate).unix() - dayjs(b.startDate).unix(),
         },
         {
             title: 'End Date',
@@ -138,9 +331,9 @@ export default function LeavePage() {
         },
         {
             title: 'Days',
-            dataIndex: 'days',
-            key: 'days',
-            sorter: (a: LeaveRequest, b: LeaveRequest) => a.days - b.days,
+            dataIndex: 'numberOfDays',
+            key: 'numberOfDays',
+            sorter: (a: LeaveRequest, b: LeaveRequest) => a.numberOfDays - b.numberOfDays,
         },
         {
             title: 'Reason',
@@ -182,46 +375,58 @@ export default function LeavePage() {
         {
             title: 'Actions',
             key: 'actions',
-            render: (_, record: LeaveRequest) => {
+            render: (_: any, record: LeaveRequest) => {
                 if (record.status === 'pending') {
                     return (
-                        <Space>
-                            <Popconfirm
-                                title="Approve this leave request?"
-                                onConfirm={() => handleApproveLeave(record.id)}
-                                okText="Yes"
-                                cancelText="No"
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<CheckOutlined />}
+                                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                                onClick={() => {
+                                    setActionType('approve');
+                                    setActionRecordId(record.id);
+                                    setActionNote(record.hrNote || '');
+                                    setIsActionModalVisible(true);
+                                }}
                             >
-                                <Button
-                                    type="primary"
-                                    size="small"
-                                    icon={<CheckOutlined />}
-                                    style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-                                >
-                                    Approve
-                                </Button>
-                            </Popconfirm>
+                                Approve
+                            </Button>
+                            <Button
+                                danger
+                                size="small"
+                                icon={<CloseOutlined />}
+                                onClick={() => {
+                                    setActionType('reject');
+                                    setActionRecordId(record.id);
+                                    setActionNote(record.rejectionReason || record.hrNote || '');
+                                    setIsActionModalVisible(true);
+                                }}
+                            >
+                                Reject
+                            </Button>
                             <Popconfirm
-                                title="Reject this leave request?"
-                                onConfirm={() => handleRejectLeave(record.id)}
+                                title="Are you sure you want to delete this leave request?"
+                                onConfirm={() => handleDeleteLeave(record.id)}
                                 okText="Yes"
                                 cancelText="No"
                             >
                                 <Button
                                     danger
                                     size="small"
-                                    icon={<CloseOutlined />}
+                                    icon={<DeleteOutlined />}
                                 >
-                                    Reject
+                                    Delete
                                 </Button>
                             </Popconfirm>
-                        </Space>
+                        </div>
                     );
                 }
                 return (
                     <Tag color={record.status === 'approved' ? 'green' : 'red'}>
                         {record.status === 'approved' ? 'Approved' : 'Rejected'}
-                        {record.approvedDate && ` on ${dayjs(record.approvedDate).format('DD/MM/YYYY')}`}
+                        {record.updatedAt && ` on ${dayjs(record.updatedAt).format('DD/MM/YYYY')}`}
                     </Tag>
                 );
             },
@@ -299,10 +504,12 @@ export default function LeavePage() {
                     columns={columns}
                     dataSource={leaveRequests}
                     rowKey="id"
+                    loading={loading}
                     pagination={{
                         pageSize: 10,
                         showSizeChanger: true,
                         showQuickJumper: true,
+                        total: leaveRequests.length,
                     }}
                     scroll={{ x: 1000 }}
                 />
@@ -329,7 +536,7 @@ export default function LeavePage() {
                         name="employeeId"
                         rules={[{ required: true, message: 'Please select an employee!' }]}
                     >
-                        <Select placeholder="Select employee">
+                        <Select placeholder="Select employee" loading={employees.length === 0}>
                             {employees.filter(emp => emp.status === 'active').map(employee => (
                                 <Select.Option key={employee.id} value={employee.id}>
                                     <UserOutlined /> {employee.fullName} - {employee.position}
@@ -349,6 +556,8 @@ export default function LeavePage() {
                             <Select.Option value="personal">Personal Leave</Select.Option>
                             <Select.Option value="maternity">Maternity Leave</Select.Option>
                             <Select.Option value="emergency">Emergency Leave</Select.Option>
+                            <Select.Option value="unpaid">Unpaid Leave</Select.Option>
+                            <Select.Option value="other">Other</Select.Option>
                         </Select>
                     </Form.Item>
 
@@ -387,12 +596,78 @@ export default function LeavePage() {
                             }}>
                                 Cancel
                             </Button>
-                            <Button type="primary" htmlType="submit">
+                            <Button type="primary" htmlType="submit" loading={submitting}>
                                 Submit Request
                             </Button>
                         </Space>
                     </Form.Item>
                 </Form>
+            </Modal>
+
+            {/* Approve/Reject with note modal */}
+            <Modal
+                title={actionType === 'approve' ? 'Approve Leave Request' : 'Reject Leave Request'}
+                open={isActionModalVisible}
+                onCancel={() => {
+                    setIsActionModalVisible(false);
+                    setActionType(null);
+                    setActionRecordId(null);
+                    setActionNote('');
+                }}
+                onOk={async () => {
+                    if (!actionRecordId || !actionType) return;
+                    setActionSubmitting(true);
+                    try {
+                        if (actionType === 'approve') {
+                            await handleApproveLeave(actionRecordId, actionNote);
+                        } else {
+                            await handleRejectLeave(actionRecordId, actionNote);
+                        }
+                        setIsActionModalVisible(false);
+                        setActionType(null);
+                        setActionRecordId(null);
+                        setActionNote('');
+                    } finally {
+                        setActionSubmitting(false);
+                    }
+                }}
+                confirmLoading={actionSubmitting}
+                width={720}
+            >
+                {selectedRecord ? (
+                    <>
+                        <Descriptions bordered size="small" column={2} style={{ marginBottom: 16 }}>
+                            <Descriptions.Item label="Employee">{selectedRecord.employee?.fullName || selectedRecord.employeeId}</Descriptions.Item>
+                            <Descriptions.Item label="Employee Code">{selectedRecord.employee?.employeeCode || selectedRecord.employeeId || '-'}</Descriptions.Item>
+                            <Descriptions.Item label="Leave Type">{selectedRecord.leaveType}</Descriptions.Item>
+                            <Descriptions.Item label="Status">{selectedRecord.status}</Descriptions.Item>
+                            <Descriptions.Item label="Start Date">{dayjs(selectedRecord.startDate).format('DD/MM/YYYY')}</Descriptions.Item>
+                            <Descriptions.Item label="End Date">{dayjs(selectedRecord.endDate).format('DD/MM/YYYY')}</Descriptions.Item>
+                            <Descriptions.Item label="Days">{selectedRecord.numberOfDays}</Descriptions.Item>
+                            <Descriptions.Item label="Applied Date">{selectedRecord.appliedDate ? dayjs(selectedRecord.appliedDate).format('DD/MM/YYYY') : '-'}</Descriptions.Item>
+                            <Descriptions.Item label="Reason" span={2}>{selectedRecord.reason}</Descriptions.Item>
+                            <Descriptions.Item label="HR Note" span={2}>{selectedRecord.hrNote || '-'}</Descriptions.Item>
+                            <Descriptions.Item label="Rejection Reason" span={2}>{selectedRecord.rejectionReason || '-'}</Descriptions.Item>
+                            <Descriptions.Item label="Created At">{dayjs(selectedRecord.createdAt).format('DD/MM/YYYY HH:mm')}</Descriptions.Item>
+                            <Descriptions.Item label="Updated At">{selectedRecord.updatedAt ? dayjs(selectedRecord.updatedAt).format('DD/MM/YYYY HH:mm') : '-'}</Descriptions.Item>
+                        </Descriptions>
+
+                        <Form layout="vertical">
+                            <Form.Item label={actionType === 'approve' ? 'Approval note (optional)' : 'Rejection note (optional)'}>
+                                <TextArea
+                                    rows={4}
+                                    value={actionNote}
+                                    onChange={(e) => setActionNote(e.target.value)}
+                                    placeholder={actionType === 'approve' ? 'Add an approval note (optional)...' : 'Add a rejection reason or note...'}
+                                    showCount
+                                    maxLength={500}
+                                />
+                            </Form.Item>
+                        </Form>
+                    </>
+                ) : (
+                    <Spin />
+                )}
             </Modal>
         </div>
     );

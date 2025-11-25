@@ -1,5 +1,44 @@
-node_modules
-# Keep environment variables out of version control
-.env
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-/generated/prisma
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+
+# Generated files
+src/generated/
+prisma/generated/
+src/**/*.generated.ts
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+Thumbs.db
+
+# Testing
+.jest/
+jest-e2e.json

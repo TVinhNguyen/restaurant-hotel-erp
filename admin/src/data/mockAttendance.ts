@@ -101,10 +101,18 @@ export interface LeaveRequest {
   id: string;
   employeeId: string;
   employeeName: string;
-  leaveType: 'annual' | 'sick' | 'personal' | 'maternity' | 'emergency';
+  leaveType:
+    | 'annual'
+    | 'sick'
+    | 'personal'
+    | 'maternity'
+    | 'emergency'
+    | 'unpaid'
+    | 'other';
+  leaveDate: string;
   startDate: string;
   endDate: string;
-  days: number;
+  numberOfDays: number;
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   appliedDate: string;
@@ -119,9 +127,10 @@ export const mockLeaveRequests: LeaveRequest[] = [
     employeeId: '3',
     employeeName: 'Lê Minh Cường',
     leaveType: 'annual',
+    leaveDate: '2025-09-01',
     startDate: '2025-09-01',
     endDate: '2025-09-05',
-    days: 5,
+    numberOfDays: 5,
     reason: 'Nghỉ phép thường niên',
     status: 'pending',
     appliedDate: '2025-08-20'
@@ -131,9 +140,10 @@ export const mockLeaveRequests: LeaveRequest[] = [
     employeeId: '1',
     employeeName: 'Nguyễn Văn An',
     leaveType: 'sick',
+    leaveDate: '2025-08-25',
     startDate: '2025-08-25',
     endDate: '2025-08-26',
-    days: 2,
+    numberOfDays: 2,
     reason: 'Bị cảm sốt, cần nghỉ dưỡng bệnh',
     status: 'approved',
     appliedDate: '2025-08-24',
@@ -145,9 +155,10 @@ export const mockLeaveRequests: LeaveRequest[] = [
     employeeId: '5',
     employeeName: 'Hoàng Văn Em',
     leaveType: 'personal',
+    leaveDate: '2025-09-10',
     startDate: '2025-09-10',
     endDate: '2025-09-10',
-    days: 1,
+    numberOfDays: 1,
     reason: 'Giải quyết việc cá nhân',
     status: 'rejected',
     appliedDate: '2025-08-28',

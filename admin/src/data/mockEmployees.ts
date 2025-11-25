@@ -1,14 +1,16 @@
 // Mock data cho HR Management
 export interface Employee {
+  userId?: string;
+  employeeCode?: string;
   id: string;
-  title: string;
+  title?: string;
   fullName: string;
   position: string;
   department: string;
   email: string;
   phone: string;
-  startDate: string;
-  salary: number;
+  hireDate: string;
+  salary?: number;
   status: 'active' | 'inactive';
 }
 
@@ -21,7 +23,7 @@ export const mockEmployees: Employee[] = [
     department: 'IT Department',
     email: 'an.nguyen@company.com',
     phone: '0901234567',
-    startDate: '2023-01-15',
+    hireDate: '2023-01-15',
     salary: 25000000,
     status: 'active'
   },
@@ -33,7 +35,7 @@ export const mockEmployees: Employee[] = [
     department: 'Human Resources',
     email: 'binh.tran@company.com',
     phone: '0902345678',
-    startDate: '2022-06-01',
+    hireDate: '2022-06-01',
     salary: 30000000,
     status: 'active'
   },
@@ -45,7 +47,7 @@ export const mockEmployees: Employee[] = [
     department: 'Marketing',
     email: 'cuong.le@company.com',
     phone: '0903456789',
-    startDate: '2023-03-20',
+    hireDate: '2023-03-20',
     salary: 18000000,
     status: 'active'
   },
@@ -57,7 +59,7 @@ export const mockEmployees: Employee[] = [
     department: 'Finance',
     email: 'dung.pham@company.com',
     phone: '0904567890',
-    startDate: '2022-11-10',
+    hireDate: '2022-11-10',
     salary: 20000000,
     status: 'inactive'
   },
@@ -69,7 +71,7 @@ export const mockEmployees: Employee[] = [
     department: 'Sales',
     email: 'em.hoang@company.com',
     phone: '0905678901',
-    startDate: '2023-05-05',
+    hireDate: '2023-05-05',
     salary: 16000000,
     status: 'active'
   }

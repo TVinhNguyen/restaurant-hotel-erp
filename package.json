@@ -1,0 +1,20 @@
+{
+  "name": "restaurant-hotel-erp",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "dev": "pnpm run dev:frontend",
+    "dev:backend": "pnpm --filter backend start:dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:admin": "pnpm --filter admin dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r --workspace-concurrency=1 lint",
+    "test": "pnpm -r --if-present test",
+    "format": "pnpm -r --if-present format"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  }
+}

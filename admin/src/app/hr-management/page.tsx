@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Card, Row, Col, Button, Typography, Space, Avatar, List, Tag, Statistic, Progress } from 'antd';
+import React, { useEffect } from 'react';
+import { Card, Row, Col, Button, Typography, Space, Avatar, List, Tag, Statistic, Progress, message } from 'antd';
 import {
   TeamOutlined,
   UserOutlined,
@@ -12,29 +12,160 @@ import {
   PlusOutlined,
   BarChartOutlined,
   SettingOutlined,
-  BellOutlined
+  BellOutlined,
+  StarOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { getMockEmployees } from '../../data/mockEmployees';
+import { Employee, getMockEmployees } from '../../data/mockEmployees';
 import { getMockLeaveRequests, getMockAttendance } from '../../data/mockAttendance';
 import { getMockPayrollRecords } from '../../data/mockPayroll';
+import { getMockEvaluations } from '../../data/mockEvaluations';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 const { Title, Text, Paragraph } = Typography;
+const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
 
 export default function HRManagementHub() {
   const router = useRouter();
-  const employees = getMockEmployees();
-  const leaveRequests = getMockLeaveRequests();
-  const attendance = getMockAttendance();
-  const payroll = getMockPayrollRecords();
+  const [employees, setEmployees] = React.useState<Employee[]>([]);
+  const [leaveRequests, setLeaveRequests] = React.useState<any[]>([]);
+  const [attendance, setAttendance] = React.useState<any[]>([]);
+  const [payroll, setPayroll] = React.useState<any[]>([]);
+  const [evaluations, setEvaluations] = React.useState<any[]>([]);
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch(`${API_ENDPOINT}/employees`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setEmployees(data.data || []);
+      } else {
+        message.error('Failed to fetch employees');
+      }
+    } catch (error) {
+      message.error('Error fetching employees');
+    }
+  };
+
+  const fetchLeaveRequests = async () => {
+    try {
+      const response = await fetch(`${API_ENDPOINT}/leaves/get-all-leaves`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched leave requests:', data);
+        setLeaveRequests(data.data || []);
+      } else {
+        message.error('Failed to fetch leave requests');
+      }
+    } catch (error) {
+      message.error('Error fetching leave requests');
+    }
+  };
+
+  const fetchAttendance = async () => {
+    try {
+      const response = await fetch(`${API_ENDPOINT}/attendance/get-all-attendances`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched attendance:', data);
+        setAttendance(data.data || []);
+      } else {
+        message.error('Failed to fetch attendance');
+      }
+    } catch (error) {
+      message.error('Error fetching attendance');
+    }
+  };
+
+  const fetchPayroll = async () => {
+    try {
+      const response = await fetch(`${API_ENDPOINT}/payroll/get-all-payrolls`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched payroll:', data);
+        setPayroll(data.data || []);
+      } else {
+        message.error('Failed to fetch payroll');
+      }
+    } catch (error) {
+      message.error('Error fetching payroll');
+    }
+  };
+
+  const fetchEvaluations = async () => {
+    try {
+      const response = await fetch(`${API_ENDPOINT}/employee-evaluations/get-all-evaluations`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched evaluations:', data);
+        setEvaluations(data.data || []);
+      } else {
+        message.error('Failed to fetch evaluations');
+      }
+    } catch (error) {
+      message.error('Error fetching evaluations');
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+    fetchLeaveRequests();
+    fetchAttendance();
+    fetchPayroll();
+    fetchEvaluations();
+  }, [])
 
   // Calculate quick stats
   const activeEmployees = employees.filter(emp => emp.status === 'active').length;
   const pendingLeaves = leaveRequests.filter(req => req.status === 'pending').length;
-  const todayAttendance = attendance.filter(att => att.date === dayjs().format('YYYY-MM-DD'));
+
+  // For attendance: check if date field exists, handle both date formats
+  const today = dayjs().format('YYYY-MM-DD');
+  const todayAttendance = attendance.filter(att => {
+    if (att.date) return att.date === today;
+    if (att.checkInTime) {
+      return dayjs(att.checkInTime).format('YYYY-MM-DD') === today;
+    }
+    return false;
+  });
   const presentToday = todayAttendance.filter(att => att.status === 'present' || att.status === 'late').length;
-  const monthlyPayroll = payroll.filter(p => p.month === dayjs().format('MM') && p.year === dayjs().year());
+
+  // For payroll: handle period format (YYYY-MM)
+  const currentPeriod = `${dayjs().year()}-${dayjs().format('MM')}`;
+  const monthlyPayroll = payroll.filter(p => {
+    if (p.period) return p.period === currentPeriod;
+    return p.month === dayjs().format('MM') && p.year === dayjs().year();
+  });
+
+  const pendingEvaluations = evaluations.filter(evaluation => evaluation.status === 'draft').length;
 
   const quickActions = [
     {
@@ -44,6 +175,14 @@ export default function HRManagementHub() {
       path: '/hr-management/employees',
       color: '#1890ff',
       stats: `${employees.length} Total Employees`,
+    },
+    {
+      title: 'Employee Evaluations',
+      description: 'Conduct performance reviews, rate employees, track development',
+      icon: <StarOutlined style={{ fontSize: '24px', color: '#eb2f96' }} />,
+      path: '/hr-management/evaluations',
+      color: '#eb2f96',
+      stats: `${pendingEvaluations} Pending Reviews`,
     },
     {
       title: 'Attendance Tracking',
@@ -79,36 +218,65 @@ export default function HRManagementHub() {
     },
   ];
 
-  const recentActivities = [
-    {
-      id: '1',
-      type: 'leave',
-      message: 'Lê Minh Cường applied for annual leave',
-      time: '2 hours ago',
-      status: 'pending',
-    },
-    {
-      id: '2',
-      type: 'attendance',
-      message: 'Trần Thị Bình marked as late today',
-      time: '4 hours ago',
-      status: 'info',
-    },
-    {
-      id: '3',
-      type: 'payroll',
-      message: 'August payroll processed for 3 employees',
-      time: '1 day ago',
-      status: 'success',
-    },
-    {
-      id: '4',
-      type: 'employee',
-      message: 'New employee onboarding completed',
-      time: '2 days ago',
-      status: 'success',
-    },
-  ];
+  // Generate recent activities from real data
+  const recentActivities = React.useMemo(() => {
+    const activities: any[] = [];
+
+    // Add recent leave requests
+    leaveRequests.slice(0, 2).forEach(leave => {
+      activities.push({
+        id: `leave-${leave.id}`,
+        type: 'leave',
+        message: `${leave.employee?.fullName || 'Employee'} applied for ${leave.leaveType || 'leave'}`,
+        time: dayjs(leave.createdAt || leave.appliedDate).fromNow(),
+        status: leave.status === 'pending' ? 'pending' : leave.status === 'approved' ? 'success' : 'info',
+      });
+    });
+
+    // Add recent attendance (today's late arrivals)
+    const lateToday = attendance.filter(att => {
+      const attDate = att.date || (att.checkInTime ? dayjs(att.checkInTime).format('YYYY-MM-DD') : null);
+      return attDate === today && att.status === 'late';
+    }).slice(0, 1);
+
+    lateToday.forEach(att => {
+      activities.push({
+        id: `att-${att.id}`,
+        type: 'attendance',
+        message: `${att.employee?.fullName || 'Employee'} marked as late today`,
+        time: att.checkInTime ? dayjs(att.checkInTime).fromNow() : 'Today',
+        status: 'info',
+      });
+    });
+
+    // Add recent payroll
+    const recentPayroll = payroll.filter(p => p.status === 'paid').slice(0, 1);
+    recentPayroll.forEach(p => {
+      const period = p.period || `${p.year}-${p.month}`;
+      activities.push({
+        id: `payroll-${p.id}`,
+        type: 'payroll',
+        message: `${period} payroll processed for ${p.employee?.fullName || 'employee'}`,
+        time: p.paidDate ? dayjs(p.paidDate).fromNow() : dayjs(p.updatedAt).fromNow(),
+        status: 'success',
+      });
+    });
+
+    // Add new employees
+    const recentEmployees = employees.filter(emp => emp.hireDate).slice(0, 1);
+    recentEmployees.forEach(emp => {
+      activities.push({
+        id: `emp-${emp.id}`,
+        type: 'employee',
+        message: `${emp.fullName} joined as ${emp.position}`,
+        time: dayjs(emp.hireDate).fromNow(),
+        status: 'success',
+      });
+    });
+
+    // Sort by time (most recent first) and return top 4
+    return activities.slice(0, 4);
+  }, [leaveRequests, attendance, payroll, employees, today]);
 
   return (
     <div style={{ padding: '24px' }}>
@@ -125,7 +293,6 @@ export default function HRManagementHub() {
             <Button icon={<BellOutlined />}>
               Notifications {pendingLeaves > 0 && <span style={{ color: '#ff4d4f' }}>({pendingLeaves})</span>}
             </Button>
-            <Button icon={<SettingOutlined />}>Settings</Button>
           </Space>
         </Col>
       </Row>
@@ -244,7 +411,7 @@ export default function HRManagementHub() {
       {/* Recent Activities and Quick Info */}
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12}>
-          <Card title="Recent Activities" extra={<Button type="link">View All</Button>}>
+          <Card title="Recent Activities">
             <List
               dataSource={recentActivities}
               renderItem={(item) => (
@@ -308,6 +475,6 @@ export default function HRManagementHub() {
           </Card>
         </Col>
       </Row>
-    </div>
+    </div >
   );
 }

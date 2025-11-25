@@ -1,0 +1,42 @@
+// Auth entities
+export { User } from './auth/user.entity';
+export { Role } from './auth/role.entity';
+
+// Core entities
+export { Employee } from './core/employee.entity';
+export { EmployeeRole } from './core/employee-role.entity';
+export { Guest } from './core/guest.entity';
+export { Property } from './core/property.entity';
+
+// Inventory entities
+export { RoomType } from './inventory/room-type.entity';
+export { Amenity } from './inventory/amenity.entity';
+export { RoomTypeAmenity } from './inventory/room-type-amenity.entity';
+export { Photo } from './inventory/photo.entity';
+export { Room } from './inventory/room.entity';
+export { RoomStatusHistory } from './inventory/room-status-history.entity';
+
+// Reservation entities
+export { RatePlan } from './reservation/rate-plan.entity';
+export { DailyRate } from './reservation/daily-rate.entity';
+export { Service } from './reservation/service.entity';
+export { PropertyService } from './reservation/property-service.entity';
+export { Promotion } from './reservation/promotion.entity';
+export { TaxRule } from './reservation/tax-rule.entity';
+export { Reservation } from './reservation/reservation.entity';
+export { Payment } from './reservation/payment.entity';
+
+// Restaurant entities
+export { Restaurant } from './restaurant/restaurant.entity';
+export { RestaurantArea } from './restaurant/restaurant-area.entity';
+export { RestaurantTable } from './restaurant/restaurant-table.entity';
+export { TableBooking } from './restaurant/table-booking.entity';
+
+// HR entities
+export { WorkingShift } from './hr/working-shift.entity';
+export { Attendance } from './hr/attendance.entity';
+export { Leave } from './hr/leave.entity';
+export { EmployeeEvaluation } from './hr/employee-evaluation.entity';
+export { Payroll } from './hr/payroll.entity';
+export { Overtime } from './hr/overtime.entity';
+export { Deduction } from './hr/deduction.entity';
