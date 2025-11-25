@@ -60,8 +60,8 @@ import { MessagingModule } from './infra.messaging';
         REDIS_HOST: Joi.string().default('localhost'),
         REDIS_PORT: Joi.number().default(6379),
 
-        // RabbitMQ Configuration (Optional - for future use)
-        RABBITMQ_URL: Joi.string().default('amqp://localhost:5672'),
+        // RabbitMQ Configuration (Optional - disabled by default)
+        RABBITMQ_URL: Joi.string().optional(),
         RABBITMQ_PREFETCH: Joi.number().min(1).max(50).default(5),
 
         // CORS Configuration (Optional)

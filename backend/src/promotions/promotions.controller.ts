@@ -108,6 +108,7 @@ export class PromotionsController {
   }
 
   @Post('validate')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Validate a promotion code' })
   @ApiBody({
     schema: {
@@ -125,6 +126,64 @@ export class PromotionsController {
     return await this.promotionsService.validatePromotion(
       body.code,
       body.propertyId,
+    );
+  }
+
+  @Post('apply')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Apply promotion to calculate discount for a reservation',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['code', 'propertyId', 'baseAmount'],
+      properties: {
+        code: {
+          type: 'string',
+          example: 'SUMMER2025',
+          description: 'Promotion code to apply',
+        },
+        propertyId: {
+          type: 'string',
+          example: 'f091036b-abd9-4005-9abc-831d2eb46ee6',
+          description: 'Property ID where promotion applies',
+        },
+        baseAmount: {
+          type: 'number',
+          example: 1000,
+          description: 'Base amount before discount (e.g., room rate)',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Promotion applied successfully with calculated discount',
+    schema: {
+      example: {
+        promotionId: 'uuid',
+        code: 'SUMMER2025',
+        discountPercent: 15,
+        discountAmount: 150,
+        finalAmount: 850,
+        valid: true,
+        message: 'Promotion applied: 15% discount (Summer special)',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Promotion could not be applied',
+  })
+  async applyPromotion(
+    @Body()
+    body: { code: string; propertyId: string; baseAmount: number },
+  ) {
+    return await this.promotionsService.applyPromotionToReservation(
+      body.code,
+      body.propertyId,
+      body.baseAmount,
     );
   }
 }

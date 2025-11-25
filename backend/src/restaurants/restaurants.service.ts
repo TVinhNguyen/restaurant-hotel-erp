@@ -302,21 +302,32 @@ export class RestaurantsService {
     // Get booked tables for the specific date and time
     const bookedTables = await this.bookingRepository
       .createQueryBuilder('booking')
-      .select('booking.tableId')
+      .select('booking.assignedTableId')
       .where('booking.restaurantId = :restaurantId', { restaurantId })
       .andWhere('booking.bookingDate = :date', { date })
       .andWhere('booking.bookingTime = :time', { time })
       .andWhere('booking.status IN (:...statuses)', {
         statuses: ['confirmed', 'seated'],
       })
+      .andWhere('booking.assignedTableId IS NOT NULL')
       .getRawMany();
 
-    const bookedTableIds = bookedTables.map((bt) => bt.tableId);
+    const bookedTableIds = bookedTables.map((bt) => bt.booking_assignedTableId).filter(id => id);
 
-    return allTables.filter(
+    // Filter available tables
+    let availableTables = allTables.filter(
       (table) =>
         !bookedTableIds.includes(table.id) && table.status === 'available',
     );
+
+    // If partySize is provided, filter by capacity
+    if (partySize) {
+      availableTables = availableTables.filter(
+        (table) => table.capacity >= partySize,
+      );
+    }
+
+    return availableTables;
   }
 
   // Table management methods

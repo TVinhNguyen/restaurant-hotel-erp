@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 
 export class UpdateRestaurantDto {
   @IsOptional()
@@ -7,17 +7,17 @@ export class UpdateRestaurantDto {
 
   @IsOptional()
   @IsString()
-  cuisine?: string;
+  description?: string;
 
   @IsOptional()
   @IsString()
-  openTime?: string;
+  location?: string;
 
   @IsOptional()
   @IsString()
-  closeTime?: string;
+  openingHours?: string;
 
   @IsOptional()
-  @IsInt()
-  maxCapacity?: number;
+  @IsString()
+  cuisineType?: string;
 }
