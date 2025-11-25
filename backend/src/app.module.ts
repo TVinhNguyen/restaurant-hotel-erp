@@ -38,6 +38,7 @@ import { WorkingShiftsModule } from './working-shifts/working-shifts.module';
 import { DeductionsModule } from './deductions/deductions.module';
 import { OvertimesModule } from './overtimes/overtimes.module';
 import { EmployeeEvaluationsModule } from './employee-evaluations/employee-evaluations.module';
+import { PaymentModule } from './payment-pos/payment.module';
 import { MessagingModule } from './infra.messaging';
 
 @Module({
@@ -66,14 +67,14 @@ import { MessagingModule } from './infra.messaging';
 
         // CORS Configuration (Optional)
         CORS_ORIGIN_FRONTEND: Joi.string().default('http://localhost:3000'),
-        CORS_ORIGIN_ADMIN: Joi.string().default('http://localhost:3001'),
-      }),
+        CORS_ORIGIN_ADMIN: Joi.string().default('http://localhost:3001')
+      })
     }),
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute time window
-        limit: 100, // 100 requests per minute (global default)
-      },
+        limit: 100 // 100 requests per minute (global default)
+      }
     ]),
     CacheModule.registerAsync({
       isGlobal: true,
@@ -82,11 +83,11 @@ import { MessagingModule } from './infra.messaging';
         const store = await redisStore({
           host: configService.get<string>('REDIS_HOST') || 'localhost',
           port: configService.get<number>('REDIS_PORT') || 6379,
-          ttl: 300, // 5 minutes default TTL
+          ttl: 300 // 5 minutes default TTL
         });
         return { store };
       },
-      inject: [ConfigService],
+      inject: [ConfigService]
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
@@ -97,7 +98,7 @@ import { MessagingModule } from './infra.messaging';
       database: process.env.DB_NAME || 'hotel_pms_v2',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: false
     }),
     MessagingModule,
     AuthModule,
@@ -130,15 +131,16 @@ import { MessagingModule } from './infra.messaging';
     DeductionsModule,
     OvertimesModule,
     EmployeeEvaluationsModule,
+    PaymentModule
   ],
   controllers: [AppController, HealthController],
   providers: [
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard, // Apply rate limiting globally
-    },
-  ],
+      useClass: ThrottlerGuard // Apply rate limiting globally
+    }
+  ]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
