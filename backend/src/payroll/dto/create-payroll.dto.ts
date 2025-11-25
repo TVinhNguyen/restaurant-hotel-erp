@@ -4,13 +4,14 @@ import {
   IsString,
   IsOptional,
   IsEnum,
+  IsInt,
+  IsDateString
 } from 'class-validator';
 
 export enum PayrollStatus {
-  PENDING = 'pending',
+  DRAFT = 'draft',
   PROCESSED = 'processed',
-  PAID = 'paid',
-  CANCELLED = 'cancelled',
+  PAID = 'paid'
 }
 
 export class CreatePayrollDto {
@@ -23,15 +24,59 @@ export class CreatePayrollDto {
   @IsNumber()
   basicSalary: number;
 
+  @IsOptional()
   @IsNumber()
-  netSalary: number;
+  overtimePay?: number;
+
+  @IsOptional()
+  @IsNumber()
+  allowances?: number;
+
+  @IsNumber()
+  grossPay: number;
 
   @IsOptional()
   @IsNumber()
   bonus?: number;
 
+  @IsOptional()
+  @IsNumber()
+  totalDeductions?: number;
+
+  @IsOptional()
+  @IsNumber()
+  tax?: number;
+
+  @IsOptional()
+  @IsNumber()
+  socialInsurance?: number;
+
+  @IsOptional()
+  @IsNumber()
+  healthInsurance?: number;
+
+  @IsNumber()
+  netSalary: number;
+
+  @IsOptional()
+  @IsInt()
+  workingDays?: number;
+
+  @IsOptional()
+  @IsInt()
+  totalWorkingDays?: number;
+
+  @IsOptional()
+  @IsEnum(PayrollStatus)
+  status?: PayrollStatus;
+
+  @IsOptional()
+  @IsDateString()
+  paidDate?: string;
+
+  @IsOptional()
   @IsString()
-  currency: string;
+  currency?: string;
 }
 
 export class UpdatePayrollDto {
@@ -45,11 +90,55 @@ export class UpdatePayrollDto {
 
   @IsOptional()
   @IsNumber()
-  netSalary?: number;
+  overtimePay?: number;
+
+  @IsOptional()
+  @IsNumber()
+  allowances?: number;
+
+  @IsOptional()
+  @IsNumber()
+  grossPay?: number;
 
   @IsOptional()
   @IsNumber()
   bonus?: number;
+
+  @IsOptional()
+  @IsNumber()
+  totalDeductions?: number;
+
+  @IsOptional()
+  @IsNumber()
+  tax?: number;
+
+  @IsOptional()
+  @IsNumber()
+  socialInsurance?: number;
+
+  @IsOptional()
+  @IsNumber()
+  healthInsurance?: number;
+
+  @IsOptional()
+  @IsNumber()
+  netSalary?: number;
+
+  @IsOptional()
+  @IsInt()
+  workingDays?: number;
+
+  @IsOptional()
+  @IsInt()
+  totalWorkingDays?: number;
+
+  @IsOptional()
+  @IsEnum(PayrollStatus)
+  status?: PayrollStatus;
+
+  @IsOptional()
+  @IsDateString()
+  paidDate?: string;
 
   @IsOptional()
   @IsString()
@@ -63,8 +152,18 @@ export class BulkPayrollDto {
   payrolls: Array<{
     employeeId: string;
     basicSalary: number;
-    netSalary: number;
+    overtimePay?: number;
+    allowances?: number;
+    grossPay: number;
     bonus?: number;
-    currency: string;
+    totalDeductions?: number;
+    tax?: number;
+    socialInsurance?: number;
+    healthInsurance?: number;
+    netSalary: number;
+    workingDays?: number;
+    totalWorkingDays?: number;
+    status?: PayrollStatus;
+    currency?: string;
   }>;
 }

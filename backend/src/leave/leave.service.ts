@@ -111,6 +111,35 @@ export class LeaveService {
     return leave;
   }
 
+  async getLeavesByEmployeeId(employeeId: string, period?: string) {
+    const queryBuilder = this.leaveRepository
+      .createQueryBuilder('leave')
+      .leftJoinAndSelect('leave.employee', 'employee')
+      .leftJoinAndSelect('leave.approver', 'approver')
+      .where('leave.employeeId = :employeeId', { employeeId });
+
+    if (period) {
+      // Period format: YYYY-MM
+      const [year, month] = period.split('-');
+      const startDate = `${year}-${month}-01`;
+      const lastDay = new Date(Number(year), Number(month), 0).getDate();
+      const endDate = `${year}-${month}-${lastDay}`;
+      queryBuilder.andWhere('leave.startDate BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate
+      });
+    }
+
+    const leaves = await queryBuilder
+      .orderBy('leave.startDate', 'DESC')
+      .getMany();
+
+    return {
+      data: leaves,
+      total: leaves.length
+    };
+  }
+
   async updateLeave(
     id: string,
     updateLeaveDto: UpdateLeaveDto,
@@ -202,6 +231,18 @@ export class LeaveService {
       approvedDays: leaves
         .filter((leave) => leave.status === LeaveStatus.APPROVED)
         .reduce((sum, leave) => sum + leave.numberOfDays, 0),
+    };
+  }
+
+  async getAllLeaves() {
+    const leaves = await this.leaveRepository.find({
+      relations: ['employee', 'approver'],
+      order: { createdAt: 'DESC' }
+    });
+
+    return {
+      data: leaves,
+      total: leaves.length
     };
   }
 

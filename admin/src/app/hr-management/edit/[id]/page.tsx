@@ -96,6 +96,7 @@ export default function CategoryEdit() {
           fullName: values.fullName,
           department: values.department,
           position: values.position,
+          salary: values.salary,
           hireDate: values.hireDate.format('YYYY-MM-DD'),
           status: values.status
         })

@@ -5,6 +5,7 @@ export interface PayrollRecord {
   employeeName: string;
   position: string;
   department: string;
+  period: string; // Format: YYYY-MM
   month: string;
   year: number;
   basicSalary: number;
@@ -31,6 +32,7 @@ export const mockPayrollRecords: PayrollRecord[] = [
     employeeName: 'Nguyễn Văn An',
     position: 'Senior Developer',
     department: 'IT Department',
+    period: '2025-08',
     month: '08',
     year: 2025,
     basicSalary: 25000000,
@@ -55,6 +57,7 @@ export const mockPayrollRecords: PayrollRecord[] = [
     employeeName: 'Trần Thị Bình',
     position: 'HR Manager',
     department: 'Human Resources',
+    period: '2025-08',
     month: '08',
     year: 2025,
     basicSalary: 30000000,
@@ -78,6 +81,7 @@ export const mockPayrollRecords: PayrollRecord[] = [
     employeeName: 'Lê Minh Cường',
     position: 'Marketing Specialist',
     department: 'Marketing',
+    period: '2025-08',
     month: '08',
     year: 2025,
     basicSalary: 18000000,
@@ -101,6 +105,7 @@ export const mockPayrollRecords: PayrollRecord[] = [
     employeeName: 'Phạm Thu Dung',
     position: 'Accountant',
     department: 'Finance',
+    period: '2025-08',
     month: '08',
     year: 2025,
     basicSalary: 20000000,
@@ -124,6 +129,7 @@ export const mockPayrollRecords: PayrollRecord[] = [
     employeeName: 'Hoàng Văn Em',
     position: 'Sales Executive',
     department: 'Sales',
+    period: '2025-08',
     month: '08',
     year: 2025,
     basicSalary: 16000000,

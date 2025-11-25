@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Card,
     Table,
@@ -38,10 +38,17 @@ import {
     calculatePayroll,
     type PayrollRecord
 } from '../../../data/mockPayroll';
-import { getMockEmployees } from '../../../data/mockEmployees';
+import { Employee, getMockEmployees } from '../../../data/mockEmployees';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
+const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT;
+
+// Helper function to format numbers in Vietnamese style (1.000.000)
+const formatVND = (value: number | undefined | null): string => {
+    if (value === undefined || value === null) return '0';
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
 
 export default function PayrollPage() {
     const [selectedMonth, setSelectedMonth] = useState('08');
@@ -50,12 +57,151 @@ export default function PayrollPage() {
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState<PayrollRecord | null>(null);
     const [form] = Form.useForm();
-    const [payrollRecords, setPayrollRecords] = useState(getMockPayrollRecords());
+    const [loading, setLoading] = useState(false);
+    const [calculatedPayroll, setCalculatedPayroll] = useState<any>(null);
+    // const [payrollRecords, setPayrollRecords] = useState(getMockPayrollRecords());
+    const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
 
-    const employees = getMockEmployees();
-    const monthlyRecords = getMockPayrollByMonth(selectedMonth, selectedYear);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    // Filter payroll records by selected month/year
+    const monthlyRecords = payrollRecords.filter(record => {
+        const recordPeriod = record.period || `${record.year}-${record.month}`;
+        const selectedPeriod = `${selectedYear}-${selectedMonth}`;
+        return recordPeriod === selectedPeriod;
+    });
 
-    // Calculate statistics
+    const fetchPayrollRecords = async () => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/payroll/get-all-payrolls`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Fetched payroll records from API:', data);
+                // Map backend data to match frontend interface
+                const mappedRecords = (data.data || []).map((record: any) => ({
+                    ...record,
+                    employeeName: record.employee?.fullName || 'Unknown',
+                    position: record.employee?.position || '-',
+                    department: record.employee?.department || '-',
+                    basicSalary: record.basicSalary || 0,
+                    overtimePay: record.overtimePay || 0,
+                    grossPay: record.grossPay || 0,
+                    netPay: record.netSalary || 0,
+                    overtime: record.overtimeHours || 0,
+                    overtimeRate: record.overtimePay && record.overtimeHours
+                        ? record.overtimePay / record.overtimeHours
+                        : 0,
+                    month: record.period ? record.period.split('-')[1] : selectedMonth,
+                    year: record.period ? parseInt(record.period.split('-')[0]) : selectedYear,
+                }));
+                setPayrollRecords(mappedRecords);
+            } else {
+                message.error('Failed to fetch payroll records');
+            }
+        } catch (error) {
+            console.error('Error fetching payroll:', error);
+            message.error('Error fetching payroll records');
+        }
+    }
+
+    const fetchEmployees = async () => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/employees`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setEmployees(data.data || []);
+            } else {
+                message.error('Failed to fetch employees');
+            }
+        } catch (error) {
+            message.error('Error fetching employees');
+        }
+    };
+
+    useEffect(() => {
+        fetchEmployees();
+        fetchPayrollRecords();
+    }, [selectedMonth, selectedYear])
+
+    // Auto-fill data when employee is selected
+    const handleEmployeeChange = async (employeeId: string) => {
+        setLoading(true);
+        try {
+            const period = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+
+            // Calculate total days in month
+            const year = parseInt(selectedYear.toString());
+            const month = parseInt(selectedMonth);
+            const totalDaysInMonth = new Date(year, month, 0).getDate();
+
+            // Fetch leave records for the period
+            const leaveResponse = await fetch(
+                `${API_ENDPOINT}/leaves/by-employee/${employeeId}?period=${period}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                }
+            );
+            console.log(leaveResponse);
+            console.log(period);
+            // Fetch overtime hours
+            const overtimeResponse = await fetch(
+                `${API_ENDPOINT}/overtimes?employeeId=${employeeId}&period=${period}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                }
+            );
+
+            let leaveDays = 0;
+            let overtimeHours = 0;
+
+            // Calculate total leave days (approved leaves only)
+            if (leaveResponse.ok) {
+                const leaveData = await leaveResponse.json();
+                const leaveRecords = leaveData.data || [];
+                leaveDays = leaveRecords
+                    .filter((record: any) => record.status === 'approved')
+                    .reduce((sum: number, record: any) => sum + (record.numberOfDays || 0), 0);
+            }
+
+            // Calculate total overtime hours (approved overtimes only)
+            if (overtimeResponse.ok) {
+                const overtimeData = await overtimeResponse.json();
+                const overtimeRecords = overtimeData.data || [];
+                overtimeHours = overtimeRecords
+                    .filter((record: any) => record.status === 'approved')
+                    .reduce((sum: number, record: any) => sum + (record.hours || 0), 0);
+            }
+
+            // Working days = Total days in month - Leave days
+            const workingDays = totalDaysInMonth - leaveDays;
+
+            // Update form fields
+            form.setFieldsValue({
+                workingDays: workingDays,
+                overtime: overtimeHours,
+            });
+
+            message.success(`Auto-filled: ${workingDays} working days (${totalDaysInMonth} - ${leaveDays} leave days), ${overtimeHours} overtime hours`);
+        } catch (error) {
+            console.error('Error fetching employee data:', error);
+            message.warning('Could not auto-fill data. Please enter manually.');
+        } finally {
+            setLoading(false);
+        }
+    };    // Calculate statistics
     const totalPaid = monthlyRecords
         .filter(record => record.status === 'paid')
         .reduce((sum, record) => sum + record.netPay, 0);
@@ -72,46 +218,205 @@ export default function PayrollPage() {
     const processedCount = monthlyRecords.filter(record => record.status === 'processed').length;
     const draftCount = monthlyRecords.filter(record => record.status === 'draft').length;
 
-    const handleProcessPayroll = (id: string) => {
-        updateMockPayrollStatus(id, 'processed');
-        setPayrollRecords([...getMockPayrollRecords()]);
-        message.success('Payroll processed successfully!');
+    const handleProcessPayroll = async (id: string) => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/payroll/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: 'processed' })
+            });
+
+            if (response.ok) {
+                message.success('Payroll processed successfully!');
+                fetchPayrollRecords();
+            } else {
+                const error = await response.json();
+                message.error(error.message || 'Failed to process payroll');
+            }
+        } catch (error) {
+            console.error('Error processing payroll:', error);
+            message.error('Error processing payroll');
+        }
     };
 
-    const handlePayPayroll = (id: string) => {
-        updateMockPayrollStatus(id, 'paid', dayjs().format('YYYY-MM-DD'));
-        setPayrollRecords([...getMockPayrollRecords()]);
-        message.success('Payroll payment completed!');
+    const handlePayPayroll = async (id: string) => {
+        try {
+            const response = await fetch(`${API_ENDPOINT}/payroll/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: 'paid',
+                    paidDate: dayjs().format('YYYY-MM-DD')
+                })
+            });
+
+            if (response.ok) {
+                message.success('Payroll payment completed!');
+                fetchPayrollRecords();
+            } else {
+                const error = await response.json();
+                message.error(error.message || 'Failed to mark as paid');
+            }
+        } catch (error) {
+            console.error('Error paying payroll:', error);
+            message.error('Error paying payroll');
+        }
     };
 
-    const handleCalculatePayroll = (values: any) => {
+    // Auto-calculate preview whenever form values change
+    const handleFormValuesChange = () => {
+        const values = form.getFieldsValue();
         const employee = employees.find(emp => emp.id === values.employeeId);
-        if (!employee) return;
 
-        const calculated = calculatePayroll(
-            employee.salary,
-            values.overtime || 0,
-            values.workingDays || 22,
-            values.allowances || 0,
-            values.deductions || 0
-        );
+        if (!employee || !employee.salary) {
+            setCalculatedPayroll(null);
+            return;
+        }
 
-        const newRecord: PayrollRecord = {
-            id: (payrollRecords.length + 1).toString(),
-            employeeId: values.employeeId,
-            employeeName: employee.fullName,
-            position: employee.position,
-            department: employee.department,
-            month: selectedMonth,
-            year: selectedYear,
-            status: 'draft',
-            ...calculated,
-        } as PayrollRecord;
+        // Get form values
+        const basicSalary = employee.salary;
+        const workingDays = values.workingDays || 22;
+        const totalWorkingDays = 22;
+        const overtimeHours = values.overtime || 0;
+        const allowances = values.allowances || 0;
+        const otherDeductions = values.otherDeductions || 0;
+        const bonus = values.bonus || 0;
 
-        setPayrollRecords([...payrollRecords, newRecord]);
-        message.success('Payroll calculated and added successfully!');
-        setIsModalVisible(false);
-        form.resetFields();
+        // Calculate overtime pay
+        const dailySalary = basicSalary / totalWorkingDays;
+        const hourlyRate = dailySalary / 8;
+        const overtimePay = overtimeHours * hourlyRate * 1.5;
+
+        // Calculate gross pay
+        const actualBasicSalary = (basicSalary * workingDays / totalWorkingDays);
+        const grossPay = actualBasicSalary + overtimePay + allowances + bonus;
+
+        // Calculate deductions
+        const tax = grossPay > 11000000 ? grossPay * 0.1 : 0;
+        const socialInsurance = basicSalary * 0.08;
+        const healthInsurance = basicSalary * 0.015;
+        const totalDeductionsCalc = tax + socialInsurance + healthInsurance + otherDeductions;
+
+        // Calculate net salary
+        const netSalary = grossPay - totalDeductionsCalc;
+
+        setCalculatedPayroll({
+            employee: employee,
+            basicSalary: basicSalary,
+            workingDays: workingDays,
+            totalWorkingDays: totalWorkingDays,
+            actualBasicSalary: actualBasicSalary,
+            overtimeHours: overtimeHours,
+            hourlyRate: hourlyRate,
+            overtimePay: overtimePay,
+            allowances: allowances,
+            bonus: bonus,
+            grossPay: grossPay,
+            tax: tax,
+            socialInsurance: socialInsurance,
+            healthInsurance: healthInsurance,
+            otherDeductions: otherDeductions,
+            totalDeductions: totalDeductionsCalc,
+            netSalary: netSalary
+        });
+    };
+
+    const handleCalculatePayroll = async (values: any) => {
+        try {
+            const employee = employees.find(emp => emp.id === values.employeeId);
+            if (!employee) {
+                message.error('Employee not found');
+                return;
+            }
+
+            if (!employee.salary || employee.salary === 0) {
+                message.error('Employee salary is not set. Please update employee information first.');
+                return;
+            }
+
+            // Create period in YYYY-MM format
+            const period = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+
+            // Get form values
+            const basicSalary = employee.salary;
+            const workingDays = values.workingDays || 22;
+            const totalWorkingDays = 22;
+            const overtimeHours = values.overtime || 0;
+            const allowances = values.allowances || 0;
+            const totalDeductions = values.deductions || 0;
+            const bonus = values.bonus || 0;
+
+            // Calculate overtime pay (hourly rate * 1.5)
+            const dailySalary = basicSalary / totalWorkingDays;
+            const hourlyRate = dailySalary / 8;
+            const overtimePay = overtimeHours * hourlyRate * 1.5;
+
+            // Calculate gross pay
+            const grossPay = (basicSalary * workingDays / totalWorkingDays) + overtimePay + allowances + bonus;
+
+            // Calculate tax (10% if gross > 11M VND)
+            const tax = grossPay > 11000000 ? grossPay * 0.1 : 0;
+
+            // Calculate insurance
+            const socialInsurance = basicSalary * 0.08;
+            const healthInsurance = basicSalary * 0.015;
+
+            // Calculate net salary
+            const netSalary = grossPay - tax - socialInsurance - healthInsurance - totalDeductions;
+
+            // Prepare payload matching CreatePayrollDto
+            const payrollData = {
+                employeeId: values.employeeId,
+                period: period,
+                basicSalary: basicSalary,
+                workingDays: workingDays,
+                totalWorkingDays: totalWorkingDays,
+                overtimePay: overtimePay,
+                allowances: allowances,
+                bonus: bonus,
+                grossPay: grossPay,
+                tax: tax,
+                socialInsurance: socialInsurance,
+                healthInsurance: healthInsurance,
+                totalDeductions: totalDeductions,
+                netSalary: netSalary,
+                status: 'draft',
+                currency: 'VND'
+            };
+
+            console.log('Creating payroll with data:', payrollData);
+
+            const response = await fetch(`${API_ENDPOINT}/payroll`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payrollData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Payroll created:', result);
+                message.success('Payroll calculated and saved successfully!');
+                fetchPayrollRecords(); // Refresh data from API
+                setIsModalVisible(false);
+                form.resetFields();
+            } else {
+                const error = await response.json();
+                console.error('API error:', error);
+                message.error(error.message || 'Failed to create payroll');
+            }
+        } catch (error) {
+            console.error('Error creating payroll:', error);
+            message.error('Error creating payroll');
+        }
     };
 
     const showPayrollDetail = (record: PayrollRecord) => {
@@ -140,7 +445,7 @@ export default function PayrollPage() {
             title: 'Basic Salary',
             dataIndex: 'basicSalary',
             key: 'basicSalary',
-            render: (amount: number) => `${amount.toLocaleString()} VNĐ`,
+            render: (amount: number) => `${formatVND(amount)} VNĐ`,
             sorter: (a: PayrollRecord, b: PayrollRecord) => a.basicSalary - b.basicSalary,
         },
         {
@@ -151,7 +456,7 @@ export default function PayrollPage() {
                 <div>
                     <div>{hours}h</div>
                     <div style={{ fontSize: '12px', color: '#666' }}>
-                        +{record.overtimePay.toLocaleString()} VNĐ
+                        +{formatVND(record.overtimePay)} VNĐ
                     </div>
                 </div>
             ),
@@ -162,7 +467,7 @@ export default function PayrollPage() {
             key: 'grossPay',
             render: (amount: number) => (
                 <Text strong style={{ color: '#1890ff' }}>
-                    {amount.toLocaleString()} VNĐ
+                    {formatVND(amount)} VNĐ
                 </Text>
             ),
             sorter: (a: PayrollRecord, b: PayrollRecord) => a.grossPay - b.grossPay,
@@ -171,11 +476,15 @@ export default function PayrollPage() {
             title: 'Deductions',
             key: 'deductions',
             render: (_: any, record: PayrollRecord) => {
-                const totalDeductions = record.tax + record.socialInsurance + record.healthInsurance + record.deductions;
+                const totalDeductions =
+                    Number(record?.tax ?? 0) +
+                    Number(record?.socialInsurance ?? 0) +
+                    Number(record?.healthInsurance ?? 0) +
+                    Number(record?.deductions ?? 0);
                 return (
-                    <Tooltip title={`Tax: ${record.tax.toLocaleString()} | SI: ${record.socialInsurance.toLocaleString()} | HI: ${record.healthInsurance.toLocaleString()} | Other: ${record.deductions.toLocaleString()}`}>
+                    <Tooltip title={`Tax: ${formatVND(record?.tax)} | Social Insurance: ${formatVND(record?.socialInsurance)} | Health Insurance: ${formatVND(record?.healthInsurance)} | Other: ${formatVND(record?.deductions)}`}>
                         <Text style={{ color: '#ff4d4f' }}>
-                            -{totalDeductions.toLocaleString()} VNĐ
+                            -{formatVND(totalDeductions)} VNĐ
                         </Text>
                     </Tooltip>
                 );
@@ -187,7 +496,7 @@ export default function PayrollPage() {
             key: 'netPay',
             render: (amount: number) => (
                 <Text strong style={{ color: '#52c41a', fontSize: '16px' }}>
-                    {amount.toLocaleString()} VNĐ
+                    {formatVND(amount)} VNĐ
                 </Text>
             ),
             sorter: (a: PayrollRecord, b: PayrollRecord) => a.netPay - b.netPay,
@@ -317,7 +626,7 @@ export default function PayrollPage() {
                                     title={`Paid (${paidCount})`}
                                     value={totalPaid}
                                     prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-                                    formatter={value => `${Number(value).toLocaleString()} VNĐ`}
+                                    formatter={value => `${formatVND(Number(value))} VNĐ`}
                                     valueStyle={{ color: '#52c41a' }}
                                 />
                             </Card>
@@ -328,7 +637,7 @@ export default function PayrollPage() {
                                     title={`Processed (${processedCount})`}
                                     value={totalProcessed}
                                     prefix={<ClockCircleOutlined style={{ color: '#1890ff' }} />}
-                                    formatter={value => `${Number(value).toLocaleString()} VNĐ`}
+                                    formatter={value => `${formatVND(Number(value))} VNĐ`}
                                     valueStyle={{ color: '#1890ff' }}
                                 />
                             </Card>
@@ -339,7 +648,7 @@ export default function PayrollPage() {
                                     title={`Draft (${draftCount})`}
                                     value={totalDraft}
                                     prefix={<FileTextOutlined style={{ color: '#faad14' }} />}
-                                    formatter={value => `${Number(value).toLocaleString()} VNĐ`}
+                                    formatter={value => `${formatVND(Number(value))} VNĐ`}
                                     valueStyle={{ color: '#faad14' }}
                                 />
                             </Card>
@@ -389,103 +698,205 @@ export default function PayrollPage() {
                 open={isModalVisible}
                 onCancel={() => {
                     setIsModalVisible(false);
+                    setCalculatedPayroll(null);
                     form.resetFields();
                 }}
                 footer={null}
-                width={600}
+                width={1200}
             >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleCalculatePayroll}
-                >
-                    <Form.Item
-                        label="Employee"
-                        name="employeeId"
-                        rules={[{ required: true, message: 'Please select an employee!' }]}
-                    >
-                        <Select placeholder="Select employee">
-                            {employees.filter(emp => emp.status === 'active').map(employee => (
-                                <Select.Option key={employee.id} value={employee.id}>
-                                    {employee.fullName} - {employee.position} ({employee.salary.toLocaleString()} VNĐ/month)
-                                </Select.Option>
-                            ))}
-                        </Select>
-                    </Form.Item>
-
-                    <Row gutter={16}>
-                        <Col span={12}>
+                <Row gutter={24}>
+                    <Col span={12}>
+                        <Form
+                            form={form}
+                            layout="vertical"
+                            onFinish={handleCalculatePayroll}
+                            onValuesChange={handleFormValuesChange}
+                        >
                             <Form.Item
-                                label="Working Days"
-                                name="workingDays"
-                                initialValue={22}
-                                rules={[{ required: true, message: 'Please enter working days!' }]}
+                                label="Employee"
+                                name="employeeId"
+                                rules={[{ required: true, message: 'Please select an employee!' }]}
                             >
-                                <InputNumber min={0} max={31} style={{ width: '100%' }} />
+                                <Select
+                                    placeholder="Select employee"
+                                    onChange={handleEmployeeChange}
+                                    loading={loading}
+                                >
+                                    {employees.filter(emp => emp.status === 'active').map(employee => (
+                                        <Select.Option key={employee.id} value={employee.id}>
+                                            {employee.fullName} - {employee.position} ({formatVND(employee?.salary)} VNĐ/month)
+                                        </Select.Option>
+                                    ))}
+                                </Select>
                             </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                label="Overtime Hours"
-                                name="overtime"
-                                initialValue={0}
-                            >
-                                <InputNumber min={0} max={100} style={{ width: '100%' }} />
-                            </Form.Item>
-                        </Col>
-                    </Row>
 
-                    <Row gutter={16}>
-                        <Col span={12}>
-                            <Form.Item
-                                label="Allowances (VNĐ)"
-                                name="allowances"
-                                initialValue={0}
-                            >
-                                <InputNumber
-                                    min={0}
-                                    style={{ width: '100%' }}
-                                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                    parser={value => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0) as any}
-                                />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item
-                                label="Deductions (VNĐ)"
-                                name="deductions"
-                                initialValue={0}
-                            >
-                                <InputNumber
-                                    min={0}
-                                    style={{ width: '100%' }}
-                                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                    parser={value => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0) as any}
-                                />
-                            </Form.Item>
-                        </Col>
-                    </Row>
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Form.Item
+                                        label="Working Days"
+                                        name="workingDays"
+                                        initialValue={22}
+                                        rules={[{ required: true, message: 'Please enter working days!' }]}
+                                    >
+                                        <InputNumber
+                                            min={0}
+                                            max={31}
+                                            style={{ width: '100%' }}
+                                            disabled={loading}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item
+                                        label="Overtime Hours"
+                                        name="overtime"
+                                        initialValue={0}
+                                    >
+                                        <InputNumber
+                                            min={0}
+                                            max={200}
+                                            style={{ width: '100%' }}
+                                            disabled={loading}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
 
-                    <Alert
-                        message="Tax and insurance will be calculated automatically based on current rates."
-                        type="info"
-                        style={{ marginBottom: '16px' }}
-                    />
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Form.Item
+                                        label="Allowances (VNĐ)"
+                                        name="allowances"
+                                        initialValue={0}
+                                    >
+                                        <InputNumber
+                                            min={0}
+                                            style={{ width: '100%' }}
+                                            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                            parser={value => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0) as any}
+                                            disabled={loading}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item
+                                        label="Bonus (VNĐ)"
+                                        name="bonus"
+                                        initialValue={0}
+                                    >
+                                        <InputNumber
+                                            min={0}
+                                            style={{ width: '100%' }}
+                                            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                            parser={value => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0) as any}
+                                            disabled={loading}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
 
-                    <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-                        <Space>
-                            <Button onClick={() => {
-                                setIsModalVisible(false);
-                                form.resetFields();
-                            }}>
-                                Cancel
-                            </Button>
-                            <Button type="primary" htmlType="submit">
-                                Calculate & Save
-                            </Button>
-                        </Space>
-                    </Form.Item>
-                </Form>
+                            <Row gutter={16}>
+                                <Col span={24}>
+                                    <Form.Item
+                                        label="Other Deductions (VNĐ)"
+                                        name="otherDeductions"
+                                        initialValue={0}
+                                    >
+                                        <InputNumber
+                                            min={0}
+                                            style={{ width: '100%' }}
+                                            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                            parser={value => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0) as any}
+                                            disabled={loading}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Alert
+                                message="Working days and overtime hours are automatically calculated from attendance and overtime records."
+                                type="info"
+                                style={{ marginBottom: '16px' }}
+                            />
+
+                            <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+                                <Space>
+                                    <Button onClick={() => {
+                                        setIsModalVisible(false);
+                                        setCalculatedPayroll(null);
+                                        form.resetFields();
+                                    }}>
+                                        Cancel
+                                    </Button>
+                                    <Button type="primary" htmlType="submit" disabled={!calculatedPayroll}>
+                                        Calculate & Save
+                                    </Button>
+                                </Space>
+                            </Form.Item>
+                        </Form>
+                    </Col>
+
+                    <Col span={12}>
+                        {calculatedPayroll && (
+                            <Card size="small" style={{ height: '100%', backgroundColor: '#f5f5f5' }}>
+                                <Title level={5}>Calculation Preview</Title>
+                                <Divider style={{ margin: '12px 0' }} />
+
+                                <div style={{ marginBottom: '12px' }}>
+                                    <Text strong>Earnings</Text>
+                                    <div style={{ marginLeft: '16px', marginTop: '8px' }}>
+                                        <div>Basic Salary: <Text strong>{formatVND(calculatedPayroll.basicSalary)} VNĐ</Text></div>
+                                        <div>× Working Days: <Text strong>{calculatedPayroll.workingDays}/{calculatedPayroll.totalWorkingDays} days</Text></div>
+                                        <div>= Actual Basic: <Text strong>{formatVND(calculatedPayroll.actualBasicSalary)} VNĐ</Text></div>
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <div>Overtime: <Text strong>{calculatedPayroll.overtimeHours} hours × {formatVND(calculatedPayroll.hourlyRate)} VNĐ/h × 1.5</Text></div>
+                                        <div>= Overtime Pay: <Text strong>{formatVND(calculatedPayroll.overtimePay)} VNĐ</Text></div>
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <div>Allowances: <Text strong>{formatVND(calculatedPayroll.allowances)} VNĐ</Text></div>
+                                        <div>Bonus: <Text strong>{formatVND(calculatedPayroll.bonus)} VNĐ</Text></div>
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <div style={{ fontSize: '16px' }}>
+                                            <Text strong style={{ color: '#1890ff' }}>Gross Pay: {formatVND(calculatedPayroll.grossPay)} VNĐ</Text>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Divider style={{ margin: '12px 0' }} />
+
+                                <div style={{ marginBottom: '12px' }}>
+                                    <Text strong>Deductions</Text>
+                                    <div style={{ marginLeft: '16px', marginTop: '8px' }}>
+                                        <div>Income Tax (10%): <Text strong>{formatVND(calculatedPayroll.tax)} VNĐ</Text></div>
+                                        <div>Social Insurance (8%): <Text strong>{formatVND(calculatedPayroll.socialInsurance)} VNĐ</Text></div>
+                                        <div>Health Insurance (1.5%): <Text strong>{formatVND(calculatedPayroll.healthInsurance)} VNĐ</Text></div>
+                                        <div>Other Deductions: <Text strong>{formatVND(calculatedPayroll.otherDeductions)} VNĐ</Text></div>
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <div style={{ fontSize: '16px' }}>
+                                            <Text strong style={{ color: '#ff4d4f' }}>Total Deductions: {formatVND(calculatedPayroll.totalDeductions)} VNĐ</Text>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Divider style={{ margin: '12px 0' }} />
+
+                                <div style={{ textAlign: 'center', padding: '12px', backgroundColor: '#fff', borderRadius: '4px' }}>
+                                    <Text type="secondary">Net Salary</Text>
+                                    <div style={{ fontSize: '24px', marginTop: '8px' }}>
+                                        <Text strong style={{ color: '#52c41a' }}>{formatVND(calculatedPayroll.netSalary)} VNĐ</Text>
+                                    </div>
+                                </div>
+                            </Card>
+                        )}
+                        {!calculatedPayroll && (
+                            <Card style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fafafa' }}>
+                                <div style={{ textAlign: 'center', color: '#999' }}>
+                                    <CalculatorOutlined style={{ fontSize: '48px', marginBottom: '16px' }} />
+                                    <div>Select an employee and fill in the details to see calculation preview</div>
+                                </div>
+                            </Card>
+                        )}
+                    </Col>
+                </Row>
             </Modal>
 
             {/* Payroll Detail Modal */}
@@ -516,39 +927,39 @@ export default function PayrollPage() {
                             <Col span={12}>
                                 <Card size="small" title="Earnings">
                                     <div style={{ marginBottom: '8px' }}>
-                                        <Text>Basic Salary: <Text strong>{selectedRecord.basicSalary.toLocaleString()} VNĐ</Text></Text>
+                                        <Text>Basic Salary: <Text strong>{formatVND(selectedRecord.basicSalary)} VNĐ</Text></Text>
                                     </div>
                                     <div style={{ marginBottom: '8px' }}>
-                                        <Text>Overtime Pay: <Text strong>{selectedRecord.overtimePay.toLocaleString()} VNĐ</Text></Text>
-                                        <Text type="secondary"> ({selectedRecord.overtime}h × {selectedRecord.overtimeRate.toLocaleString()})</Text>
+                                        <Text>Overtime Pay: <Text strong>{formatVND(selectedRecord.overtimePay)} VNĐ</Text></Text>
+                                        <Text type="secondary"> ({selectedRecord.overtime}h × {formatVND(selectedRecord.overtimeRate)})</Text>
                                     </div>
                                     <div style={{ marginBottom: '8px' }}>
-                                        <Text>Allowances: <Text strong>{selectedRecord.allowances.toLocaleString()} VNĐ</Text></Text>
+                                        <Text>Allowances: <Text strong>{formatVND(selectedRecord.allowances)} VNĐ</Text></Text>
                                     </div>
                                     <Divider style={{ margin: '8px 0' }} />
                                     <div>
-                                        <Text strong>Gross Pay: <Text style={{ color: '#1890ff' }}>{selectedRecord.grossPay.toLocaleString()} VNĐ</Text></Text>
+                                        <Text strong>Gross Pay: <Text style={{ color: '#1890ff' }}>{formatVND(selectedRecord.grossPay)} VNĐ</Text></Text>
                                     </div>
                                 </Card>
                             </Col>
                             <Col span={12}>
                                 <Card size="small" title="Deductions">
                                     <div style={{ marginBottom: '8px' }}>
-                                        <Text>Income Tax: <Text strong>{selectedRecord.tax.toLocaleString()} VNĐ</Text></Text>
+                                        <Text>Income Tax: <Text strong>{formatVND(selectedRecord?.tax)} VNĐ</Text></Text>
                                     </div>
                                     <div style={{ marginBottom: '8px' }}>
-                                        <Text>Social Insurance: <Text strong>{selectedRecord.socialInsurance.toLocaleString()} VNĐ</Text></Text>
+                                        <Text>Social Insurance: <Text strong>{formatVND(selectedRecord?.socialInsurance)} VNĐ</Text></Text>
                                     </div>
                                     <div style={{ marginBottom: '8px' }}>
-                                        <Text>Health Insurance: <Text strong>{selectedRecord.healthInsurance.toLocaleString()} VNĐ</Text></Text>
+                                        <Text>Health Insurance: <Text strong>{formatVND(selectedRecord?.healthInsurance)} VNĐ</Text></Text>
                                     </div>
                                     <div style={{ marginBottom: '8px' }}>
-                                        <Text>Other Deductions: <Text strong>{selectedRecord.deductions.toLocaleString()} VNĐ</Text></Text>
+                                        <Text>Other Deductions: <Text strong>{formatVND(selectedRecord?.deductions)} VNĐ</Text></Text>
                                     </div>
                                     <Divider style={{ margin: '8px 0' }} />
                                     <div>
                                         <Text strong>Total Deductions: <Text style={{ color: '#ff4d4f' }}>
-                                            {(selectedRecord.tax + selectedRecord.socialInsurance + selectedRecord.healthInsurance + selectedRecord.deductions).toLocaleString()} VNĐ
+                                            {formatVND(selectedRecord.tax + selectedRecord.socialInsurance + selectedRecord.healthInsurance + (selectedRecord.deductions || 0))} VNĐ
                                         </Text></Text>
                                     </div>
                                 </Card>
@@ -564,7 +975,7 @@ export default function PayrollPage() {
                                 </Col>
                                 <Col>
                                     <Title level={3} style={{ margin: 0, color: '#52c41a' }}>
-                                        {selectedRecord.netPay.toLocaleString()} VNĐ
+                                        {formatVND(selectedRecord.netPay)} VNĐ
                                     </Title>
                                 </Col>
                             </Row>

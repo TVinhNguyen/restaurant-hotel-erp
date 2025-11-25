@@ -33,6 +33,18 @@ export class EmployeeEvaluationsService {
     return await this.employeeEvaluationRepository.save(evaluation);
   }
 
+  async getAllEvaluations() {
+    const evaluations = await this.employeeEvaluationRepository.find({
+      relations: ['employee', 'evaluator', 'evaluatedByEmployee'],
+      order: { createdAt: 'DESC' }
+    });
+
+    return {
+      data: evaluations,
+      total: evaluations.length
+    };
+  }
+
   async findAll(
     page: number = 1,
     limit: number = 10,

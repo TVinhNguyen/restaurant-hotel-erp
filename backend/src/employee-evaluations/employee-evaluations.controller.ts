@@ -51,6 +51,11 @@ export class EmployeeEvaluationsController {
     );
   }
 
+  @Get('get-all-evaluations')
+  async getAllEvaluations() {
+    return this.employeeEvaluationsService.getAllEvaluations();
+  }
+
   @Get('employee/:employeeId')
   async findByEmployee(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
