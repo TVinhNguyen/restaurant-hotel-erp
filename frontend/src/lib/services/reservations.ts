@@ -134,11 +134,11 @@ class ReservationsService {
   async createTableBooking(
     data: CreateTableBookingRequest
   ): Promise<TableBooking> {
-    return apiClient.post<TableBooking>('/table-bookings', data)
+    return apiClient.post<TableBooking>('/restaurants/bookings', data)
   }
 
   async getTableBookingById(id: string): Promise<TableBooking> {
-    return apiClient.get<TableBooking>(`/table-bookings/${id}`)
+    return apiClient.get<TableBooking>(`/restaurants/bookings/${id}`)
   }
 
   async getTableBookings(params?: {
@@ -148,7 +148,7 @@ class ReservationsService {
     bookingDate?: string
     status?: string
   }): Promise<{ data: TableBooking[] }> {
-    return apiClient.get<{ data: TableBooking[] }>('/table-bookings', params)
+    return apiClient.get<{ data: TableBooking[] }>('/restaurants/bookings', params)
   }
 }
 

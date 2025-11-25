@@ -5,13 +5,16 @@ export interface Restaurant {
   propertyId?: string
   name: string
   description?: string
-  cuisine?: string
+  cuisineType?: string
+  cuisine?: string // Keep for backward compatibility
   rating?: number
   images?: string[]
   openingHours?: string
-  address?: string
+  location?: string
+  address?: string // Keep for backward compatibility
   phone?: string
   email?: string
+  tables?: Table[] // Tables from API response
   createdAt?: string
   updatedAt?: string
 }
@@ -50,8 +53,8 @@ class RestaurantsService {
     page?: number
     limit?: number
     propertyId?: string
-  }): Promise<{ data: Restaurant[] }> {
-    return apiClient.get<{ data: Restaurant[] }>('/restaurants', params)
+  }): Promise<{ restaurants: Restaurant[], total: number } | { data: Restaurant[] }> {
+    return apiClient.get<{ restaurants: Restaurant[], total: number } | { data: Restaurant[] }>('/restaurants', params)
   }
 
   async getRestaurantById(id: string): Promise<Restaurant> {
@@ -69,7 +72,18 @@ class RestaurantsService {
   }
 
   async getTables(restaurantId: string): Promise<Table[]> {
-    return apiClient.get<Table[]>(`/restaurants/${restaurantId}/tables`)
+    const response = await apiClient.get<{ tables: Table[], total: number } | { data: Table[] }>('/restaurants/tables', { 
+      restaurantId,
+      page: 1,
+      limit: 100 // Get all tables
+    })
+    // Handle different response formats
+    if (response && 'tables' in response && Array.isArray(response.tables)) {
+      return response.tables
+    } else if (response && 'data' in response && Array.isArray((response as any).data)) {
+      return (response as any).data
+    }
+    return []
   }
 }
 

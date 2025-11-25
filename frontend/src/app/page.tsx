@@ -153,7 +153,7 @@ export default function HomePage() {
                 Bảo mật thông tin 100%
               </p>
             </div>
-          </div>
+        </div>
 
           <div
             className="group bg-white p-8 rounded-3xl text-center scroll-reveal opacity-0 translate-y-10 relative overflow-hidden transition-all duration-500 hover:scale-105 hover:-translate-y-2 cursor-pointer"
@@ -178,7 +178,7 @@ export default function HomePage() {
                   backgroundColor: colors.lightBlue,
                   boxShadow: "0 4px 16px rgba(30, 64, 175, 0.1)"
                 }}
-              >
+        >
                 <TrendingUp className="w-10 h-10 transition-all duration-500 group-hover:scale-110" style={{ color: colors.primary }} />
               </div>
               <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-orange-600" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
