@@ -10,6 +10,7 @@ import { Reservation } from '../entities/reservation/reservation.entity';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { MessagingQueues, MessagingService } from '../infra.messaging';
+import { PromotionsService } from '../promotions/promotions.service';
 
 @Injectable()
 export class ReservationsService {
@@ -19,6 +20,7 @@ export class ReservationsService {
     @InjectRepository(Reservation)
     private reservationRepository: Repository<Reservation>,
     private readonly messagingService: MessagingService,
+    private readonly promotionsService: PromotionsService,
   ) {}
 
   async findAll(query: {

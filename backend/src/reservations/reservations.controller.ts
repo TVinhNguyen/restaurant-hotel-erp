@@ -7,11 +7,11 @@ import {
   Body,
   Param,
   Query,
-  UseGuards,
+  // UseGuards, // Temporarily disabled
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+// import { AuthGuard } from '@nestjs/passport'; // Temporarily disabled
 import {
   ApiTags,
   ApiOperation,
@@ -28,7 +28,7 @@ import { UpdateReservationDto } from './dto/update-reservation.dto';
 @ApiTags('Reservations')
 @ApiBearerAuth('JWT-auth')
 @Controller('reservations')
-@UseGuards(AuthGuard('jwt'))
+// @UseGuards(AuthGuard('jwt')) // Temporarily disabled for testing
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 

@@ -115,6 +115,9 @@ export class PromotionsService {
       validTo: createPromotionDto.validTo
         ? new Date(createPromotionDto.validTo)
         : undefined,
+      description: createPromotionDto.description,
+      notes: createPromotionDto.notes,
+      active: true, // Default to active on creation
     };
 
     const promotion = this.promotionRepository.create(entityData);
@@ -153,6 +156,15 @@ export class PromotionsService {
     if (updatePromotionDto.validTo !== undefined) {
       promotion.validTo = new Date(updatePromotionDto.validTo);
     }
+    if (updatePromotionDto.description !== undefined) {
+      promotion.description = updatePromotionDto.description;
+    }
+    if (updatePromotionDto.notes !== undefined) {
+      promotion.notes = updatePromotionDto.notes;
+    }
+    if (updatePromotionDto.active !== undefined) {
+      promotion.active = updatePromotionDto.active;
+    }
 
     return await this.promotionRepository.save(promotion);
   }
@@ -169,8 +181,14 @@ export class PromotionsService {
     try {
       const promotion = await this.findByCode(code);
 
-      if (promotion.propertyId !== propertyId) {
+      // Allow global promotions (propertyId = null) or matching property
+      if (promotion.propertyId !== null && promotion.propertyId !== propertyId) {
         return { valid: false, error: 'Promotion not valid for this property' };
+      }
+
+      // Check if promotion is active
+      if (promotion.active === false) {
+        return { valid: false, error: 'Promotion is not active' };
       }
 
       const currentDate = new Date();
@@ -191,5 +209,79 @@ export class PromotionsService {
     } catch (error) {
       return { valid: false, error: 'Promotion not found' };
     }
+  }
+
+  /**
+   * Calculate discount amount for a base price using promotion discount percent
+   * @param baseAmount - The base amount before discount (e.g., room rate)
+   * @param promotionId - The promotion ID to apply
+   * @returns The calculated discount amount
+   */
+  async calculateDiscount(
+    baseAmount: number,
+    promotionId: string,
+  ): Promise<{ discountAmount: number; discountPercent: number }> {
+    const promotion = await this.findOne(promotionId);
+
+    if (!promotion.active) {
+      throw new Error('Promotion is not active');
+    }
+
+    const discountPercent = Number(promotion.discountPercent);
+    const discountAmount = (baseAmount * discountPercent) / 100;
+
+    return {
+      discountAmount: Math.round(discountAmount * 100) / 100, // Round to 2 decimals
+      discountPercent,
+    };
+  }
+
+  /**
+   * Apply promotion to a reservation - validates and calculates discount
+   * @param promotionCode - The promotion code to apply
+   * @param propertyId - The property ID
+   * @param baseAmount - The base amount for calculation
+   * @returns Promotion details with calculated discount
+   */
+  async applyPromotionToReservation(
+    promotionCode: string,
+    propertyId: string,
+    baseAmount: number,
+  ): Promise<{
+    promotionId: string;
+    code: string;
+    discountPercent: number;
+    discountAmount: number;
+    finalAmount: number;
+    valid: boolean;
+    message: string;
+  }> {
+    // First validate the promotion exists and is valid for the property
+    const validation = await this.validatePromotion(promotionCode, propertyId);
+
+    if (!validation.valid || !validation.promotion) {
+      return {
+        promotionId: '',
+        code: promotionCode,
+        discountPercent: 0,
+        discountAmount: 0,
+        finalAmount: baseAmount,
+        valid: false,
+        message: validation.error || 'Promotion could not be applied',
+      };
+    }
+
+    const promotion = validation.promotion;
+    const discount = await this.calculateDiscount(baseAmount, promotion.id);
+
+    return {
+      promotionId: promotion.id,
+      code: promotion.code,
+      discountPercent: discount.discountPercent,
+      discountAmount: discount.discountAmount,
+      finalAmount: baseAmount - discount.discountAmount,
+      valid: true,
+      message: `Promotion applied: ${discount.discountPercent}% discount (${promotion.description || 'No description'})`,
+    };
   }
 }

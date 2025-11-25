@@ -83,50 +83,19 @@ export class RestaurantsController {
     description: 'Restaurants retrieved successfully',
   })
   async findAllRestaurants(
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('limit', ParseIntPipe) limit: number = 10,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
     @Query('propertyId') propertyId?: string,
     @Query('cuisineType') cuisineType?: string,
   ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.restaurantsService.findAllRestaurants(
-      page,
-      limit,
+      pageNum,
+      limitNum,
       propertyId,
       cuisineType,
     );
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get restaurant by ID' })
-  @ApiParam({ name: 'id', type: String, description: 'Restaurant ID' })
-  @ApiResponse({ status: 200, description: 'Restaurant found' })
-  @ApiResponse({ status: 404, description: 'Restaurant not found' })
-  async findRestaurantById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.restaurantsService.findRestaurantById(id);
-  }
-
-  @Put(':id')
-  @ApiOperation({ summary: 'Update a restaurant' })
-  @ApiParam({ name: 'id', type: String, description: 'Restaurant ID' })
-  @ApiBody({ type: UpdateRestaurantDto })
-  @ApiResponse({ status: 200, description: 'Restaurant updated successfully' })
-  @ApiResponse({ status: 404, description: 'Restaurant not found' })
-  async updateRestaurant(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateRestaurantDto: UpdateRestaurantDto,
-  ) {
-    return this.restaurantsService.updateRestaurant(id, updateRestaurantDto);
-  }
-
-  @Delete(':id')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Delete a restaurant' })
-  @ApiParam({ name: 'id', type: String, description: 'Restaurant ID' })
-  @ApiResponse({ status: 200, description: 'Restaurant deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Restaurant not found' })
-  async deleteRestaurant(@Param('id', ParseUUIDPipe) id: string) {
-    await this.restaurantsService.deleteRestaurant(id);
-    return { message: 'Restaurant deleted successfully' };
   }
 
   // Restaurant Area Management Endpoints
@@ -264,15 +233,17 @@ export class RestaurantsController {
   })
   @ApiResponse({ status: 200, description: 'Tables retrieved successfully' })
   async findAllTables(
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('limit', ParseIntPipe) limit: number = 10,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
     @Query('restaurantId') restaurantId?: string,
     @Query('status') status?: string,
     @Query('areaId') areaId?: string,
   ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.restaurantsService.findAllTables(
-      page,
-      limit,
+      pageNum,
+      limitNum,
       restaurantId,
       status,
       areaId,
@@ -356,15 +327,17 @@ export class RestaurantsController {
   })
   @ApiResponse({ status: 200, description: 'Bookings retrieved successfully' })
   async findAllBookings(
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('limit', ParseIntPipe) limit: number = 10,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
     @Query('restaurantId') restaurantId?: string,
     @Query('status') status?: string,
     @Query('date') date?: string,
   ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.restaurantsService.findAllBookings(
-      page,
-      limit,
+      pageNum,
+      limitNum,
       restaurantId,
       status,
       date,
@@ -454,5 +427,39 @@ export class RestaurantsController {
   @ApiResponse({ status: 404, description: 'Booking not found' })
   async completeBooking(@Param('id', ParseUUIDPipe) id: string) {
     return this.restaurantsService.completeBooking(id);
+  }
+
+  // Restaurant CRUD (must be last to avoid route conflicts)
+  @Get(':id')
+  @ApiOperation({ summary: 'Get restaurant by ID' })
+  @ApiParam({ name: 'id', type: String, description: 'Restaurant ID' })
+  @ApiResponse({ status: 200, description: 'Restaurant found' })
+  @ApiResponse({ status: 404, description: 'Restaurant not found' })
+  async findRestaurantById(@Param('id', ParseUUIDPipe) id: string) {
+    return this.restaurantsService.findRestaurantById(id);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update a restaurant' })
+  @ApiParam({ name: 'id', type: String, description: 'Restaurant ID' })
+  @ApiBody({ type: UpdateRestaurantDto })
+  @ApiResponse({ status: 200, description: 'Restaurant updated successfully' })
+  @ApiResponse({ status: 404, description: 'Restaurant not found' })
+  async updateRestaurant(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateRestaurantDto: UpdateRestaurantDto,
+  ) {
+    return this.restaurantsService.updateRestaurant(id, updateRestaurantDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a restaurant' })
+  @ApiParam({ name: 'id', type: String, description: 'Restaurant ID' })
+  @ApiResponse({ status: 200, description: 'Restaurant deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Restaurant not found' })
+  async deleteRestaurant(@Param('id', ParseUUIDPipe) id: string) {
+    await this.restaurantsService.deleteRestaurant(id);
+    return { message: 'Restaurant deleted successfully' };
   }
 }

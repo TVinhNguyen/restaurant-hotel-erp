@@ -16,7 +16,6 @@ services:
       DB_PASSWORD: app
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      AMQP_URL: amqp://myuser:mypass@rabbitmq:5672/
     volumes:
       - .:/app
       - backend_node_modules:/app/node_modules
