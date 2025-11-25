@@ -7,9 +7,9 @@ import {
   Delete,
   UseGuards
 } from '@nestjs/common';
-import { PaymentService } from './payment.service.js';
+import { PaymentService } from './payment.service';
 import type { CreatePaymentDto } from './types/dto';
-import { PaymentWebhookGuard } from './guards/payment-webhook.guard.js';
+import { PaymentWebhookGuard } from './guards/payment-webhook.guard';
 
 @Controller('payments')
 export class PaymentController {

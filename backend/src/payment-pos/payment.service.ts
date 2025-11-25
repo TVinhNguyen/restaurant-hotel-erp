@@ -37,7 +37,7 @@ export class PaymentService {
       signature
     };
     const response = await firstValueFrom(
-      this.httpService.post(url, payload, config)
+      this.httpService.post<any>(url, payload, config)
     );
     return response.data;
   }
