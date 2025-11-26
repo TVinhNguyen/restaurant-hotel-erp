@@ -5,7 +5,7 @@ export interface PayosRequestPaymentItem {
 }
 
 export interface PayosRequestPaymentPayload {
-  orderCode: number;
+  orderCode: string;
   amount: number;
   description: string;
   buyerName?: string;

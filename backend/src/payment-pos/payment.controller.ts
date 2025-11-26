@@ -11,7 +11,7 @@ import { PaymentService } from './payment.service';
 import type { CreatePaymentDto } from './types/dto';
 import { PaymentWebhookGuard } from './guards/payment-webhook.guard';
 
-@Controller('payments')
+@Controller('payments-pos')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
