@@ -22,7 +22,8 @@ export class PaymentController {
 
   @Post('webhook')
   @UseGuards(PaymentWebhookGuard)
-  handleWebhook() {
-    return this.paymentService.handleWebhook();
+  handleWebhook(@Body() body: unknown) {
+    console.log('Received webhook body:', body);
+    return this.paymentService.handleWebhook(body);
   }
 }

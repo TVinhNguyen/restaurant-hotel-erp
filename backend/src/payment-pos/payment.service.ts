@@ -35,8 +35,6 @@ export class PaymentService {
       .update(signatureData)
       .digest('hex');
 
-    console.log('Generated signature:', signature);
-
     const payload: PayosRequestPaymentPayload = {
       orderCode,
       amount,
@@ -45,8 +43,6 @@ export class PaymentService {
       returnUrl,
       signature
     };
-
-    console.log('Final payload:', JSON.stringify(payload, null, 2));
 
     try {
       const response: AxiosResponse<any> = await firstValueFrom(
@@ -60,8 +56,9 @@ export class PaymentService {
     }
   }
 
-  handleWebhook() {
-    // TODO: Parse provider event and update payment
+  handleWebhook(body: unknown) {
+    // Handle the webhook logic here
+    console.log('Received webhook body:', body);
     return { received: true };
   }
 }
