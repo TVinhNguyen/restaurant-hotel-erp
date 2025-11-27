@@ -239,6 +239,17 @@ export class RestaurantsService {
       }
     }
 
+    // Verify assigned table exists and is available if provided
+    if (createBookingDto.assignedTableId) {
+      const table = await this.findTableById(createBookingDto.assignedTableId);
+      if (table.status !== 'available') {
+        throw new BadRequestException('Table is not available');
+      }
+      // Update table status to reserved/occupied
+      table.status = 'reserved';
+      await this.tableRepository.save(table);
+    }
+
     const booking = this.bookingRepository.create(createBookingDto);
     return await this.bookingRepository.save(booking);
   }
@@ -256,7 +267,7 @@ export class RestaurantsService {
   async findBookingById(id: string): Promise<TableBooking> {
     const booking = await this.bookingRepository.findOne({
       where: { id },
-      relations: ['restaurant', 'guest', 'reservation'],
+      relations: ['restaurant', 'guest', 'reservation', 'assignedTable'],
     });
     if (!booking) {
       throw new NotFoundException('Table booking not found');
@@ -377,7 +388,8 @@ export class RestaurantsService {
     const queryBuilder = this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.restaurant', 'restaurant')
-      .leftJoinAndSelect('booking.guest', 'guest');
+      .leftJoinAndSelect('booking.guest', 'guest')
+      .leftJoinAndSelect('booking.assignedTable', 'assignedTable');
 
     if (restaurantId) {
       queryBuilder.andWhere('booking.restaurantId = :restaurantId', {
@@ -439,7 +451,8 @@ export class RestaurantsService {
     table.status = 'occupied';
     await this.tableRepository.save(table);
 
-    // Update booking status
+    // Update booking with assigned table and status
+    booking.assignedTableId = tableId;
     booking.status = 'seated';
     await this.bookingRepository.save(booking);
 
