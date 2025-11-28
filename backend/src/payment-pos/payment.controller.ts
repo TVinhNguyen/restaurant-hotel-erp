@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Delete,
-  UseGuards
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import type { CreatePaymentDto } from './types/dto';
 import { PaymentWebhookGuard } from './guards/payment-webhook.guard';
@@ -22,8 +14,14 @@ export class PaymentController {
 
   @Post('webhook')
   @UseGuards(PaymentWebhookGuard)
-  handleWebhook(@Body() body: unknown) {
+  async handleWebhook(@Body() body: unknown) {
     console.log('Received webhook body:', body);
     return this.paymentService.handleWebhook(body);
+  }
+
+  // New endpoint to check payment status
+  @Get('status/:orderId')
+  async getPaymentStatus(@Param('orderId') orderId: string) {
+    return this.paymentService.getPaymentStatus(orderId);
   }
 }

@@ -4,6 +4,7 @@ export interface CreatePaymentDto {
   orderId: string;
   description: string;
   amount: number;
+  platform?: 'web' | 'mobile'; // Optional platform field
 }
 
 export interface Payment {
