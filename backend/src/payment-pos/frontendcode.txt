@@ -54,6 +54,7 @@ const checkPayment = () => {
 
   const poll = setInterval(async () => {
     try {
+      // ⚠️ QUAN TRỌNG: URL phải có /status/ 
       const res = await fetch(`${API_URL}/payments-pos/status/${orderId}`);
       const data = await res.json();
 

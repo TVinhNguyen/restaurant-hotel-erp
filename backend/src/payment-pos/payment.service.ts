@@ -87,8 +87,10 @@ export class PaymentService {
     console.log('Received webhook body:', body);
 
     try {
-      // Verify webhook signature here if needed
-      const { orderCode, code } = body;
+      // PayOS webhook structure: { code, data: { orderCode, ... } }
+      // orderCode có thể nằm ở body.orderCode hoặc body.data.orderCode
+      const orderCode = body.data?.orderCode || body.orderCode;
+      const code = body.code;
 
       if (!orderCode) {
         console.warn('No orderCode in webhook body');
