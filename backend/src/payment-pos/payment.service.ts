@@ -57,25 +57,35 @@ export class PaymentService {
       );
       console.log('PayOS response:', response.data);
 
-      // Store initial payment status in Redis
-      const paymentKey = `payment:${orderCode}`;
-      await this.cacheManager.set(
-        paymentKey,
-        {
-          orderId: orderCode,
-          status: 'pending',
-          amount: amount,
-          description: description,
-          createdAt: new Date().toISOString(),
-          payosData: response.data,
-        },
-        1800,
-      ); // 30 minutes TTL
+      // ⚠️ QUAN TRỌNG: Dùng orderCode từ PayOS response, không phải từ body.orderId
+      // PayOS có thể trả về orderCode khác (number) so với orderId gửi lên (string)
+      const payosOrderCode = response.data?.data?.orderCode || orderCode;
+      
+      // Store initial payment status in Redis với orderCode từ PayOS
+      const paymentKey = `payment:${payosOrderCode}`;
+      console.log(`Storing payment in Redis with key: ${paymentKey}`);
+      
+      const paymentData = {
+        orderId: payosOrderCode,
+        originalOrderId: orderCode,
+        status: 'pending',
+        amount: amount,
+        description: description,
+        createdAt: new Date().toISOString(),
+        payosData: response.data,
+      };
+      
+      // TTL in milliseconds for cache-manager v5+
+      await this.cacheManager.set(paymentKey, paymentData, 1800 * 1000);
+      
+      // Verify data was stored
+      const verifyData = await this.cacheManager.get(paymentKey);
+      console.log(`Redis stored verification: ${verifyData ? 'SUCCESS' : 'FAILED'}`);
 
       // Return response with orderId for frontend to track
       return {
         ...response.data,
-        orderId: orderCode,
+        orderId: payosOrderCode,
       };
     } catch (error: any) {
       console.error('PayOS error:', error.response?.data || error.message);
@@ -120,8 +130,8 @@ export class PaymentService {
         completedAt: new Date().toISOString(),
       };
 
-      // Extend TTL for successful/completed payments to 1 hour
-      const ttl = status === 'success' ? 3600 : 1800;
+      // Extend TTL for successful/completed payments to 1 hour (in milliseconds)
+      const ttl = status === 'success' ? 3600 * 1000 : 1800 * 1000;
       await this.cacheManager.set(paymentKey, updatedPayment, ttl);
 
       console.log(`Payment status updated: ${orderCode} -> ${status}`);
