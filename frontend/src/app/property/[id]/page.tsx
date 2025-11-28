@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Star, Wifi, Car, AirVent, Bath, CreditCard, MapPin, Bed, Loader2, Users, Maximize2, Waves, Wind, Tv, Coffee, ChevronLeft, ChevronRight, Calendar, Check, Phone, Mail, Globe, Clock, Utensils, X, User, CalendarDays, Clock3, MessageSquare } from "lucide-react"
+import { ArrowLeft, Star, Wifi, Car, AirVent, Bath, CreditCard, MapPin, Bed, Loader2, Users, Maximize2, Waves, Wind, Tv, Coffee, ChevronLeft, ChevronRight, Calendar, Check, Phone, Mail, Globe, Clock, Utensils, X, User, CalendarDays, Clock3, MessageSquare, Tag } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -22,6 +22,7 @@ import { propertiesService, type Property, type RoomType, type Room } from "@/li
 import { restaurantsService, type Restaurant } from "@/lib/services/restaurants"
 import { guestsService } from "@/lib/services/guests"
 import { reservationsService } from "@/lib/services/reservations"
+import { promotionsService, type Promotion } from "@/lib/services/promotions"
 import { authService } from "@/lib/auth"
 import { colors, shadows, borderRadius } from "@/lib/designTokens"
 
@@ -291,6 +292,8 @@ export default function PropertyDetailPage() {
   const [selectedTableForBooking, setSelectedTableForBooking] = useState<any | null>(null)
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false)
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false)
+  const [promotions, setPromotions] = useState<Promotion[]>([])
+  const [loadingPromotions, setLoadingPromotions] = useState(false)
   const sectionsRef = useRef<(HTMLDivElement | null)[]>([])
 
   // Table Booking Form
@@ -312,6 +315,7 @@ export default function PropertyDetailPage() {
     if (propertyId) {
       loadProperty()
       loadRoomTypes()
+      loadPromotions()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId])
@@ -529,6 +533,30 @@ export default function PropertyDetailPage() {
       setRestaurants([])
     } finally {
       setLoadingRestaurants(false)
+    }
+  }
+
+  const loadPromotions = async () => {
+    if (!propertyId || loadingPromotions) return
+
+    try {
+      setLoadingPromotions(true)
+      const response = await promotionsService.getPromotions({
+        propertyId,
+        active: true,
+        page: 1,
+        limit: 10,
+      })
+      if (response && response.data) {
+        setPromotions(response.data)
+      } else {
+        setPromotions([])
+      }
+    } catch (err) {
+      console.error("Failed to load promotions:", err)
+      setPromotions([])
+    } finally {
+      setLoadingPromotions(false)
     }
   }
 
@@ -1021,10 +1049,106 @@ export default function PropertyDetailPage() {
               )}
             </div>
 
+            {/* Promotions Section */}
+            {promotions.length > 0 && (
+              <div
+                ref={(el) => {
+                  sectionsRef.current[1] = el
+                }}
+                className="scroll-reveal opacity-0 translate-y-10 mb-8"
+              >
+                <div
+                  className="bg-white p-6"
+                  style={{
+                    borderRadius: borderRadius.card,
+                    boxShadow: shadows.card,
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-lg" style={{ backgroundColor: colors.lightBlue }}>
+                      <Tag className="w-5 h-5" style={{ color: colors.primary }} />
+                    </div>
+                    <h3 className="text-xl font-bold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Khuyến mãi đặc biệt
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {promotions.map((promotion) => {
+                      const validFrom = promotion.validFrom ? new Date(promotion.validFrom) : null
+                      const validTo = promotion.validTo ? new Date(promotion.validTo) : null
+                      const now = new Date()
+                      const isActive = (!validFrom || now >= validFrom) && (!validTo || now <= validTo) && promotion.active
+
+                      return (
+                        <div
+                          key={promotion.id}
+                          className="p-4 rounded-xl border-2 transition-all hover:shadow-lg"
+                          style={{
+                            backgroundColor: isActive ? colors.lightBlue : '#F3F4F6',
+                            borderColor: isActive ? colors.primary : colors.border,
+                            boxShadow: shadows.card,
+                          }}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge
+                                  className="text-xs font-bold px-2 py-1"
+                                  style={{
+                                    backgroundColor: colors.primary,
+                                    color: 'white',
+                                  }}
+                                >
+                                  {promotion.code}
+                                </Badge>
+                                {!isActive && (
+                                  <Badge
+                                    className="text-xs px-2 py-1"
+                                    style={{
+                                      backgroundColor: '#EF4444',
+                                      color: 'white',
+                                    }}
+                                  >
+                                    Hết hạn
+                                  </Badge>
+                                )}
+                              </div>
+                              <h4 className="font-bold text-lg mb-1" style={{ color: colors.textPrimary }}>
+                                Giảm {promotion.discountPercent}%
+                              </h4>
+                              {promotion.description && (
+                                <p className="text-sm mb-2" style={{ color: colors.textSecondary }}>
+                                  {promotion.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {(validFrom || validTo) && (
+                            <div className="text-xs mt-3 pt-3 border-t" style={{ borderColor: colors.border }}>
+                              {validFrom && (
+                                <p style={{ color: colors.textSecondary }}>
+                                  Từ: {validFrom.toLocaleDateString('vi-VN')}
+                                </p>
+                              )}
+                              {validTo && (
+                                <p style={{ color: colors.textSecondary }}>
+                                  Đến: {validTo.toLocaleDateString('vi-VN')}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Tabs */}
             <div
               ref={(el) => {
-                sectionsRef.current[1] = el
+                sectionsRef.current[promotions.length > 0 ? 2 : 1] = el
               }}
               className="scroll-reveal opacity-0 translate-y-10"
             >
