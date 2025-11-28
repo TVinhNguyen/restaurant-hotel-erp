@@ -94,6 +94,10 @@ class PropertiesService {
     return apiClient.get<{ rooms?: Room[], roomTypes?: RoomType[] }>(`/properties/${propertyId}/rooms`)
   }
 
+  async getPropertyRestaurants(propertyId: string): Promise<Property & { restaurants?: any[] }> {
+    return apiClient.get<Property & { restaurants?: any[] }>(`/properties/${propertyId}/restaurants`)
+  }
+
   async getAvailableRooms(
     propertyId: string,
     checkIn: string,

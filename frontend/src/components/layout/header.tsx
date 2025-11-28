@@ -112,22 +112,22 @@ export function Header() {
               style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               Khách sạn
-            </Link>
+              </Link>
             <Link
               href="/about"
               className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
               style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               Giới thiệu
-            </Link>
+              </Link>
             <Link
               href="/contact"
               className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
               style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               Liên hệ
-            </Link>
-          </nav>
+              </Link>
+            </nav>
 
           <div className="flex items-center gap-3">
             {isLoading ? (
@@ -153,9 +153,9 @@ export function Header() {
                 >
                   <LogOut className="w-5 h-5" style={{ color: colors.textSecondary }} />
                 </button>
-              </div>
+          </div>
             ) : (
-              <Link href="/login">
+            <Link href="/login">
                 <Button
                   className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-white transition-all hover:shadow-lg"
                   style={{ backgroundColor: colors.primary }}
@@ -163,7 +163,7 @@ export function Header() {
                   <UserIcon className="w-4 h-4" />
                   <span className="text-sm" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>Đăng nhập</span>
                 </Button>
-              </Link>
+            </Link>
             )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

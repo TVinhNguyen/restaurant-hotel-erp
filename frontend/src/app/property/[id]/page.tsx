@@ -2,19 +2,269 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Star, Wifi, Car, AirVent, Bath, CreditCard, MapPin, Bed, Loader2, Users, Maximize2, Waves, Wind, Tv, Coffee, ChevronLeft, ChevronRight, Calendar, Check, Phone, Mail, Globe } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { ArrowLeft, Star, Wifi, Car, AirVent, Bath, CreditCard, MapPin, Bed, Loader2, Users, Maximize2, Waves, Wind, Tv, Coffee, ChevronLeft, ChevronRight, Calendar, Check, Phone, Mail, Globe, Clock, Utensils, X, User, CalendarDays, Clock3, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import PropertyDetailSkeleton from "@/components/skeletons/PropertyDetailSkeleton"
 import RoomCardSkeleton from "@/components/skeletons/RoomCardSkeleton"
 import { propertiesService, type Property, type RoomType, type Room } from "@/lib/services/properties"
+import { restaurantsService, type Restaurant } from "@/lib/services/restaurants"
+import { guestsService } from "@/lib/services/guests"
+import { reservationsService } from "@/lib/services/reservations"
 import { authService } from "@/lib/auth"
 import { colors, shadows, borderRadius } from "@/lib/designTokens"
+
+// Table Booking Form Schema
+const tableBookingSchema = z.object({
+  bookingDate: z.string().min(1, "Vui lòng chọn ngày"),
+  bookingTime: z.string().min(1, "Vui lòng chọn giờ"),
+  numberOfGuests: z.number().min(1, "Số người phải lớn hơn 0"),
+  firstName: z.string().min(1, "Vui lòng nhập họ"),
+  lastName: z.string().min(1, "Vui lòng nhập tên"),
+  email: z.string().email("Email không hợp lệ"),
+  phone: z.string().optional(),
+  specialRequests: z.string().optional(),
+})
+
+type TableBookingFormValues = z.infer<typeof tableBookingSchema>
+import { showToast } from "@/lib/toast"
+
+// Restaurant Image Carousel Component
+function RestaurantImageCarousel({ restaurant, fullWidth = false }: { restaurant?: Restaurant; fullWidth?: boolean }) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isHovered, setIsHovered] = useState(false)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  const fallbacks = [
+    "/luxury-hotel-room-with-blue-accents-and-modern-des.jpg",
+    "/modern-hotel-room-with-city-view-london.jpg",
+    "/dark-modern-hotel-room-with-ambient-lighting.jpg",
+    "/luxury-hotel-suite-with-marble-bathroom.jpg",
+    "/modern-green-hotel-building-exterior.jpg",
+  ]
+
+  // Get all available images (from restaurant.images or fallbacks)
+  const getAllImages = () => {
+    if (restaurant?.images && restaurant.images.length > 0) {
+      return restaurant.images
+    }
+    // Use restaurant ID to consistently select fallback images
+    const id = restaurant?.id || ""
+    const startIndex = id ? parseInt(id.replace(/-/g, '').slice(0, 8), 16) % fallbacks.length : 0
+    // Return 3-4 fallback images in a cycle
+    return [
+      fallbacks[startIndex % fallbacks.length],
+      fallbacks[(startIndex + 1) % fallbacks.length],
+      fallbacks[(startIndex + 2) % fallbacks.length],
+    ]
+  }
+
+  const images = getAllImages()
+  const hasMultipleImages = images.length > 1
+
+  // Auto-rotate images on hover
+  useEffect(() => {
+    if (isHovered && hasMultipleImages) {
+      intervalRef.current = setInterval(() => {
+        setCurrentImageIndex((prev) => (prev + 1) % images.length)
+      }, 1500) // Change image every 1.5 seconds
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [isHovered, hasMultipleImages, images.length])
+
+  // Reset to first image when hover ends
+  useEffect(() => {
+    if (!isHovered) {
+      setCurrentImageIndex(0)
+    }
+  }, [isHovered])
+
+  return (
+    <div 
+      className={`${fullWidth ? 'w-full' : 'w-80'} ${fullWidth ? 'h-64' : 'h-56'} ${fullWidth ? '' : 'flex-shrink-0'} overflow-hidden relative group cursor-pointer`}
+      style={{ borderRadius: borderRadius.image }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Image container with carousel */}
+      <div className="relative w-full h-full">
+        {images.map((image, index) => (
+          <img
+            key={index}
+            src={image}
+            alt={restaurant?.name || `Restaurant - Image ${index + 1}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+              index === currentImageIndex ? 'opacity-100 z-0' : 'opacity-0 z-0'
+            } ${isHovered ? 'group-hover:scale-110' : ''}`}
+            style={{
+              transition: 'opacity 0.5s ease-in-out, transform 0.7s ease-out'
+            }}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement
+              target.src = "/placeholder.svg"
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Navigation dots */}
+      {hasMultipleImages && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setCurrentImageIndex(index)
+              }}
+              className={`rounded-full transition-all duration-300 cursor-pointer ${
+                index === currentImageIndex
+                  ? 'w-5 h-1.5 bg-white'
+                  : 'w-1.5 h-1.5 bg-white/60 hover:bg-white/80'
+              }`}
+              aria-label={`Go to image ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Room Image Carousel Component
+function RoomImageCarousel({ roomType, roomId }: { roomType?: RoomType; roomId?: string }) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isHovered, setIsHovered] = useState(false)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  const fallbacks = [
+    "/luxury-hotel-room-with-blue-accents-and-modern-des.jpg",
+    "/modern-hotel-room-with-city-view-london.jpg",
+    "/dark-modern-hotel-room-with-ambient-lighting.jpg",
+    "/luxury-hotel-suite-with-marble-bathroom.jpg",
+    "/modern-hotel-room-with-city-view-london.jpg",
+  ]
+
+  // Get all available images (from roomType.images or fallbacks)
+  const getAllImages = () => {
+    if (roomType?.images && roomType.images.length > 0) {
+      return roomType.images
+    }
+    // Use room ID or roomType ID to consistently select fallback images
+    const id = roomId || roomType?.id || ""
+    const startIndex = id ? parseInt(id.replace(/-/g, '').slice(0, 8), 16) % fallbacks.length : 0
+    // Return 3-4 fallback images in a cycle
+    return [
+      fallbacks[startIndex % fallbacks.length],
+      fallbacks[(startIndex + 1) % fallbacks.length],
+      fallbacks[(startIndex + 2) % fallbacks.length],
+    ]
+  }
+
+  const images = getAllImages()
+  const hasMultipleImages = images.length > 1
+
+  // Auto-rotate images on hover
+  useEffect(() => {
+    if (isHovered && hasMultipleImages) {
+      intervalRef.current = setInterval(() => {
+        setCurrentImageIndex((prev) => (prev + 1) % images.length)
+      }, 1500) // Change image every 1.5 seconds
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [isHovered, hasMultipleImages, images.length])
+
+  // Reset to first image when hover ends
+  useEffect(() => {
+    if (!isHovered) {
+      setCurrentImageIndex(0)
+    }
+  }, [isHovered])
+
+  return (
+    <div 
+      className="w-80 h-56 flex-shrink-0 overflow-hidden relative group cursor-pointer"
+      style={{ borderRadius: borderRadius.image }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Image container with carousel */}
+      <div className="relative w-full h-full">
+        {images.map((image, index) => (
+          <img
+            key={index}
+            src={image}
+            alt={roomType?.name || `Room - Image ${index + 1}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+              index === currentImageIndex ? 'opacity-100 z-0' : 'opacity-0 z-0'
+            } ${isHovered ? 'group-hover:scale-110' : ''}`}
+            style={{
+              transition: 'opacity 0.5s ease-in-out, transform 0.7s ease-out'
+            }}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement
+              target.src = "/placeholder.svg"
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Navigation dots */}
+      {hasMultipleImages && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setCurrentImageIndex(index)
+              }}
+              className={`rounded-full transition-all duration-300 cursor-pointer ${
+                index === currentImageIndex
+                  ? 'w-5 h-1.5 bg-white'
+                  : 'w-1.5 h-1.5 bg-white/60 hover:bg-white/80'
+              }`}
+              aria-label={`Go to image ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function PropertyDetailPage() {
   const params = useParams()
@@ -32,7 +282,31 @@ export default function PropertyDetailPage() {
   const [roomsLimit] = useState(10)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [selectedRoomType, setSelectedRoomType] = useState<RoomType | null>(null)
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [loadingRestaurants, setLoadingRestaurants] = useState(false)
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
+  const [restaurantTables, setRestaurantTables] = useState<any[]>([])
+  const [loadingTables, setLoadingTables] = useState(false)
+  const [isRestaurantModalOpen, setIsRestaurantModalOpen] = useState(false)
+  const [selectedTableForBooking, setSelectedTableForBooking] = useState<any | null>(null)
+  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false)
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false)
   const sectionsRef = useRef<(HTMLDivElement | null)[]>([])
+
+  // Table Booking Form
+  const tableBookingForm = useForm<TableBookingFormValues>({
+    resolver: zodResolver(tableBookingSchema),
+    defaultValues: {
+      bookingDate: "",
+      bookingTime: "",
+      numberOfGuests: 2,
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      specialRequests: "",
+    },
+  })
 
   useEffect(() => {
     if (propertyId) {
@@ -74,7 +348,40 @@ export default function PropertyDetailPage() {
     })
 
     return () => observer.disconnect()
-  }, [property, roomTypes, rooms])
+  }, [property, roomTypes, rooms, restaurants])
+
+  // Trigger observer again when restaurants are loaded
+  useEffect(() => {
+    if (restaurants.length > 0 && !loadingRestaurants) {
+      // Small delay to ensure DOM is updated
+      const timer = setTimeout(() => {
+        const scrollRevealElements = document.querySelectorAll('.scroll-reveal')
+        const observerOptions = {
+          threshold: 0.1,
+          rootMargin: "0px 0px -50px 0px",
+        }
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible")
+              entry.target.classList.remove("opacity-0", "translate-y-10")
+            }
+          })
+        }, observerOptions)
+        
+        scrollRevealElements.forEach((element) => {
+          if (!element.classList.contains("visible")) {
+            element.classList.add("transition-all", "duration-700", "ease-out")
+            observer.observe(element)
+          }
+        })
+      }, 100)
+      
+      return () => {
+        clearTimeout(timer)
+      }
+    }
+  }, [restaurants, loadingRestaurants])
 
   const loadProperty = async () => {
     try {
@@ -198,16 +505,175 @@ export default function PropertyDetailPage() {
     }
   }
 
-  const handleRoomsTabChange = (value: string) => {
+  const loadRestaurants = async () => {
+    if (!propertyId || loadingRestaurants) return
+    
+    try {
+      setLoadingRestaurants(true)
+      // Call restaurants endpoint with propertyId, page, and limit
+      const response = await restaurantsService.getRestaurants({ 
+        propertyId: propertyId,
+        page: 1,
+        limit: 100 
+      })
+      // Backend returns { restaurants: Restaurant[], total: number }
+      if (response && 'restaurants' in response && Array.isArray(response.restaurants)) {
+        setRestaurants(response.restaurants)
+      } else if (response && 'data' in response && Array.isArray((response as any).data)) {
+        setRestaurants((response as any).data)
+      } else {
+        setRestaurants([])
+      }
+    } catch (err) {
+      console.error("Failed to load restaurants:", err)
+      setRestaurants([])
+    } finally {
+      setLoadingRestaurants(false)
+    }
+  }
+
+  const handleTabChange = (value: string) => {
     if (value === "rooms") {
-      // Load room types if not already loaded
-      if (roomTypes.length === 0) {
-        loadRoomTypes()
+      // Always reload room types and rooms when tab is clicked
+      loadRoomTypes()
+      loadRooms(1)
+    } else if (value === "restaurants") {
+      // Always reload restaurants when tab is clicked
+      loadRestaurants()
+    }
+  }
+
+  const handleViewRestaurantDetails = async (restaurant: Restaurant) => {
+    setSelectedRestaurant(restaurant)
+    setIsRestaurantModalOpen(true)
+    
+    // Load tables if not already in restaurant data
+    if ((restaurant as any).tables && Array.isArray((restaurant as any).tables) && (restaurant as any).tables.length > 0) {
+      setRestaurantTables((restaurant as any).tables)
+    } else {
+      try {
+        setLoadingTables(true)
+        const tables = await restaurantsService.getTables(restaurant.id)
+        setRestaurantTables(tables)
+      } catch (err) {
+        console.error("Failed to load tables:", err)
+        setRestaurantTables([])
+      } finally {
+        setLoadingTables(false)
       }
-      // Load rooms if not already loaded
-      if (rooms.length === 0) {
-        loadRooms(1)
+    }
+  }
+
+  const handleSelectTable = (table: any) => {
+    if (table.status !== 'available') {
+      showToast.error("Bàn này không khả dụng")
+      return
+    }
+    setSelectedTableForBooking(table)
+    setIsBookingFormOpen(true)
+    // Set default number of guests based on table capacity
+    tableBookingForm.setValue("numberOfGuests", table.capacity)
+  }
+
+  const handleCloseBookingForm = () => {
+    setIsBookingFormOpen(false)
+    setSelectedTableForBooking(null)
+    tableBookingForm.reset()
+  }
+
+  const onSubmitTableBooking = async (data: TableBookingFormValues) => {
+    if (!selectedRestaurant || !selectedTableForBooking) {
+      showToast.error("Thiếu thông tin đặt bàn")
+      return
+    }
+
+    setIsSubmittingBooking(true)
+
+    try {
+      // Get current user if logged in
+      let user: { id: string; email: string; name?: string; phone?: string } | null = null
+      
+      if (authService.isAuthenticated()) {
+        try {
+          user = await authService.getCurrentUser()
+        } catch (err) {
+          console.error("Failed to get user ID:", err)
+        }
       }
+
+      // Find or create guest
+      let guestId: string | undefined
+      try {
+        const emailToSearch = user?.email || data.email
+        
+        const existingGuest = await guestsService.findGuestByEmail(emailToSearch)
+        if (existingGuest) {
+          guestId = existingGuest.id
+        } else {
+          // Create guest
+          const guestData = user 
+            ? {
+                name: user.name || `${data.firstName} ${data.lastName}`.trim(),
+                email: user.email,
+                phone: user.phone || data.phone,
+              }
+            : {
+                name: `${data.firstName} ${data.lastName}`.trim(),
+                email: data.email,
+                phone: data.phone,
+              }
+          
+          const newGuest = await guestsService.createGuest(guestData)
+          guestId = newGuest.id
+        }
+      } catch (err) {
+        console.error("Failed to create/find guest:", err)
+        showToast.error("Không thể xử lý thông tin khách hàng")
+        return
+      }
+
+      // Create table booking - map to backend format
+      const bookingPayload: any = {
+        restaurantId: selectedRestaurant.id,
+        bookingDate: data.bookingDate,
+        bookingTime: data.bookingTime,
+        pax: data.numberOfGuests, // Backend expects 'pax' not 'numberOfGuests'
+        contactName: `${data.firstName} ${data.lastName}`.trim(),
+        contactPhone: data.phone || "",
+        specialRequests: data.specialRequests,
+      }
+
+      // Add guestId if we have one
+      if (guestId) {
+        bookingPayload.guestId = guestId
+      }
+
+      // Add assignedTableId if we have a selected table
+      if (selectedTableForBooking?.id) {
+        bookingPayload.assignedTableId = selectedTableForBooking.id
+      }
+
+      await reservationsService.createTableBooking(bookingPayload as any)
+
+      showToast.success("Đặt bàn thành công!")
+      
+      // Close form and refresh tables
+      handleCloseBookingForm()
+      
+      // Reload tables to update status
+      if (selectedRestaurant) {
+        try {
+          const tables = await restaurantsService.getTables(selectedRestaurant.id)
+          setRestaurantTables(tables)
+        } catch (err) {
+          console.error("Failed to reload tables:", err)
+        }
+      }
+    } catch (err) {
+      console.error("Table booking error:", err)
+      showToast.error(err instanceof Error ? err.message : "Không thể đặt bàn. Vui lòng thử lại.")
+    } finally {
+      setIsSubmittingBooking(false)
     }
   }
 
@@ -562,9 +1028,10 @@ export default function PropertyDetailPage() {
               }}
               className="scroll-reveal opacity-0 translate-y-10"
             >
-            <Tabs defaultValue="rooms" className="w-full" onValueChange={handleRoomsTabChange}>
-              <TabsList className="grid w-full grid-cols-3 mb-8" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: colors.lightBlue }}>
+            <Tabs defaultValue="rooms" className="w-full" onValueChange={handleTabChange}>
+              <TabsList className="grid w-full grid-cols-4 mb-8" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: colors.lightBlue }}>
                 <TabsTrigger value="rooms" className="font-semibold">Phòng</TabsTrigger>
+                <TabsTrigger value="restaurants" className="font-semibold">Nhà hàng</TabsTrigger>
                 <TabsTrigger value="amenities" className="font-semibold">Tiện nghi</TabsTrigger>
                 <TabsTrigger value="policies" className="font-semibold">Chính sách</TabsTrigger>
               </TabsList>
@@ -601,15 +1068,7 @@ export default function PropertyDetailPage() {
                             }}
                           >
                             <div className="flex gap-6">
-                              {roomType?.images && roomType.images.length > 0 && (
-                                <div className="w-48 h-32 flex-shrink-0 overflow-hidden" style={{ borderRadius: borderRadius.image }}>
-                                  <img
-                                    src={roomType.images[0] || "/placeholder.svg"}
-                                    alt={roomType.name || `Room ${roomNumber}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              )}
+                              <RoomImageCarousel roomType={roomType} roomId={room.id} />
                               <div className="flex-1">
                                 <div className="flex justify-between items-start mb-3">
                                   <div>
@@ -823,15 +1282,7 @@ export default function PropertyDetailPage() {
                             }}
                           >
                             <div className="flex gap-6">
-                              {roomType.images && roomType.images.length > 0 && (
-                                <div className="w-48 h-32 flex-shrink-0 overflow-hidden" style={{ borderRadius: borderRadius.image }}>
-                                  <img
-                                    src={roomType.images[0] || "/placeholder.svg"}
-                                    alt={roomType.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              )}
+                              <RoomImageCarousel roomType={roomType} />
                               <div className="flex-1">
                                 <div className="flex justify-between items-start mb-3">
                                   <div>
@@ -1028,6 +1479,148 @@ export default function PropertyDetailPage() {
                 </div>
               </TabsContent>
 
+              <TabsContent value="restaurants" className="mt-8">
+                <div className="space-y-6">
+                  {loadingRestaurants ? (
+                    <div className="space-y-6">
+                      {[1, 2, 3].map((i) => (
+                        <RoomCardSkeleton key={i} />
+                      ))}
+                    </div>
+                  ) : restaurants.length > 0 ? (
+                    restaurants.map((restaurant, restaurantIndex) => (
+                      <div
+                        key={restaurant.id}
+                        className="bg-white p-6 hover:shadow-xl transition-all border-2 border-transparent hover:border-primary/20 scroll-reveal opacity-0 translate-y-10"
+                        style={{
+                          borderRadius: borderRadius.card,
+                          boxShadow: shadows.card,
+                          animationDelay: `${restaurantIndex * 0.1}s`,
+                        }}
+                      >
+                        <div className="flex gap-6">
+                          <RestaurantImageCarousel restaurant={restaurant} />
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <h4 className="text-xl font-bold mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                  {restaurant.name}
+                                </h4>
+                                {restaurant.description && (
+                                  <p className="text-sm mb-3" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    {restaurant.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div
+                              className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b"
+                              style={{ borderColor: colors.border }}
+                            >
+                              {(restaurant.cuisineType || restaurant.cuisine) && (
+                                <div className="flex items-center gap-3">
+                                  <div className="p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
+                                    <Utensils className="w-5 h-5" style={{ color: colors.primary }} />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Ẩm thực
+                                    </p>
+                                    <p className="font-semibold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      {restaurant.cuisineType || restaurant.cuisine}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                              {restaurant.openingHours && (
+                                <div className="flex items-center gap-3">
+                                  <div className="p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
+                                    <Clock className="w-5 h-5" style={{ color: colors.primary }} />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Giờ mở cửa
+                                    </p>
+                                    <p className="font-semibold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      {restaurant.openingHours}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                              {restaurant.rating !== undefined && restaurant.rating !== null && (
+                                <div className="flex items-center gap-3">
+                                  <div className="p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
+                                    <Star className="w-5 h-5 fill-current" style={{ color: colors.accent }} />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Đánh giá
+                                    </p>
+                                    <p className="font-semibold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      {restaurant.rating.toFixed(1)}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {(restaurant.phone || restaurant.email || restaurant.location || restaurant.address) && (
+                              <div className="flex items-center space-x-2 flex-wrap gap-2 mb-4">
+                                {restaurant.phone && (
+                                  <div className="flex items-center gap-2 text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    <Phone className="w-4 h-4" style={{ color: colors.primary }} />
+                                    <span>{restaurant.phone}</span>
+                                  </div>
+                                )}
+                                {restaurant.email && (
+                                  <div className="flex items-center gap-2 text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    <Mail className="w-4 h-4" style={{ color: colors.primary }} />
+                                    <span>{restaurant.email}</span>
+                                  </div>
+                                )}
+                                {(restaurant.location || restaurant.address) && (
+                                  <div className="flex items-center gap-2 text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    <MapPin className="w-4 h-4" style={{ color: colors.primary }} />
+                                    <span>{restaurant.location || restaurant.address}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-end pt-4 border-t" style={{ borderColor: colors.border }}>
+                              <Button
+                                onClick={() => handleViewRestaurantDetails(restaurant)}
+                                className="px-8 py-3 text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg hover:shadow-xl cursor-pointer"
+                                style={{
+                                  backgroundColor: colors.primary,
+                                  borderRadius: borderRadius.button,
+                                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                                }}
+                              >
+                                Xem chi tiết
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div
+                      className="bg-white p-12 text-center"
+                      style={{
+                        borderRadius: borderRadius.card,
+                        boxShadow: shadows.card,
+                      }}
+                    >
+                      <p className="mb-4" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Chưa có nhà hàng nào
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
               <TabsContent value="policies" className="mt-8">
                 <div
                   className="bg-white p-8"
@@ -1213,6 +1806,417 @@ export default function PropertyDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Restaurant Details Modal */}
+      <Dialog open={isRestaurantModalOpen} onOpenChange={setIsRestaurantModalOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          {selectedRestaurant && (
+            <>
+              <DialogHeader className="pb-4 border-b" style={{ borderColor: colors.border }}>
+                <DialogTitle className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary }}>
+                  {selectedRestaurant.name}
+                </DialogTitle>
+                <DialogDescription className="text-base leading-relaxed" style={{ color: colors.textSecondary }}>
+                  {selectedRestaurant.description}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-8 pt-6">
+                {/* Restaurant Image Carousel */}
+                <div className="w-full rounded-2xl overflow-hidden" style={{ boxShadow: shadows.card }}>
+                  <RestaurantImageCarousel restaurant={selectedRestaurant} fullWidth={true} />
+                </div>
+
+                {/* Restaurant Info Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(selectedRestaurant.cuisineType || selectedRestaurant.cuisine) && (
+                    <div className="flex items-center gap-4 p-5 rounded-2xl transition-all hover:scale-105" style={{ backgroundColor: colors.lightBlue, boxShadow: shadows.card }}>
+                      <div className="p-4 rounded-xl bg-white flex-shrink-0" style={{ boxShadow: shadows.input }}>
+                        <Utensils className="w-6 h-6" style={{ color: colors.primary }} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium mb-1 uppercase tracking-wide" style={{ color: colors.textSecondary }}>
+                          Ẩm thực
+                        </p>
+                        <p className="text-lg font-bold" style={{ color: colors.textPrimary }}>
+                          {selectedRestaurant.cuisineType || selectedRestaurant.cuisine}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedRestaurant.openingHours && (
+                    <div className="flex items-center gap-4 p-5 rounded-2xl transition-all hover:scale-105" style={{ backgroundColor: colors.lightBlue, boxShadow: shadows.card }}>
+                      <div className="p-4 rounded-xl bg-white flex-shrink-0" style={{ boxShadow: shadows.input }}>
+                        <Clock className="w-6 h-6" style={{ color: colors.primary }} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium mb-1 uppercase tracking-wide" style={{ color: colors.textSecondary }}>
+                          Giờ mở cửa
+                        </p>
+                        <p className="text-lg font-bold" style={{ color: colors.textPrimary }}>
+                          {selectedRestaurant.openingHours}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {(selectedRestaurant.location || selectedRestaurant.address) && (
+                    <div className="flex items-center gap-4 p-5 rounded-2xl transition-all hover:scale-105" style={{ backgroundColor: colors.lightBlue, boxShadow: shadows.card }}>
+                      <div className="p-4 rounded-xl bg-white flex-shrink-0" style={{ boxShadow: shadows.input }}>
+                        <MapPin className="w-6 h-6" style={{ color: colors.primary }} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium mb-1 uppercase tracking-wide" style={{ color: colors.textSecondary }}>
+                          Vị trí
+                        </p>
+                        <p className="text-lg font-bold" style={{ color: colors.textPrimary }}>
+                          {selectedRestaurant.location || selectedRestaurant.address}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tables Section */}
+                <div className="pt-4">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
+                      Chọn bàn
+                    </h3>
+                    <Badge className="px-4 py-1.5 text-sm font-semibold" style={{ backgroundColor: colors.primary, color: 'white' }}>
+                      {restaurantTables.length} bàn
+                    </Badge>
+                  </div>
+                  {loadingTables ? (
+                    <div className="flex justify-center py-12">
+                      <Loader2 className="w-8 h-8 animate-spin" style={{ color: colors.primary }} />
+                    </div>
+                  ) : restaurantTables.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {restaurantTables.map((table) => (
+                        <div
+                          key={table.id}
+                          onClick={() => table.status === 'available' && handleSelectTable(table)}
+                          className={`p-5 rounded-2xl border-2 transition-all duration-300 ${
+                            table.status === 'available' 
+                              ? 'hover:scale-105 hover:shadow-xl cursor-pointer' 
+                              : 'opacity-60 cursor-not-allowed'
+                          }`}
+                          style={{
+                            backgroundColor: table.status === 'available' ? colors.lightBlue : '#FEE2E2',
+                            borderColor: table.status === 'available' ? colors.primary : '#EF4444',
+                            boxShadow: shadows.card,
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${table.status === 'available' ? 'animate-pulse' : ''}`} style={{ backgroundColor: table.status === 'available' ? colors.success : '#EF4444' }} />
+                              <span className="text-base font-bold" style={{ color: colors.textPrimary }}>
+                                Bàn {table.tableNumber}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: colors.textSecondary }}>
+                              <Users className="w-4 h-4" style={{ color: colors.primary }} />
+                              <span>Tối đa {table.capacity} người</span>
+                            </div>
+                            <Badge
+                              className="text-xs font-semibold px-3 py-1"
+                              style={{
+                                backgroundColor: table.status === 'available' ? colors.success : '#EF4444',
+                                color: 'white',
+                              }}
+                            >
+                              {table.status === 'available' ? '✓ Trống' : '✗ Đã đặt'}
+                            </Badge>
+                            {table.status === 'available' && (
+                              <p className="text-xs mt-3 font-bold text-center py-2 px-3 rounded-lg" style={{ backgroundColor: colors.primary, color: 'white' }}>
+                                Nhấn để đặt bàn
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 rounded-2xl" style={{ backgroundColor: colors.lightBlue }}>
+                      <Users className="w-12 h-12 mx-auto mb-3" style={{ color: colors.textSecondary }} />
+                      <p className="text-lg font-medium" style={{ color: colors.textSecondary }}>
+                        Chưa có bàn nào
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Booking Form */}
+                {isBookingFormOpen && selectedTableForBooking && (
+                  <div className="mt-8 p-8 rounded-2xl border-2 transition-all animate-in slide-in-from-bottom-4" style={{ backgroundColor: colors.lightBlue, borderColor: colors.primary, boxShadow: shadows.cardHover }}>
+                    <div className="flex items-center justify-between mb-6 pb-4 border-b" style={{ borderColor: colors.border }}>
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-xl bg-white" style={{ boxShadow: shadows.input }}>
+                          <CalendarDays className="w-6 h-6" style={{ color: colors.primary }} />
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
+                            Đặt bàn {selectedTableForBooking.tableNumber}
+                          </h4>
+                          <p className="text-sm" style={{ color: colors.textSecondary }}>
+                            Tối đa {selectedTableForBooking.capacity} người
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleCloseBookingForm}
+                        className="h-9 w-9 hover:bg-white/80"
+                        style={{ borderRadius: borderRadius.button }}
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </div>
+
+                    <Form {...tableBookingForm}>
+                      <form onSubmit={tableBookingForm.handleSubmit(onSubmitTableBooking)} className="space-y-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <FormField
+                            control={tableBookingForm.control}
+                            name="bookingDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="flex items-center gap-2 font-semibold" style={{ color: colors.textPrimary }}>
+                                  <Calendar className="w-4 h-4" style={{ color: colors.primary }} />
+                                  Ngày đặt bàn
+                                </FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <Input
+                                      type="date"
+                                      {...field}
+                                      min={new Date().toISOString().split('T')[0]}
+                                      className="bg-white h-12 pl-4 pr-4 text-base"
+                                      style={{ borderRadius: borderRadius.input, borderColor: colors.border }}
+                                    />
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={tableBookingForm.control}
+                            name="bookingTime"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="flex items-center gap-2 font-semibold" style={{ color: colors.textPrimary }}>
+                                  <Clock3 className="w-4 h-4" style={{ color: colors.primary }} />
+                                  Giờ đặt bàn
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="time"
+                                    {...field}
+                                    className="bg-white h-12 pl-4 pr-4 text-base"
+                                    style={{ borderRadius: borderRadius.input, borderColor: colors.border }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={tableBookingForm.control}
+                          name="numberOfGuests"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2 font-semibold" style={{ color: colors.textPrimary }}>
+                                <Users className="w-4 h-4" style={{ color: colors.primary }} />
+                                Số người (Tối đa: {selectedTableForBooking.capacity})
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={selectedTableForBooking.capacity}
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                  className="bg-white h-12 pl-4 pr-4 text-base"
+                                  style={{ borderRadius: borderRadius.input, borderColor: colors.border }}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <FormField
+                            control={tableBookingForm.control}
+                            name="firstName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="flex items-center gap-2 font-semibold" style={{ color: colors.textPrimary }}>
+                                  <User className="w-4 h-4" style={{ color: colors.primary }} />
+                                  Họ
+                                </FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    className="bg-white h-12 pl-4 pr-4 text-base"
+                                    style={{ borderRadius: borderRadius.input, borderColor: colors.border }}
+                                    placeholder="Nhập họ của bạn"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={tableBookingForm.control}
+                            name="lastName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="flex items-center gap-2 font-semibold" style={{ color: colors.textPrimary }}>
+                                  <User className="w-4 h-4" style={{ color: colors.primary }} />
+                                  Tên
+                                </FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    className="bg-white h-12 pl-4 pr-4 text-base"
+                                    style={{ borderRadius: borderRadius.input, borderColor: colors.border }}
+                                    placeholder="Nhập tên của bạn"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <FormField
+                            control={tableBookingForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="flex items-center gap-2 font-semibold" style={{ color: colors.textPrimary }}>
+                                  <Mail className="w-4 h-4" style={{ color: colors.primary }} />
+                                  Email
+                                </FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="email" 
+                                    {...field} 
+                                    className="bg-white h-12 pl-4 pr-4 text-base"
+                                    style={{ borderRadius: borderRadius.input, borderColor: colors.border }}
+                                    placeholder="your.email@example.com"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={tableBookingForm.control}
+                            name="phone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="flex items-center gap-2 font-semibold" style={{ color: colors.textPrimary }}>
+                                  <Phone className="w-4 h-4" style={{ color: colors.primary }} />
+                                  Số điện thoại
+                                </FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="tel" 
+                                    {...field} 
+                                    className="bg-white h-12 pl-4 pr-4 text-base"
+                                    style={{ borderRadius: borderRadius.input, borderColor: colors.border }}
+                                    placeholder="0123 456 789"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={tableBookingForm.control}
+                          name="specialRequests"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2 font-semibold" style={{ color: colors.textPrimary }}>
+                                <MessageSquare className="w-4 h-4" style={{ color: colors.primary }} />
+                                Yêu cầu đặc biệt (tùy chọn)
+                              </FormLabel>
+                              <FormControl>
+                                <textarea
+                                  {...field}
+                                  rows={4}
+                                  className="w-full px-4 py-3 rounded-xl border bg-white text-base resize-none focus:outline-none focus:ring-2 transition-all"
+                                  style={{ 
+                                    borderColor: colors.border,
+                                    borderRadius: borderRadius.input,
+                                    boxShadow: shadows.input,
+                                  }}
+                                  placeholder="Ví dụ: Bàn gần cửa sổ, yêu cầu không cay..."
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="flex gap-4 pt-6">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCloseBookingForm}
+                            className="flex-1 h-12 text-base font-semibold"
+                            style={{ 
+                              borderRadius: borderRadius.button,
+                              borderColor: colors.border,
+                            }}
+                          >
+                            Hủy
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={isSubmittingBooking}
+                            className="flex-1 h-12 text-base font-semibold text-white shadow-lg hover:shadow-xl transition-all"
+                            style={{ 
+                              backgroundColor: colors.primary,
+                              borderRadius: borderRadius.button,
+                            }}
+                          >
+                            {isSubmittingBooking ? (
+                              <>
+                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                Đang xử lý...
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-5 h-5 mr-2" />
+                                Xác nhận đặt bàn
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

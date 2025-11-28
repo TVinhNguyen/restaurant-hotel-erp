@@ -82,9 +82,9 @@ export default function ContactPage() {
             </h1>
             <p className="text-xl text-white/90" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               Chúng tôi luôn sẵn lòng lắng nghe từ bạn
-            </p>
-          </div>
-        </div>
+                    </p>
+                  </div>
+                </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-16">
@@ -143,9 +143,9 @@ export default function ContactPage() {
               Tầng 10, Tòa nhà ABC
               <br />
               Hà Nội, Việt Nam
-            </p>
-          </div>
-        </div>
+                    </p>
+                  </div>
+                </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <div className="scroll-reveal opacity-0 translate-y-10">
@@ -153,7 +153,7 @@ export default function ContactPage() {
               Gửi tin nhắn cho chúng tôi
             </h2>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
+                  <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   Họ và tên
                 </label>
@@ -165,7 +165,7 @@ export default function ContactPage() {
                   style={{ borderColor: colors.border, fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   required
                 />
-              </div>
+                  </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -179,9 +179,9 @@ export default function ContactPage() {
                   style={{ borderColor: colors.border, fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   required
                 />
-              </div>
+                </div>
 
-              <div>
+                  <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   Chủ đề
                 </label>
@@ -193,7 +193,7 @@ export default function ContactPage() {
                   style={{ borderColor: colors.border, fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   required
                 />
-              </div>
+                  </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -206,7 +206,7 @@ export default function ContactPage() {
                   style={{ borderColor: colors.border, fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   required
                 />
-              </div>
+                </div>
 
               <button
                 type="submit"
