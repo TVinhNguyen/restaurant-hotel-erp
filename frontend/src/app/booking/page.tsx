@@ -16,10 +16,11 @@ import { colors, shadows, borderRadius } from "@/lib/designTokens"
 import { propertiesService } from "@/lib/services/properties"
 import { ratePlansService } from "@/lib/services/rate-plans"
 import { guestsService } from "@/lib/services/guests"
-import { reservationsService } from "@/lib/services/reservations"
+import { reservationsService, type CreateReservationRequest } from "@/lib/services/reservations"
 import { promotionsService, type PromotionApplyResult } from "@/lib/services/promotions"
 import { authService } from "@/lib/auth"
 import { showToast } from "@/lib/toast"
+import { paymentService } from "@/lib/services/payments"
 
 const bookingFormSchema = z.object({
   firstName: z.string().min(1, "Vui lòng nhập họ"),
@@ -347,7 +348,6 @@ export default function BookingPage() {
         throw new Error("Không thể xử lý thông tin khách hàng")
       }
 
-      // Calculate price breakdown (use current state values which may include promotion discount)
       const basePrice = typeof roomType.basePrice === 'string' ? parseFloat(roomType.basePrice) : roomType.basePrice
       const calculatedSubtotal = basePrice * nights
       const finalSubtotal = calculatedSubtotal - discountAmount
@@ -355,8 +355,7 @@ export default function BookingPage() {
       const finalServiceAmount = finalSubtotal * 0.05
       const finalTotal = finalSubtotal + finalTaxAmount + finalServiceAmount
 
-      // Create reservation
-      const reservation = await reservationsService.createReservation({
+      const reservationPayload: CreateReservationRequest = {
         propertyId: bookingContext.propertyId,
         guestId: guestId,
         roomTypeId: bookingContext.roomTypeId,
@@ -378,19 +377,35 @@ export default function BookingPage() {
         serviceAmount: finalServiceAmount,
         discountAmount: discountAmount,
         promotionId: appliedPromotion?.promotionId,
-        paymentStatus: "unpaid",
-        status: "pending",
-      })
+      }
 
-      // Save reservation ID for confirmation page
-      localStorage.setItem("reservation_id", reservation.id)
-      
-      // Clear booking data
-      localStorage.removeItem("booking_context")
-      localStorage.removeItem("booking_dates")
+      const amountInVND =
+        reservationPayload.currency === "USD"
+          ? Math.round(finalTotal * 25000)
+          : Math.round(finalTotal)
 
-      // Redirect to confirmation
-      router.push("/booking/confirmation")
+      const description = `Thanh toán #${property.name}`.slice(0, 25)
+      const orderId = Date.now()
+
+      const paymentResponse = await paymentService.createPayment(amountInVND, description, orderId)
+
+      const finalOrderId = paymentResponse.orderId ?? orderId
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("pending_reservation_payload", JSON.stringify(reservationPayload))
+        localStorage.setItem("payment_orderId", String(finalOrderId))
+      }
+
+      const checkoutUrl =
+        paymentResponse.data?.checkoutUrl ||
+        (paymentResponse as any).data?.data?.checkoutUrl ||
+        (paymentResponse as any).checkoutUrl
+
+      if (!checkoutUrl) {
+        throw new Error("Không nhận được checkout URL từ PayOS. Vui lòng thử lại.")
+      }
+
+      paymentService.redirectToPayOS(checkoutUrl)
       } catch (err) {
       console.error("Booking error:", err)
       setError(err instanceof Error ? err.message : "Không thể hoàn tất đặt phòng. Vui lòng thử lại.")
@@ -744,7 +759,7 @@ export default function BookingPage() {
                     </>
                   ) : (
                     <>
-                      Hoàn tất đặt phòng
+                      Chuyển đến trang thanh toán
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}
