@@ -27,7 +27,11 @@ export class PaymentService {
     };
     const orderCode = body.orderId;
     const amount = body.amount;
-    const description = body.description;
+    const rawDescription = body.description || '';
+    const description =
+      rawDescription.length > 25
+        ? rawDescription.slice(0, 25)
+        : rawDescription;
 
     // Simple approach - always use configured frontend URL
     const webUrl =

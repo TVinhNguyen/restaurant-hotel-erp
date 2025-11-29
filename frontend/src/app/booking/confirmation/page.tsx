@@ -10,6 +10,8 @@ import { Footer } from "@/components/layout/footer"
 import { colors, shadows, borderRadius } from "@/lib/designTokens"
 import { reservationsService, type Reservation } from "@/lib/services/reservations"
 import { propertiesService } from "@/lib/services/properties"
+import { paymentService } from "@/lib/services/payments"
+import { showToast } from "@/lib/toast"
 
 export default function BookingConfirmationPage() {
   const [reservation, setReservation] = useState<Reservation | null>(null)
@@ -17,6 +19,7 @@ export default function BookingConfirmationPage() {
   const [roomType, setRoomType] = useState<{ id: string; name: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -72,6 +75,55 @@ export default function BookingConfirmationPage() {
       return property.address
     }
     return "Chưa có địa chỉ"
+  }
+
+  const handlePayment = async () => {
+    if (!reservation) return
+
+    try {
+      setIsProcessingPayment(true)
+      const amount = typeof reservation.totalAmount === 'number' 
+        ? reservation.totalAmount 
+        : typeof reservation.totalAmount === 'string' 
+          ? parseFloat(reservation.totalAmount) 
+          : 0
+
+      const amountInVND = reservation.currency === 'USD' ? Math.round(amount * 25000) : Math.round(amount)
+      
+      const description = `Thanh toán #${reservation.confirmationCode || reservation.id}`.slice(0, 25)
+      const orderId = Date.now()
+
+      const response = await paymentService.createPayment(amountInVND, description, orderId)
+      
+      console.log('Payment response:', response)
+      
+      // Lưu orderId và reservationId để check sau (luôn lưu dạng string trong localStorage)
+      const finalOrderId = response.orderId ?? orderId
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('payment_orderId', String(finalOrderId))
+        localStorage.setItem('payment_reservationId', reservation.id)
+      }
+
+      const checkoutUrl = response.data?.checkoutUrl
+      
+      if (!checkoutUrl) {
+        console.error('Response structure:', JSON.stringify(response, null, 2))
+        console.error('Available keys:', Object.keys(response))
+        if (response.data) {
+          console.error('Data keys:', Object.keys(response.data))
+        }
+        throw new Error(`Không nhận được checkout URL từ PayOS. Kiểm tra console để xem chi tiết.`)
+      }
+      
+      console.log('Redirecting to PayOS:', checkoutUrl)
+      paymentService.redirectToPayOS(checkoutUrl)
+    } catch (err) {
+      console.error('Payment error:', err)
+      showToast.error(
+        err instanceof Error ? err.message : 'Lỗi tạo thanh toán. Vui lòng thử lại.'
+      )
+      setIsProcessingPayment(false)
+    }
   }
 
   if (loading) {
@@ -345,6 +397,34 @@ export default function BookingConfirmationPage() {
                 </div>
               </div>
             </div>
+
+            {/* Payment Button - Show if unpaid */}
+            {reservation.paymentStatus === 'unpaid' && (
+              <div className="pt-6 border-t" style={{ borderColor: colors.border }}>
+                <Button 
+                  onClick={handlePayment}
+                  disabled={isProcessingPayment}
+                  className="w-full py-4 text-white font-semibold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: colors.success,
+                    borderRadius: borderRadius.button,
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                  }}
+                >
+                  {isProcessingPayment ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      Thanh toán ngay
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t" style={{ borderColor: colors.border }}>
