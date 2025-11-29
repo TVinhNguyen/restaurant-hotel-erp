@@ -2,55 +2,66 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
-  // Enable security headers with Helmet
+  // =================================================================
+  // CẤU HÌNH QUAN TRỌNG ĐỂ FIX LỖI SWAGGER
+  // =================================================================
+
+  // 1. Tạm thời COMMENT dòng này khi chạy IP trực tiếp (không qua Domain/SSL)
+  // Nếu bạn chạy qua Nginx/Load Balancer có SSL thì hãy mở lại.
+  // app.set('trust proxy', 1); 
+
+  // 2. Cấu hình Helmet: TẮT chế độ ép buộc HTTPS (upgradeInsecureRequests)
   app.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'", 'https:', 'http:'],
+          // QUAN TRỌNG: Dòng này tắt việc trình duyệt tự đổi sang HTTPS
+          upgradeInsecureRequests: null, 
         },
       },
-      crossOriginEmbedderPolicy: false, // Allow embedding in admin/frontend
+      crossOriginEmbedderPolicy: false,
     }),
   );
 
-  // Enable CORS - Allow all origins for public API access
+  // Enable CORS
   const corsOrigins = configService.get('CORS_ORIGINS');
   app.enableCors({
-    origin: corsOrigins ? corsOrigins.split(',') : true, // true = allow all origins
+    origin: corsOrigins ? corsOrigins.split(',') : true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
-    maxAge: 3600, // Cache preflight requests for 1 hour
   });
 
-  // Global prefix for API
+  // Global prefix
   app.setGlobalPrefix('api');
 
-  // Enable API versioning
+  // Versioning
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
   });
 
-  // Setup Swagger API Documentation
+  // =================================================================
+  // SWAGGER CONFIG
+  // =================================================================
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Restaurant-Hotel ERP API')
-    .setDescription(
-      'Comprehensive API documentation for Property Management System, Restaurant Management, and HR system',
-    )
+    .setDescription('API documentation')
     .setVersion('1.0')
     .addBearerAuth(
       {
@@ -63,42 +74,29 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
-    .addTag('Auth', 'Authentication and authorization endpoints')
-    .addTag('Properties', 'Property management endpoints')
-    .addTag('Guests', 'Guest management endpoints')
-    .addTag('Reservations', 'Reservation booking and management')
-    .addTag('Rooms', 'Room inventory management')
-    .addTag('Room Types', 'Room type configuration')
-    .addTag('Payments', 'Payment processing endpoints')
-    .addTag('Employees', 'Employee management')
-    .addTag('Restaurants', 'Restaurant management')
-    .addTag('Services', 'Property services management')
-    .addTag('HR', 'Human resources management')
+    .addTag('Auth')
+    .addTag('Guests')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
+
+  // Đường dẫn là 'docs' (truy cập: http://IP:4000/docs)
   SwaggerModule.setup('docs', app, document, {
-    customSiteTitle: 'Restaurant-Hotel ERP API',
-    customfavIcon: 'https://nestjs.com/img/logo_text.svg',
-    customCss: '.swagger-ui .topbar { display: none }',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+    },
+    customSiteTitle: 'Restaurant-Hotel ERP API Docs',
   });
 
-  logger.log(
-    `📚 API Documentation available at: http://localhost:${configService.get('PORT') || 4000}/api/docs`,
-  );
-
-  // Global exception filter
+  // Global filters & pipes
   app.useGlobalFilters(new GlobalExceptionFilter());
-
-  // Enable validation with detailed error messages
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
+      transformOptions: { enableImplicitConversion: true },
       errorHttpStatusCode: 422,
     }),
   );
@@ -106,7 +104,9 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') || 4000;
   await app.listen(port);
 
-  logger.log(`🚀 Application is running on: http://localhost:${port}/api`);
+  const appUrl = await app.getUrl();
+  logger.log(`🚀 Application is running on: ${appUrl}/api`);
+  logger.log(`📚 Swagger Documentation: http://localhost:${port}/docs`);
 }
 
 void bootstrap();
