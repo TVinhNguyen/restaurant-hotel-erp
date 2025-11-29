@@ -33,11 +33,10 @@ export class Employee {
 
   @Column({ length: 50, nullable: true })
   department:
-    | 'IT Department'
-    | 'Human Resources'
-    | 'Marketing'
-    | 'Finances'
-    | 'Sales';
+    | 'Front Desk'
+    | 'Housekeeping'
+    | 'HR'
+    | 'F&B';
 
   @Column({ length: 100, nullable: true })
   position: string;

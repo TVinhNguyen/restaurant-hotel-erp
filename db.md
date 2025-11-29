@@ -19,7 +19,7 @@ class Property {
 }
 
 %% =========================
-%% 1) CORE & STAFF
+%% 1) CORE & STAFF (UPDATED)
 %% =========================
 class User {
   +string id
@@ -36,6 +36,18 @@ class Role {
   +string name "CHAIN_ADMIN|PROPERTY_MANAGER|RECEPTIONIST"
   +string description
   +string scope "global|per_property"
+}
+
+class Permission {
+  +string id
+  +string slug "reservation.view|room.edit|user.delete"
+  +string name "Mô tả ngắn gọn"
+  +string module "FrontDesk|Housekeeping|System"
+}
+
+class RolePermission {
+  +string role_id
+  +string permission_id
 }
 
 class Employee {
@@ -368,8 +380,14 @@ class Deduction {
 }
 
 %% =========================
-%% 8) RELATIONSHIPS (đã chỉnh theo yêu cầu)
+%% 8) RELATIONSHIPS
 %% =========================
+
+%% --- NEW PERMISSION LINKS ---
+Role "1" -- "0..*" RolePermission : has_permissions
+Permission "1" -- "0..*" RolePermission : defined_in
+%% ----------------------------
+
 Property "1" -- "0..*" EmployeeRole : has_roles
 Property "1" -- "0..*" RoomType : offers
 Property "1" -- "0..*" Room : contains
@@ -395,7 +413,6 @@ Amenity "1" -- "0..*" RoomTypeAmenity : available_in
 
 RoomType "1" -- "0..*" RatePlan : offers
 RatePlan "1" -- "0..*" DailyRate : prices
-%% (BỎ quan hệ RatePlan -> Promotion để giữ gọn; promo áp thẳng ở Reservation)
 
 Reservation "1" -- "1" RoomType : of_type
 Reservation "1" -- "1" RatePlan : uses
@@ -403,7 +420,6 @@ Reservation "0..1" -- "1" Room : assigned_to
 Reservation "1" -- "0..*" Payment : has
 Reservation "1" -- "0..*" ReservationService : uses
 Reservation "0..1" -- "1" Promotion : applies
-%% (BỎ M-N Reservation <-> TaxRule; TaxRule dùng để tính rồi snapshot taxAmount)
 
 Restaurant "1" -- "0..*" RestaurantArea : has_areas
 RestaurantArea "1" -- "0..*" RestaurantTable : contains

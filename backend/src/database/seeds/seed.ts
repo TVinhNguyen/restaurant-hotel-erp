@@ -86,11 +86,13 @@ async function seed() {
 
       // Assign Role
       const roleName =
-        emp.department === 'Sales'
+        emp.department === 'Front Desk'
           ? 'Receptionist'
-          : emp.department === 'Human Resources'
+          : emp.department === 'HR'
             ? 'Property Manager'
-            : 'Property Manager';
+            : emp.department === 'Housekeeping'
+              ? 'Housekeeper'
+              : 'Property Manager';
       const roleId = roleMap.get(roleName) || roleMap.get('Receptionist');
 
       await insert(queryRunner, 'core.employee_roles', {
