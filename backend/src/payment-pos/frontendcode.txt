@@ -1,0 +1,125 @@
+// ============================================
+// FRONTEND CODE - Payment Integration
+// ============================================
+
+// API Base URL (đổi theo môi trường)
+const API_URL = 'http://localhost:3000'; // hoặc 'https://your-api.com'
+
+// ============================================
+// 1. TẠO PAYMENT - Gọi khi user click thanh toán
+// ============================================
+const createPayment = async (amount, description) => {
+  const orderId = Date.now().toString();
+  
+  try {
+    const response = await fetch(`${API_URL}/payments-pos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', // ⚠️ QUAN TRỌNG: Thiếu header này sẽ lỗi
+      },
+      body: JSON.stringify({
+        orderId,
+        amount,
+        description,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Tạo payment thất bại');
+    }
+
+    const data = await response.json();
+    
+    // Redirect đến PayOS payment gateway
+    window.location.href = data.data.checkoutUrl; // ⚠️ PayOS trả về nested trong data.data
+    
+  } catch (error) {
+    console.error('Payment error:', error);
+    alert('Lỗi tạo thanh toán. Vui lòng thử lại.');
+  }
+};
+
+// ============================================
+// 2. CHECK PAYMENT STATUS - Gọi ở return page
+// ============================================
+const checkPayment = () => {
+  const orderId = new URLSearchParams(location.search).get('orderId');
+
+  if (!orderId) {
+    console.error('Không tìm thấy orderId');
+    return;
+  }
+
+  console.log('Checking payment for orderId:', orderId);
+
+  const poll = setInterval(async () => {
+    try {
+      // ⚠️ QUAN TRỌNG: URL phải có /status/ 
+      const res = await fetch(`${API_URL}/payments-pos/status/${orderId}`);
+      const data = await res.json();
+
+      console.log('Payment status:', data);
+
+      if (data.found && data.status === 'success') {
+        clearInterval(poll);
+        location.href = '/payment/success';
+      } else if (data.status === 'failed' || data.status === 'cancelled') {
+        clearInterval(poll);
+        location.href = '/payment/failed';
+      }
+      // Nếu status = 'pending' → tiếp tục polling
+      
+    } catch (error) {
+      console.error('Error checking status:', error);
+    }
+  }, 2000);
+
+  // Timeout sau 1 phút
+  setTimeout(() => {
+    clearInterval(poll);
+    alert('Không thể xác nhận thanh toán. Vui lòng liên hệ support.');
+  }, 60000);
+};
+
+// ============================================
+// 3. USAGE EXAMPLES
+// ============================================
+
+// Ví dụ: Button thanh toán
+// <button onclick="createPayment(100000, 'Thanh toán đơn hàng #123')">
+//   Thanh toán 100,000 VNĐ
+// </button>
+
+// Ví dụ: Return page (payment/return.html hoặc React component)
+// useEffect(() => { checkPayment(); }, []);
+
+// ============================================
+// 4. REACT/NEXT.JS VERSION
+// ============================================
+/*
+// components/PaymentButton.tsx
+export const PaymentButton = ({ amount, description }) => {
+  const handlePayment = async () => {
+    await createPayment(amount, description);
+  };
+  
+  return <button onClick={handlePayment}>Thanh toán {amount.toLocaleString()}đ</button>;
+};
+
+// pages/payment/return.tsx
+import { useEffect, useState } from 'react';
+
+export default function PaymentReturn() {
+  const [status, setStatus] = useState('checking');
+  
+  useEffect(() => {
+    checkPayment();
+  }, []);
+  
+  return (
+    <div>
+      {status === 'checking' && <p>Đang xác nhận thanh toán...</p>}
+    </div>
+  );
+}
+*/

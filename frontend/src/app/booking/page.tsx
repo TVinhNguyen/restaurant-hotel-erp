@@ -7,7 +7,7 @@ import * as z from "zod"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { ArrowLeft, Star, Clock, Ban, Loader2, User, Mail, Phone, FileText, ArrowRight, Calendar, Users, Bed } from "lucide-react"
+import { ArrowLeft, Star, Clock, Ban, Loader2, User, Mail, Phone, FileText, ArrowRight, Calendar, Users, Bed, Tag, X } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -16,8 +16,11 @@ import { colors, shadows, borderRadius } from "@/lib/designTokens"
 import { propertiesService } from "@/lib/services/properties"
 import { ratePlansService } from "@/lib/services/rate-plans"
 import { guestsService } from "@/lib/services/guests"
-import { reservationsService } from "@/lib/services/reservations"
+import { reservationsService, type CreateReservationRequest } from "@/lib/services/reservations"
+import { promotionsService, type PromotionApplyResult } from "@/lib/services/promotions"
 import { authService } from "@/lib/auth"
+import { showToast } from "@/lib/toast"
+import { paymentService } from "@/lib/services/payments"
 
 const bookingFormSchema = z.object({
   firstName: z.string().min(1, "Vui lòng nhập họ"),
@@ -40,6 +43,13 @@ export default function BookingPage() {
   const [totalPrice, setTotalPrice] = useState(0)
   const [nights, setNights] = useState(0)
   const [hasCheckedStorage, setHasCheckedStorage] = useState(false)
+  const [promotionCode, setPromotionCode] = useState("")
+  const [appliedPromotion, setAppliedPromotion] = useState<PromotionApplyResult | null>(null)
+  const [isValidatingPromotion, setIsValidatingPromotion] = useState(false)
+  const [subtotal, setSubtotal] = useState(0)
+  const [taxAmount, setTaxAmount] = useState(0)
+  const [serviceAmount, setServiceAmount] = useState(0)
+  const [discountAmount, setDiscountAmount] = useState(0)
   const router = useRouter()
 
   const form = useForm<BookingFormValues>({
@@ -154,10 +164,17 @@ export default function BookingPage() {
           // Calculate total price (base price * nights + tax + service) - for display only
           if (rt.basePrice) {
             const basePrice = typeof rt.basePrice === 'string' ? parseFloat(rt.basePrice) : rt.basePrice
-            const subtotal = basePrice * diffDays
-            const tax = subtotal * 0.1 // 10% tax
-            const service = subtotal * 0.05 // 5% service fee
-            setTotalPrice(subtotal + tax + service)
+            const calculatedSubtotal = basePrice * diffDays
+            const tax = calculatedSubtotal * 0.1 // 10% tax
+            const service = calculatedSubtotal * 0.05 // 5% service fee
+            setSubtotal(calculatedSubtotal)
+            setTaxAmount(tax)
+            setServiceAmount(service)
+            setTotalPrice(calculatedSubtotal + tax + service)
+            // Reset discount when recalculating from scratch
+            if (!appliedPromotion) {
+              setDiscountAmount(0)
+            }
           }
         }
 
@@ -198,6 +215,67 @@ export default function BookingPage() {
 
     loadBookingData()
   }, [router, form])
+
+  const handleApplyPromotion = async () => {
+    if (!promotionCode.trim() || !bookingContext || !roomType) {
+      showToast.error("Vui lòng nhập mã khuyến mãi")
+      return
+    }
+
+    setIsValidatingPromotion(true)
+    try {
+      const basePrice = typeof roomType.basePrice === 'string' ? parseFloat(roomType.basePrice) : roomType.basePrice
+      const calculatedSubtotal = basePrice * nights
+      
+      const result = await promotionsService.applyPromotion(
+        promotionCode.trim().toUpperCase(),
+        bookingContext.propertyId,
+        calculatedSubtotal
+      )
+
+      if (result.valid) {
+        setAppliedPromotion(result)
+        setDiscountAmount(result.discountAmount)
+        // Recalculate total with discount
+        const newSubtotal = calculatedSubtotal - result.discountAmount
+        const tax = newSubtotal * 0.1
+        const service = newSubtotal * 0.05
+        setTaxAmount(tax)
+        setServiceAmount(service)
+        setTotalPrice(newSubtotal + tax + service)
+        showToast.success(result.message)
+      } else {
+        setAppliedPromotion(null)
+        setDiscountAmount(0)
+        // Reset to original price
+        const tax = calculatedSubtotal * 0.1
+        const service = calculatedSubtotal * 0.05
+        setTaxAmount(tax)
+        setServiceAmount(service)
+        setTotalPrice(calculatedSubtotal + tax + service)
+        showToast.error(result.message || "Mã khuyến mãi không hợp lệ")
+      }
+    } catch (err) {
+      console.error("Failed to apply promotion:", err)
+      showToast.error("Không thể áp dụng mã khuyến mãi. Vui lòng thử lại.")
+    } finally {
+      setIsValidatingPromotion(false)
+    }
+  }
+
+  const handleRemovePromotion = () => {
+    setPromotionCode("")
+    setAppliedPromotion(null)
+    setDiscountAmount(0)
+    // Reset to original price
+    const basePrice = typeof roomType.basePrice === 'string' ? parseFloat(roomType.basePrice) : roomType.basePrice
+    const calculatedSubtotal = basePrice * nights
+    const tax = calculatedSubtotal * 0.1
+    const service = calculatedSubtotal * 0.05
+    setTaxAmount(tax)
+    setServiceAmount(service)
+    setTotalPrice(calculatedSubtotal + tax + service)
+  }
 
   const onSubmit = async (data: BookingFormValues) => {
     if (!bookingContext || !bookingDates || !property || !roomType) {
@@ -270,15 +348,14 @@ export default function BookingPage() {
         throw new Error("Không thể xử lý thông tin khách hàng")
       }
 
-      // Calculate price breakdown
       const basePrice = typeof roomType.basePrice === 'string' ? parseFloat(roomType.basePrice) : roomType.basePrice
-      const subtotal = basePrice * nights
-      const taxAmount = subtotal * 0.1
-      const serviceAmount = subtotal * 0.05
-      const finalTotal = subtotal + taxAmount + serviceAmount
+      const calculatedSubtotal = basePrice * nights
+      const finalSubtotal = calculatedSubtotal - discountAmount
+      const finalTaxAmount = finalSubtotal * 0.1
+      const finalServiceAmount = finalSubtotal * 0.05
+      const finalTotal = finalSubtotal + finalTaxAmount + finalServiceAmount
 
-      // Create reservation
-      const reservation = await reservationsService.createReservation({
+      const reservationPayload: CreateReservationRequest = {
         propertyId: bookingContext.propertyId,
         guestId: guestId,
         roomTypeId: bookingContext.roomTypeId,
@@ -296,21 +373,39 @@ export default function BookingPage() {
         channel: "website",
         bookerUserId: bookerUserId,
         assignedRoomId: bookingContext.roomId,
-        taxAmount: taxAmount,
-        serviceAmount: serviceAmount,
-        paymentStatus: "unpaid",
-        status: "pending",
-      })
+        taxAmount: finalTaxAmount,
+        serviceAmount: finalServiceAmount,
+        discountAmount: discountAmount,
+        promotionId: appliedPromotion?.promotionId,
+      }
 
-      // Save reservation ID for confirmation page
-      localStorage.setItem("reservation_id", reservation.id)
-      
-      // Clear booking data
-      localStorage.removeItem("booking_context")
-      localStorage.removeItem("booking_dates")
+      const amountInVND =
+        reservationPayload.currency === "USD"
+          ? Math.round(finalTotal * 25000)
+          : Math.round(finalTotal)
 
-      // Redirect to confirmation
-      router.push("/booking/confirmation")
+      const description = `Thanh toán #${property.name}`.slice(0, 25)
+      const orderId = Date.now()
+
+      const paymentResponse = await paymentService.createPayment(amountInVND, description, orderId)
+
+      const finalOrderId = paymentResponse.orderId ?? orderId
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("pending_reservation_payload", JSON.stringify(reservationPayload))
+        localStorage.setItem("payment_orderId", String(finalOrderId))
+      }
+
+      const checkoutUrl =
+        paymentResponse.data?.checkoutUrl ||
+        (paymentResponse as any).data?.data?.checkoutUrl ||
+        (paymentResponse as any).checkoutUrl
+
+      if (!checkoutUrl) {
+        throw new Error("Không nhận được checkout URL từ PayOS. Vui lòng thử lại.")
+      }
+
+      paymentService.redirectToPayOS(checkoutUrl)
       } catch (err) {
       console.error("Booking error:", err)
       setError(err instanceof Error ? err.message : "Không thể hoàn tất đặt phòng. Vui lòng thử lại.")
@@ -378,9 +473,6 @@ export default function BookingPage() {
   }
 
   const basePrice = typeof roomType.basePrice === 'string' ? parseFloat(roomType.basePrice) : roomType.basePrice
-  const subtotal = basePrice * nights
-  const taxAmount = subtotal * 0.1
-  const serviceAmount = subtotal * 0.05
 
   return (
     <div style={{ backgroundColor: colors.background }} className="min-h-screen">
@@ -667,7 +759,7 @@ export default function BookingPage() {
                     </>
                   ) : (
                     <>
-                      Hoàn tất đặt phòng
+                      Chuyển đến trang thanh toán
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}
@@ -743,6 +835,72 @@ export default function BookingPage() {
                   </div>
                 </div>
 
+                {/* Promotion Code */}
+                <div className="border-t pt-6" style={{ borderColor: colors.border }}>
+                  <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Mã khuyến mãi
+                  </h4>
+                  {appliedPromotion ? (
+                    <div className="p-3 rounded-xl mb-3" style={{ backgroundColor: colors.lightBlue }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4" style={{ color: colors.primary }} />
+                          <span className="font-semibold" style={{ color: colors.textPrimary }}>
+                            {appliedPromotion.code}
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleRemovePromotion}
+                          className="p-1 rounded hover:bg-white/50 transition-colors"
+                        >
+                          <X className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                        </button>
+                      </div>
+                      <p className="text-xs" style={{ color: colors.textSecondary }}>
+                        Giảm {appliedPromotion.discountPercent}% - {appliedPromotion.discountAmount.toFixed(2)} USD
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Nhập mã khuyến mãi"
+                        value={promotionCode}
+                        onChange={(e) => setPromotionCode(e.target.value.toUpperCase())}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleApplyPromotion()
+                          }
+                        }}
+                        className="flex-1 px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 transition-all"
+                        style={{
+                          borderRadius: borderRadius.input,
+                          borderColor: colors.border,
+                          boxShadow: shadows.input,
+                          fontFamily: 'system-ui, -apple-system, sans-serif',
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleApplyPromotion}
+                        disabled={isValidatingPromotion || !promotionCode.trim()}
+                        className="px-4"
+                        style={{
+                          backgroundColor: colors.primary,
+                          borderRadius: borderRadius.button,
+                        }}
+                      >
+                        {isValidatingPromotion ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Áp dụng"
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="border-t pt-6" style={{ borderColor: colors.border }}>
                   <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                     Chi tiết giá
@@ -756,6 +914,12 @@ export default function BookingPage() {
                       <span>{nights} đêm</span>
                       <span>${subtotal.toFixed(2)}</span>
                     </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between" style={{ color: colors.success }}>
+                        <span>Giảm giá</span>
+                        <span>-${discountAmount.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between" style={{ color: colors.textSecondary }}>
                       <span>Thuế (10%)</span>
                       <span>${taxAmount.toFixed(2)}</span>
