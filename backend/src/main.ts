@@ -77,7 +77,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup('docs', app, document, {
     customSiteTitle: 'Restaurant-Hotel ERP API',
     customfavIcon: 'https://nestjs.com/img/logo_text.svg',
     customCss: '.swagger-ui .topbar { display: none }',
