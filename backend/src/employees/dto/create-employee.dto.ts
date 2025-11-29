@@ -25,13 +25,12 @@ export class CreateEmployeeDto {
   fullName: string;
 
   @IsOptional()
-  @IsIn(['IT Department', 'Human Resources', 'Marketing', 'Finances', 'Sales'])
+  @IsIn(['Front Desk', 'Housekeeping', 'HR', 'F&B'])
   department?:
-    | 'IT Department'
-    | 'Human Resources'
-    | 'Marketing'
-    | 'Finances'
-    | 'Sales';
+    | 'Front Desk'
+    | 'Housekeeping'
+    | 'HR'
+    | 'F&B';
 
   @IsOptional()
   @IsIn(['active', 'on_leave', 'terminated'])

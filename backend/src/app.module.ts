@@ -39,6 +39,9 @@ import { DeductionsModule } from './deductions/deductions.module';
 import { OvertimesModule } from './overtimes/overtimes.module';
 import { EmployeeEvaluationsModule } from './employee-evaluations/employee-evaluations.module';
 import { MessagingModule } from './infra.messaging';
+import { RolesModule } from './roles/roles.module';
+import { PermissionsModule } from './permissions/permissions.module';
+import { RolePermissionsModule } from './role-permissions/role-permissions.module';
 
 @Module({
   imports: [
@@ -102,6 +105,9 @@ import { MessagingModule } from './infra.messaging';
     MessagingModule,
     AuthModule,
     UsersModule,
+    RolesModule,
+    PermissionsModule,
+    RolePermissionsModule,
     PropertiesModule,
     GuestsModule,
     // ROOMS & INVENTORY modules (working ones)

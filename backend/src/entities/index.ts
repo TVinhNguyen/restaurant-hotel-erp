@@ -1,6 +1,8 @@
 // Auth entities
 export { User } from './auth/user.entity';
 export { Role } from './auth/role.entity';
+export { Permission } from './auth/permission.entity';
+export { RolePermission } from './auth/role-permission.entity';
 
 // Core entities
 export { Employee } from './core/employee.entity';
