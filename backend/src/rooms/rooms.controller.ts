@@ -19,17 +19,10 @@ import {
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { RoomsService } from './rooms.service';
-import {
-  CreateRoomDto,
-  UpdateRoomStatusDto,
-  RoomQueryDto,
-  // AvailableRoomsQueryDto,
-  // BulkUpdateRoomsStatusDto,
-  // ScheduleMaintenanceDto,
-  // HousekeepingReportQueryDto,
-  // OccupancyForecastQueryDto
-} from './dto/create-room.dto';
+import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { RoomQueryDto } from './dto/room-query.dto';
+import { UpdateRoomStatusDto } from './dto/update-room-status.dto';
 
 @ApiTags('Rooms')
 @Controller('rooms')

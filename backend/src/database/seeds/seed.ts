@@ -77,30 +77,62 @@ async function seed() {
       properties.push({ ...prop, id });
     }
 
-    // Employees
+    // Employees with proper role assignments
     const employees = [];
-    for (const user of employeeUsers) {
-      const emp = generators.generateEmployee(user.id);
-      const id = await insert(queryRunner, 'core.employees', emp);
-      employees.push({ ...emp, id });
+    const employeeDepartments = [
+      { count: 4, department: 'Front Desk', role: 'Receptionist' },
+      { count: 3, department: 'Housekeeping', role: 'Housekeeper' },
+      { count: 2, department: 'HR', role: 'Property Manager' },
+      { count: 3, department: 'F&B', role: 'Receptionist' }, // F&B staff can use Receptionist role or create dedicated F&B role later
+    ];
 
-      // Assign Role
-      const roleName =
-        emp.department === 'Front Desk'
-          ? 'Receptionist'
-          : emp.department === 'HR'
-            ? 'Property Manager'
-            : emp.department === 'Housekeeping'
-              ? 'Housekeeper'
-              : 'Property Manager';
-      const roleId = roleMap.get(roleName) || roleMap.get('Receptionist');
+    let userIndex = 0;
+    for (const dept of employeeDepartments) {
+      for (let i = 0; i < dept.count; i++) {
+        if (userIndex >= employeeUsers.length) break;
+        
+        const user = employeeUsers[userIndex];
+        const emp = {
+          user_id: user.id,
+          employee_code: 'EMP-' + String(10001 + userIndex).padStart(5, '0'),
+          full_name: user.name,
+          department: dept.department,
+          status: 'active',
+          hire_date: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000 * 3), // Random hire date within last 3 years
+        };
+        
+        const id = await insert(queryRunner, 'core.employees', emp);
+        employees.push({ ...emp, id });
 
-      await insert(queryRunner, 'core.employee_roles', {
-        employee_id: id,
-        property_id: properties[0].id,
-        role_id: roleId,
-        effective_from: new Date(),
-      });
+        // Assign roles across multiple properties for realism
+        const propertyCount = Math.min(properties.length, i === 0 ? 2 : 1); // First employee in each dept works at 2 properties
+        for (let p = 0; p < propertyCount; p++) {
+          const property = properties[p % properties.length];
+          const roleId = roleMap.get(dept.role) || roleMap.get('Receptionist');
+          
+          await insert(queryRunner, 'core.employee_roles', {
+            employee_id: id,
+            property_id: property.id,
+            role_id: roleId,
+            effective_from: new Date(Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000), // Random start date within last 6 months
+          });
+        }
+
+        userIndex++;
+      }
+    }
+
+    // Assign one admin role to first user (admin user)
+    if (employees.length > 0 && employeeUsers.length > 0) {
+      const adminRoleId = roleMap.get('Admin');
+      if (adminRoleId && properties.length > 0) {
+        await insert(queryRunner, 'core.employee_roles', {
+          employee_id: employees[0].id,
+          property_id: properties[0].id,
+          role_id: adminRoleId,
+          effective_from: new Date(),
+        });
+      }
     }
 
     // Guests

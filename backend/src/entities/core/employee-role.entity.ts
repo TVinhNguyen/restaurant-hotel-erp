@@ -24,10 +24,10 @@ export class EmployeeRole {
   roleId: string;
 
   @Column({ name: 'effective_from', type: 'date', nullable: true })
-  effectiveFrom: Date;
+  effectiveFrom: Date | null;
 
   @Column({ name: 'effective_to', type: 'date', nullable: true })
-  effectiveTo: Date;
+  effectiveTo: Date | null;
 
   // Relations
   @ManyToOne(() => Employee, (employee) => employee.employeeRoles)
