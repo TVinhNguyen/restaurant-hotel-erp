@@ -3,49 +3,50 @@ import { apiRequest, API_BASE_URL } from "../utils/api";
 
 export const dataProvider = (apiUrl: string = API_BASE_URL): DataProvider => ({
   getList: async ({ resource, pagination, filters, sorters }) => {
-    const url = new URL(`${apiUrl}/${resource}`);
+    try {
+      const url = new URL(`${apiUrl}/${resource}`);
 
-    // Pagination
-    if (pagination) {
-      const { page = 1, pageSize = 10 } = pagination as any;
-      url.searchParams.append("page", String(page));
-      url.searchParams.append("limit", String(pageSize));
-    }
+      // Pagination - Refine v5 uses 'current' instead of 'page'
+      if (pagination) {
+        const { current = 1, pageSize = 10 } = pagination as any;
+        url.searchParams.append("page", String(current));
+        url.searchParams.append("limit", String(pageSize));
+      }
 
-    // Filters
-    if (filters) {
-      filters.forEach((filter) => {
-        if (filter.operator === "eq" && filter.value) {
-          url.searchParams.append(filter.field, String(filter.value));
-        }
+      // Filters
+      if (filters) {
+        filters.forEach((filter) => {
+          if (filter.operator === "eq" && filter.value) {
+            url.searchParams.append(filter.field, String(filter.value));
+          }
+        });
+      }
+
+      // Sorters
+      if (sorters && sorters.length > 0) {
+        const { field, order } = sorters[0];
+        url.searchParams.append("sortBy", field);
+        url.searchParams.append("order", order === "asc" ? "ASC" : "DESC");
+      }
+
+      const response = await apiRequest<any>(`/${resource}${url.search}`, {
+        method: "GET",
       });
+
+      // Handle different response formats
+      const data = response.data || response.items || response;
+      const total = response.total || response.meta?.total || data.length;
+
+      console.log(`[DataProvider] ${resource}:`, { data, total, dataLength: data?.length });
+
+      return {
+        data,
+        total,
+      };
+    } catch (error) {
+      console.error(`[DataProvider] Error fetching ${resource}:`, error);
+      throw error;
     }
-
-    // Sorters
-    if (sorters && sorters.length > 0) {
-      const { field, order } = sorters[0];
-      url.searchParams.append("sortBy", field);
-      url.searchParams.append("order", order === "asc" ? "ASC" : "DESC");
-    }
-
-    // const response = await apiRequest<any>(url.pathname + url.search, {
-    //   method: "GET",
-    // });
-
-    const response = await apiRequest<any>(`/${resource}${url.search}`, {
-      method: "GET",
-    });
-
-    // Handle different response formats
-    const data = response.data || response.items || response;
-    const total = response.total || response.meta?.total || data.length;
-
-    console.log(data, total);
-
-    return {
-      data,
-      total,
-    };
   },
 
   getOne: async ({ resource, id }) => {

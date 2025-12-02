@@ -1,52 +1,92 @@
 import { List, useTable } from "@refinedev/antd";
-import { Table, Space, Button, Tag, Card, Row, Col, Typography, Select } from "antd";
-import { EyeOutlined, EditOutlined, HomeOutlined } from "@ant-design/icons";
-import { useNavigation, useCan, useGetIdentity } from "@refinedev/core";
+import { Table, Space, Button, Tag, Card, Row, Col, Typography, Select, Spin, Statistic, Modal, Descriptions, Divider } from "antd";
+import { EyeOutlined, HomeOutlined, CheckCircleOutlined, StopOutlined, SyncOutlined, ToolOutlined, ReloadOutlined, DollarOutlined, TeamOutlined, EnvironmentOutlined } from "@ant-design/icons";
 import { useState, useEffect } from "react";
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
+
+const TOKEN_KEY = "refine-auth";
+const USER_KEY = "refine-user";
+const API_URL = "http://34.151.224.213:4000/api/v1";
 
 export const PhongList: React.FC = () => {
-    const { show, edit } = useNavigation();
     const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
-    const [propertyId, setPropertyId] = useState<number | null>(null);
+    const [propertyId, setPropertyId] = useState<string | null>(null);
+    const [propertyName, setPropertyName] = useState<string>("");
+    const [loading, setLoading] = useState(true);
+    const [allRooms, setAllRooms] = useState<any[]>([]); // For stats
+    
+    // View modal
+    const [viewModalVisible, setViewModalVisible] = useState(false);
+    const [selectedRoom, setSelectedRoom] = useState<any>(null);
 
-    const { data: identity } = useGetIdentity<any>();
+    const getAuthHeader = () => {
+        const token = localStorage.getItem(TOKEN_KEY);
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    };
 
     useEffect(() => {
         const fetchPropertyId = async () => {
-            const userStr = localStorage.getItem("refine-user");
-            if (userStr) {
-                const user = JSON.parse(userStr);
-                const token = JSON.parse(localStorage.getItem("refine-auth") || '""');
-                const API_URL = import.meta.env.VITE_API_URL;
+            try {
+                const userStr = localStorage.getItem(USER_KEY);
+                if (!userStr) return;
+                
+                const userData = JSON.parse(userStr);
+                const userId = userData.id;
 
-                try {
-                    const response = await fetch(
-                        `${API_URL}/employees/get-employee-by-user-id/${user.id}`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                            },
-                        }
-                    );
-                    if (response.ok) {
-                        const data = await response.json();
-                        setPropertyId(data.propertyId);
+                // Get employee by userId
+                const empResponse = await fetch(`${API_URL}/employees/get-employee-by-user-id/${userId}`, {
+                    headers: getAuthHeader(),
+                });
+                const empData = await empResponse.json();
+
+                if (empData?.id) {
+                    // Get employee roles
+                    const roleResponse = await fetch(`${API_URL}/employee-roles?employeeId=${empData.id}`, {
+                        headers: getAuthHeader(),
+                    });
+                    const roleData = await roleResponse.json();
+
+                    if (roleData?.length > 0 && roleData[0]?.propertyId) {
+                        setPropertyId(roleData[0].propertyId);
+
+                        // Fetch property name
+                        const propResponse = await fetch(`${API_URL}/properties/${roleData[0].propertyId}`, {
+                            headers: getAuthHeader(),
+                        });
+                        const propData = await propResponse.json();
+                        setPropertyName(propData?.name || "");
                     }
-                } catch (error) {
-                    console.error("Error fetching propertyId:", error);
                 }
+            } catch (error) {
+                console.error("Error fetching propertyId:", error);
+            } finally {
+                setLoading(false);
             }
         };
         fetchPropertyId();
     }, []);
 
-    // Check permissions
-    const { data: canEdit } = useCan({
-        resource: "phong",
-        action: "edit",
-    });
+    // Fetch all rooms for stats
+    useEffect(() => {
+        if (!propertyId) return;
+
+        const fetchAllRooms = async () => {
+            try {
+                const response = await fetch(`${API_URL}/rooms?propertyId=${propertyId}`, {
+                    headers: getAuthHeader(),
+                });
+                const data = await response.json();
+                // API returns {data: [], total: number} or array
+                const roomsArray = Array.isArray(data) ? data : (data?.data || []);
+                setAllRooms(roomsArray);
+            } catch (error) {
+                console.error("Error fetching rooms:", error);
+            }
+        };
+
+        fetchAllRooms();
+    }, [propertyId]);
 
     const { tableProps } = useTable({
         resource: "rooms",
@@ -78,8 +118,6 @@ export const PhongList: React.FC = () => {
         },
     });
 
-    console.log("Table Data:", tableProps.dataSource);
-
     // Room status configuration
     const roomStatusConfig: Record<string, { label: string; color: string; icon: string }> = {
         available: { label: "Trống", color: "success", icon: "✓" },
@@ -89,101 +127,120 @@ export const PhongList: React.FC = () => {
         reserved: { label: "Đã đặt", color: "default", icon: "◐" },
     };
 
-    // Calculate room statistics
-    const rooms = (tableProps.dataSource as any[]) || [];
+    // Calculate room statistics from ALL rooms (unfiltered)
     const stats = {
-        total: rooms.length,
-        available: rooms.filter((r) => r.status === "available").length,
-        occupied: rooms.filter((r) => r.status === "occupied").length,
-        cleaning: rooms.filter((r) => r.status === "cleaning").length,
-        maintenance: rooms.filter((r) => r.status === "maintenance").length,
+        total: allRooms.length,
+        available: allRooms.filter((r) => r.status === "available").length,
+        occupied: allRooms.filter((r) => r.status === "occupied").length,
+        cleaning: allRooms.filter((r) => r.status === "cleaning").length,
+        maintenance: allRooms.filter((r) => r.status === "maintenance").length,
     };
+
+    const handleView = (record: any) => {
+        setSelectedRoom(record);
+        setViewModalVisible(true);
+    };
+
+    if (loading) {
+        return (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh" }}>
+                <Spin size="large" />
+            </div>
+        );
+    }
 
     return (
         <div>
-            <Row gutter={16} style={{ marginBottom: 24 }}>
-                <Col span={4}>
-                    <Card>
-                        <div style={{ textAlign: "center" }}>
-                            <HomeOutlined style={{ fontSize: 24, color: "#1890ff" }} />
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Tổng số phòng</Text>
-                                <div style={{ fontSize: 20, fontWeight: "bold" }}>
-                                    {stats.total}
-                                </div>
-                            </div>
-                        </div>
+            {/* Responsive Stats Row - Always show total stats */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                <Col xs={12} sm={8} md={4}>
+                    <Card 
+                        hoverable
+                        onClick={() => setStatusFilter(undefined)}
+                        style={{ borderBottom: !statusFilter ? "3px solid #1890ff" : "3px solid transparent" }}
+                    >
+                        <Statistic
+                            title="Tổng số phòng"
+                            value={stats.total}
+                            prefix={<HomeOutlined />}
+                            valueStyle={{ color: "#1890ff", fontSize: 24 }}
+                        />
                     </Card>
                 </Col>
-                <Col span={4}>
-                    <Card onClick={() => setStatusFilter("available")} style={{ cursor: "pointer" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 24, color: "#52c41a" }}>✓</div>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Phòng trống</Text>
-                                <div style={{ fontSize: 20, fontWeight: "bold", color: "#52c41a" }}>
-                                    {stats.available}
-                                </div>
-                            </div>
-                        </div>
+                <Col xs={12} sm={8} md={4}>
+                    <Card 
+                        hoverable 
+                        onClick={() => setStatusFilter("available")} 
+                        style={{ cursor: "pointer", borderBottom: statusFilter === "available" ? "3px solid #52c41a" : "3px solid transparent" }}
+                    >
+                        <Statistic
+                            title="Phòng trống"
+                            value={stats.available}
+                            prefix={<CheckCircleOutlined />}
+                            valueStyle={{ color: "#52c41a", fontSize: 24 }}
+                        />
                     </Card>
                 </Col>
-                <Col span={4}>
-                    <Card onClick={() => setStatusFilter("occupied")} style={{ cursor: "pointer" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 24, color: "#ff4d4f" }}>●</div>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Đang sử dụng</Text>
-                                <div style={{ fontSize: 20, fontWeight: "bold", color: "#ff4d4f" }}>
-                                    {stats.occupied}
-                                </div>
-                            </div>
-                        </div>
+                <Col xs={12} sm={8} md={4}>
+                    <Card 
+                        hoverable 
+                        onClick={() => setStatusFilter("occupied")} 
+                        style={{ cursor: "pointer", borderBottom: statusFilter === "occupied" ? "3px solid #ff4d4f" : "3px solid transparent" }}
+                    >
+                        <Statistic
+                            title="Đang sử dụng"
+                            value={stats.occupied}
+                            prefix={<StopOutlined />}
+                            valueStyle={{ color: "#ff4d4f", fontSize: 24 }}
+                        />
                     </Card>
                 </Col>
-                <Col span={4}>
-                    <Card onClick={() => setStatusFilter("cleaning")} style={{ cursor: "pointer" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 24, color: "#1890ff" }}>⟳</div>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Đang dọn</Text>
-                                <div style={{ fontSize: 20, fontWeight: "bold", color: "#1890ff" }}>
-                                    {stats.cleaning}
-                                </div>
-                            </div>
-                        </div>
+                <Col xs={12} sm={8} md={4}>
+                    <Card 
+                        hoverable 
+                        onClick={() => setStatusFilter("cleaning")} 
+                        style={{ cursor: "pointer", borderBottom: statusFilter === "cleaning" ? "3px solid #1890ff" : "3px solid transparent" }}
+                    >
+                        <Statistic
+                            title="Đang dọn"
+                            value={stats.cleaning}
+                            prefix={<SyncOutlined />}
+                            valueStyle={{ color: "#1890ff", fontSize: 24 }}
+                        />
                     </Card>
                 </Col>
-                <Col span={4}>
-                    <Card onClick={() => setStatusFilter("maintenance")} style={{ cursor: "pointer" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 24, color: "#faad14" }}>⚠</div>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Bảo trì</Text>
-                                <div style={{ fontSize: 20, fontWeight: "bold", color: "#faad14" }}>
-                                    {stats.maintenance}
-                                </div>
-                            </div>
-                        </div>
+                <Col xs={12} sm={8} md={4}>
+                    <Card 
+                        hoverable 
+                        onClick={() => setStatusFilter("maintenance")} 
+                        style={{ cursor: "pointer", borderBottom: statusFilter === "maintenance" ? "3px solid #faad14" : "3px solid transparent" }}
+                    >
+                        <Statistic
+                            title="Bảo trì"
+                            value={stats.maintenance}
+                            prefix={<ToolOutlined />}
+                            valueStyle={{ color: "#faad14", fontSize: 24 }}
+                        />
                     </Card>
                 </Col>
-                <Col span={4}>
-                    <Card onClick={() => setStatusFilter(undefined)} style={{ cursor: "pointer" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 24 }}>🔄</div>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Xem tất cả</Text>
-                                <div style={{ fontSize: 14 }}>
-                                    <Button type="link" size="small">Reset</Button>
-                                </div>
-                            </div>
-                        </div>
+                <Col xs={12} sm={8} md={4}>
+                    <Card 
+                        hoverable 
+                        onClick={() => setStatusFilter(undefined)} 
+                        style={{ cursor: "pointer", borderBottom: "3px solid transparent" }}
+                    >
+                        <Statistic
+                            title="Xem tất cả"
+                            value="Reset"
+                            prefix={<ReloadOutlined />}
+                            valueStyle={{ color: "#722ed1", fontSize: 20 }}
+                        />
                     </Card>
                 </Col>
             </Row>
 
             <List
-                title="Danh sách phòng"
+                title={`Danh sách phòng - ${propertyName}`}
                 canCreate={false}
                 headerButtons={({ defaultButtons }) => (
                     <>
@@ -204,7 +261,12 @@ export const PhongList: React.FC = () => {
                     </>
                 )}
             >
-                <Table {...tableProps} rowKey="id">
+                <Table 
+                    {...tableProps} 
+                    rowKey="id" 
+                    scroll={{ x: 900 }}
+                    pagination={{ pageSize: 10, showTotal: (total) => `Hiển thị ${total} phòng` }}
+                >
                     <Table.Column
                         title="Số phòng"
                         dataIndex="roomNumber"
@@ -265,13 +327,6 @@ export const PhongList: React.FC = () => {
                                 </Tag>
                             );
                         }}
-                        filters={[
-                            { text: "Phòng trống", value: "available" },
-                            { text: "Đang sử dụng", value: "occupied" },
-                            { text: "Đang dọn", value: "cleaning" },
-                            { text: "Bảo trì", value: "maintenance" },
-                            { text: "Đã đặt", value: "reserved" },
-                        ]}
                     />
                     <Table.Column
                         title="Ghi chú"
@@ -287,28 +342,97 @@ export const PhongList: React.FC = () => {
                         title="Thao tác"
                         key="actions"
                         render={(_, record: any) => (
-                            <Space>
-                                <Button
-                                    size="small"
-                                    icon={<EyeOutlined />}
-                                    onClick={() => show("rooms", record.id)}
-                                >
-                                    Xem
-                                </Button>
-                                {canEdit?.can && (
-                                    <Button
-                                        size="small"
-                                        icon={<EditOutlined />}
-                                        onClick={() => edit("rooms", record.id)}
-                                    >
-                                        Sửa
-                                    </Button>
-                                )}
-                            </Space>
+                            <Button
+                                size="small"
+                                icon={<EyeOutlined />}
+                                onClick={() => handleView(record)}
+                            >
+                                Xem
+                            </Button>
                         )}
                     />
                 </Table>
             </List>
+
+            {/* View Room Modal */}
+            <Modal
+                title={
+                    <Space>
+                        <HomeOutlined style={{ fontSize: 24, color: "#1890ff" }} />
+                        <div>
+                            <Title level={4} style={{ margin: 0 }}>Chi tiết phòng {selectedRoom?.roomNumber}</Title>
+                            <Text type="secondary">{selectedRoom?.roomType?.name}</Text>
+                        </div>
+                    </Space>
+                }
+                open={viewModalVisible}
+                onCancel={() => {
+                    setViewModalVisible(false);
+                    setSelectedRoom(null);
+                }}
+                footer={[
+                    <Button key="close" onClick={() => setViewModalVisible(false)}>
+                        Đóng
+                    </Button>
+                ]}
+                width={600}
+            >
+                {selectedRoom && (
+                    <>
+                        <Divider orientation="left"><HomeOutlined /> Thông tin phòng</Divider>
+                        <Descriptions column={2} bordered size="small">
+                            <Descriptions.Item label="Số phòng">
+                                <Text strong style={{ fontSize: 16 }}>{selectedRoom.roomNumber}</Text>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Tầng">
+                                Tầng {selectedRoom.floor}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Loại phòng" span={2}>
+                                {selectedRoom.roomType?.name}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Trạng thái">
+                                <Tag color={roomStatusConfig[selectedRoom.status]?.color || "default"}>
+                                    {roomStatusConfig[selectedRoom.status]?.icon} {roomStatusConfig[selectedRoom.status]?.label || selectedRoom.status}
+                                </Tag>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="View">
+                                {selectedRoom.viewType || "-"}
+                            </Descriptions.Item>
+                        </Descriptions>
+
+                        <Divider orientation="left"><TeamOutlined /> Thông tin loại phòng</Divider>
+                        <Descriptions column={2} bordered size="small">
+                            <Descriptions.Item label="Sức chứa">
+                                {selectedRoom.roomType?.capacity} người
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Diện tích">
+                                {selectedRoom.roomType?.size || "-"} m²
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Mô tả" span={2}>
+                                {selectedRoom.roomType?.description || "-"}
+                            </Descriptions.Item>
+                        </Descriptions>
+
+                        <Divider orientation="left"><DollarOutlined /> Thông tin giá</Divider>
+                        <Descriptions column={2} bordered size="small">
+                            <Descriptions.Item label="Giá cơ bản" span={2}>
+                                <Text strong style={{ color: "#52c41a", fontSize: 18 }}>
+                                    {selectedRoom.roomType?.basePrice?.toLocaleString("vi-VN")} VNĐ/đêm
+                                </Text>
+                            </Descriptions.Item>
+                        </Descriptions>
+
+                        {selectedRoom.notes && (
+                            <>
+                                <Divider orientation="left"><EnvironmentOutlined /> Ghi chú</Divider>
+                                <Card size="small" style={{ background: "#f5f5f5" }}>
+                                    {selectedRoom.notes}
+                                </Card>
+                            </>
+                        )}
+                    </>
+                )}
+            </Modal>
         </div>
     );
 };

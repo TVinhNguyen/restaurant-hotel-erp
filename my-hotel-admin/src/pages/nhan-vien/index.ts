@@ -1,0 +1,1 @@
+export { NhanVienList } from "./list";
