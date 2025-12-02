@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
     Card,
     Descriptions,
@@ -20,40 +20,84 @@ import {
 } from "@ant-design/icons";
 
 const { Title } = Typography;
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const PropertyInfo: React.FC = () => {
-    // Mock property data - sẽ được lấy từ API /properties
+    const [property, setPropertyData] = React.useState<any>(null);
+    const [amenities, setAmenities] = React.useState<string[]>([]);
+    useEffect(() => {
+        const getPropertyData = async () => {
+            const token = localStorage.getItem("refine-auth");
+            const userID = JSON.parse(localStorage.getItem("refine-user") || "")?.id;
+            const employeeResponse = await fetch(
+                `${API_URL}/employees/get-employee-by-user-id/${userID}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+            if (employeeResponse.ok) {
+                const employeeData = await employeeResponse.json();
+                const employeeId = employeeData.id;
+                const employeeRoleResponse = await fetch(
+                    `${API_URL}/employee-roles?employeeId=${employeeId}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                })
+                if (employeeRoleResponse.ok) {
+                    const employeeRoleData = await employeeRoleResponse.json();
+                    const propertyId = employeeRoleData[0]?.propertyId;
+                    const propertyResponse = await fetch(
+                        `${API_URL}/properties/${propertyId}?include=amenities,images,restaurants,rooms`, {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    })
+                    if (propertyResponse.ok) {
+                        const propertyData = await propertyResponse.json();
+                        console.log("Fetched property data:", propertyData);
+                        setPropertyData(propertyData);
+                    }
+                }
+            }
+        };
+        const getAmenities = async () => {
+
+        }
+        getPropertyData();
+        getAmenities();
+    }, []);
+
     const propertyData = {
-        id: "1",
-        name: "Golden Palace Hotel",
-        type: "Khách sạn 5 sao",
-        address: "123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh",
-        phone: "028 1234 5678",
-        email: "info@goldenpalace.com",
-        website: "www.goldenpalace.com",
-        taxCode: "0123456789",
-        establishedYear: "2020",
-        description:
-            "Golden Palace Hotel là khách sạn 5 sao sang trọng tọa lạc tại trung tâm thành phố, cung cấp dịch vụ cao cấp với đội ngũ nhân viên chuyên nghiệp.",
-        checkInTime: "14:00",
-        checkOutTime: "12:00",
-        totalRooms: 120,
-        totalEmployees: 85,
-        amenities: [
-            "Hồ bơi",
-            "Phòng gym",
-            "Spa",
-            "Nhà hàng",
-            "Bar",
-            "Phòng họp",
-            "WiFi miễn phí",
-            "Bãi đỗ xe",
-        ],
-        images: [
-            "https://via.placeholder.com/800x400?text=Hotel+Exterior",
-            "https://via.placeholder.com/800x400?text=Lobby",
-            "https://via.placeholder.com/800x400?text=Room",
-        ],
+        id: property?.id,
+        name: property?.name,
+        type: property?.propertyType,
+        address: property?.address,
+        city: property?.city,
+        country: property?.country,
+        phone: property?.phone,
+        email: property?.email,
+        website: property?.website,
+        // taxCode: "0123456789",
+        // establishedYear: "2020",
+        description: `${property?.name} là khách sạn 5 sao sang trọng tọa lạc tại trung tâm thành phố, cung cấp dịch vụ cao cấp với đội ngũ nhân viên chuyên nghiệp.`,
+        totalRooms: property?.rooms?.length,
+        totalRestaurants: property?.restaurants?.length,
+        // amenities: [
+        //     "Hồ bơi",
+        //     "Phòng gym",
+        //     "Spa",
+        //     "Nhà hàng",
+        //     "Bar",
+        //     "Phòng họp",
+        //     "WiFi miễn phí",
+        //     "Bãi đỗ xe",
+        // ],
+        // images: [
+        //     "https://via.placeholder.com/800x400?text=Hotel+Exterior",
+        //     "https://via.placeholder.com/800x400?text=Lobby",
+        //     "https://via.placeholder.com/800x400?text=Room",
+        // ],
     };
 
     const isLoading = false; // Mock loading state
@@ -116,14 +160,14 @@ export const PropertyInfo: React.FC = () => {
                     <Col span={8}>
                         <Card>
                             <Statistic
-                                title="Số nhân viên"
-                                value={propertyData.totalEmployees}
+                                title="Tổng số nhà hàng"
+                                value={propertyData.totalRestaurants}
                                 prefix={<TeamOutlined />}
                                 valueStyle={{ color: "#1890ff" }}
                             />
                         </Card>
                     </Col>
-                    <Col span={8}>
+                    {/* <Col span={8}>
                         <Card>
                             <Statistic
                                 title="Năm thành lập"
@@ -132,11 +176,11 @@ export const PropertyInfo: React.FC = () => {
                                 valueStyle={{ color: "#cf1322" }}
                             />
                         </Card>
-                    </Col>
+                    </Col> */}
                 </Row>
 
                 {/* Property Images */}
-                <Card title="Hình ảnh cơ sở" bordered={false}>
+                {/* <Card title="Hình ảnh cơ sở" bordered={false}>
                     <Space size="middle" wrap>
                         {propertyData.images.map((image, index) => (
                             <Image
@@ -148,7 +192,7 @@ export const PropertyInfo: React.FC = () => {
                             />
                         ))}
                     </Space>
-                </Card>
+                </Card> */}
 
                 {/* General Information */}
                 <Card title="Thông tin chung" bordered={false}>
@@ -160,7 +204,7 @@ export const PropertyInfo: React.FC = () => {
                             {propertyData.type}
                         </Descriptions.Item>
                         <Descriptions.Item label="Địa chỉ" span={2}>
-                            {propertyData.address}
+                            {propertyData.address}, {propertyData.city}, {propertyData.country}
                         </Descriptions.Item>
                         <Descriptions.Item label="Số điện thoại">
                             {propertyData.phone}
@@ -171,32 +215,26 @@ export const PropertyInfo: React.FC = () => {
                         <Descriptions.Item label="Website">
                             {propertyData.website}
                         </Descriptions.Item>
-                        <Descriptions.Item label="Mã số thuế">
+                        <Descriptions.Item label="Mô tả" span={2}>
+                            {propertyData.description}
+                        </Descriptions.Item>
+                        {/* <Descriptions.Item label="Mã số thuế">
                             {propertyData.taxCode}
                         </Descriptions.Item>
                         <Descriptions.Item label="Năm thành lập">
                             {propertyData.establishedYear}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Giờ nhận phòng">
-                            {propertyData.checkInTime}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Giờ trả phòng">
-                            {propertyData.checkOutTime}
-                        </Descriptions.Item>
+                        </Descriptions.Item> */}
                         <Descriptions.Item label="Tổng số phòng">
                             {propertyData.totalRooms}
                         </Descriptions.Item>
-                        <Descriptions.Item label="Số nhân viên">
-                            {propertyData.totalEmployees}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Mô tả" span={2}>
-                            {propertyData.description}
+                        <Descriptions.Item label="Tổng số nhà hàng">
+                            {propertyData.totalRestaurants}
                         </Descriptions.Item>
                     </Descriptions>
                 </Card>
 
                 {/* Amenities */}
-                <Card title="Tiện nghi" bordered={false}>
+                {/* <Card title="Tiện nghi" bordered={false}>
                     <Space size={[8, 16]} wrap>
                         {propertyData.amenities.map((amenity, index) => (
                             <Card
@@ -211,17 +249,46 @@ export const PropertyInfo: React.FC = () => {
                             </Card>
                         ))}
                     </Space>
+                </Card> */}
+
+                <Card title={`Danh sách phòng - Tổng cộng: ${property?.rooms?.length || 0} phòng`}>
+                    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+                        {property?.rooms?.map((room: any) => (
+                            <Card key={room.id} type="inner" title={`Phòng ${room.number}`}>
+                                <Descriptions column={3} bordered>
+                                    <Descriptions.Item label="Tầng">
+                                        {room.floor}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="View">
+                                        {room.viewType}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Ghi chú" span={2}>
+                                        {room.notes || "Không có"}
+                                    </Descriptions.Item>
+                                </Descriptions>
+                            </Card>
+                        ))}
+                    </Space>
                 </Card>
 
-                {/* Operating Hours */}
-                <Card title="Giờ hoạt động" bordered={false}>
-                    <Descriptions column={1} bordered>
-                        <Descriptions.Item label="Lễ tân">24/7</Descriptions.Item>
-                        <Descriptions.Item label="Nhà hàng">06:00 - 23:00</Descriptions.Item>
-                        <Descriptions.Item label="Spa & Gym">06:00 - 22:00</Descriptions.Item>
-                        <Descriptions.Item label="Hồ bơi">06:00 - 20:00</Descriptions.Item>
-                        <Descriptions.Item label="Bar">18:00 - 02:00</Descriptions.Item>
-                    </Descriptions>
+                <Card title={`Danh sách nhà hàng - Tổng cộng: ${property?.restaurants?.length || 0} nhà hàng`}>
+                    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+                        {property?.restaurants?.map((restaurant: any) => (
+                            <Card key={restaurant.id} type="inner" title={`Nhà hàng ${restaurant.name}`}>
+                                <Descriptions column={3} bordered>
+                                    <Descriptions.Item label="Vị trí">
+                                        {restaurant.location}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Loại ẩm thực">
+                                        {restaurant.cuisineType}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Giờ hoạt động" span={2}>
+                                        {restaurant.openingHours || "Không có"}
+                                    </Descriptions.Item>
+                                </Descriptions>
+                            </Card>
+                        ))}
+                    </Space>
                 </Card>
             </Space>
         </div>

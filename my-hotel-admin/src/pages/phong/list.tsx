@@ -1,14 +1,46 @@
 import { List, useTable } from "@refinedev/antd";
 import { Table, Space, Button, Tag, Card, Row, Col, Typography, Select } from "antd";
 import { EyeOutlined, EditOutlined, HomeOutlined } from "@ant-design/icons";
-import { useNavigation, useCan } from "@refinedev/core";
-import { useState } from "react";
+import { useNavigation, useCan, useGetIdentity } from "@refinedev/core";
+import { useState, useEffect } from "react";
 
 const { Text } = Typography;
 
 export const PhongList: React.FC = () => {
     const { show, edit } = useNavigation();
     const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+    const [propertyId, setPropertyId] = useState<number | null>(null);
+
+    const { data: identity } = useGetIdentity<any>();
+
+    useEffect(() => {
+        const fetchPropertyId = async () => {
+            const userStr = localStorage.getItem("refine-user");
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                const token = JSON.parse(localStorage.getItem("refine-auth") || '""');
+                const API_URL = import.meta.env.VITE_API_URL;
+
+                try {
+                    const response = await fetch(
+                        `${API_URL}/employees/get-employee-by-user-id/${user.id}`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        }
+                    );
+                    if (response.ok) {
+                        const data = await response.json();
+                        setPropertyId(data.propertyId);
+                    }
+                } catch (error) {
+                    console.error("Error fetching propertyId:", error);
+                }
+            }
+        };
+        fetchPropertyId();
+    }, []);
 
     // Check permissions
     const { data: canEdit } = useCan({
@@ -20,17 +52,33 @@ export const PhongList: React.FC = () => {
         resource: "rooms",
         syncWithLocation: true,
         filters: {
-            permanent: statusFilter
-                ? [
-                    {
-                        field: "status",
-                        operator: "eq",
-                        value: statusFilter,
-                    },
-                ]
-                : [],
+            permanent: [
+                ...(propertyId
+                    ? [
+                        {
+                            field: "propertyId",
+                            operator: "eq" as const,
+                            value: propertyId,
+                        },
+                    ]
+                    : []),
+                ...(statusFilter
+                    ? [
+                        {
+                            field: "status",
+                            operator: "eq" as const,
+                            value: statusFilter,
+                        },
+                    ]
+                    : []),
+            ],
+        },
+        meta: {
+            include: "roomType,amenities",
         },
     });
+
+    console.log("Table Data:", tableProps.dataSource);
 
     // Room status configuration
     const roomStatusConfig: Record<string, { label: string; color: string; icon: string }> = {

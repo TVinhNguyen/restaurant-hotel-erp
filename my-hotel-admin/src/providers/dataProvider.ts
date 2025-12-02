@@ -28,13 +28,19 @@ export const dataProvider = (apiUrl: string = API_BASE_URL): DataProvider => ({
       url.searchParams.append("order", order === "asc" ? "ASC" : "DESC");
     }
 
-    const response = await apiRequest<any>(url.pathname + url.search, {
+    // const response = await apiRequest<any>(url.pathname + url.search, {
+    //   method: "GET",
+    // });
+
+    const response = await apiRequest<any>(`/${resource}${url.search}`, {
       method: "GET",
     });
 
     // Handle different response formats
     const data = response.data || response.items || response;
     const total = response.total || response.meta?.total || data.length;
+
+    console.log(data, total);
 
     return {
       data,
