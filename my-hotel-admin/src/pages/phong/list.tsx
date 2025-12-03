@@ -11,16 +11,21 @@ export const PhongList: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
     const [propertyId, setPropertyId] = useState<number | null>(null);
 
-    const { data: identity } = useGetIdentity<any>();
+    const [stats, setStats] = useState({
+        total: 0,
+        available: 0,
+        occupied: 0,
+        cleaning: 0,
+        maintenance: 0,
+    });
 
     useEffect(() => {
         const fetchPropertyId = async () => {
             const userStr = localStorage.getItem("refine-user");
             if (userStr) {
                 const user = JSON.parse(userStr);
-                const token = JSON.parse(localStorage.getItem("refine-auth") || '""');
+                const token = localStorage.getItem("refine-auth");
                 const API_URL = import.meta.env.VITE_API_URL;
-
                 try {
                     const response = await fetch(
                         `${API_URL}/employees/get-employee-by-user-id/${user.id}`,
@@ -32,7 +37,40 @@ export const PhongList: React.FC = () => {
                     );
                     if (response.ok) {
                         const data = await response.json();
-                        setPropertyId(data.propertyId);
+                        const employeeRoleDataResponse = await fetch(
+                            `${API_URL}/employee-roles?employeeId=${data.id}`,
+                            {
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                },
+                            }
+                        );
+                        if (employeeRoleDataResponse.ok) {
+                            const employeeRoleData = await employeeRoleDataResponse.json();
+                            const propertyIdFromApi = employeeRoleData[0]?.propertyId;
+                            setPropertyId(propertyIdFromApi);
+                            if (propertyIdFromApi) {
+                                const roomsStatsResponse = await fetch(
+                                    `${API_URL}/rooms?propertyId=${propertyIdFromApi}&limit=9999`,
+                                    {
+                                        headers: {
+                                            Authorization: `Bearer ${token}`,
+                                        },
+                                    }
+                                );
+                                if (roomsStatsResponse.ok) {
+                                    const roomsData = await roomsStatsResponse.json();
+                                    const allRooms = roomsData.data || [];
+                                    setStats({
+                                        total: allRooms.length,
+                                        available: allRooms.filter((r: any) => r.operationalStatus === "available").length,
+                                        occupied: allRooms.filter((r: any) => r.operationalStatus === "occupied").length,
+                                        cleaning: allRooms.filter((r: any) => r.operationalStatus === "cleaning").length,
+                                        maintenance: allRooms.filter((r: any) => r.operationalStatus === "maintenance").length,
+                                    });
+                                }
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error("Error fetching propertyId:", error);
@@ -51,34 +89,22 @@ export const PhongList: React.FC = () => {
     const { tableProps } = useTable({
         resource: "rooms",
         syncWithLocation: true,
-        filters: {
-            permanent: [
-                ...(propertyId
-                    ? [
-                        {
-                            field: "propertyId",
-                            operator: "eq" as const,
-                            value: propertyId,
-                        },
-                    ]
-                    : []),
-                ...(statusFilter
-                    ? [
-                        {
-                            field: "status",
-                            operator: "eq" as const,
-                            value: statusFilter,
-                        },
-                    ]
-                    : []),
-            ],
+        pagination: {
+            currentPage: 1,
+            pageSize: 10,
         },
-        meta: {
-            include: "roomType,amenities",
+        filters: {
+            permanent: propertyId ? [
+                {
+                    field: "propertyId",
+                    operator: "eq",
+                    value: propertyId,
+                },
+            ] : [],
         },
     });
 
-    console.log("Table Data:", tableProps.dataSource);
+    console.log("Table Props:", tableProps);
 
     // Room status configuration
     const roomStatusConfig: Record<string, { label: string; color: string; icon: string }> = {
@@ -91,13 +117,13 @@ export const PhongList: React.FC = () => {
 
     // Calculate room statistics
     const rooms = (tableProps.dataSource as any[]) || [];
-    const stats = {
-        total: rooms.length,
-        available: rooms.filter((r) => r.status === "available").length,
-        occupied: rooms.filter((r) => r.status === "occupied").length,
-        cleaning: rooms.filter((r) => r.status === "cleaning").length,
-        maintenance: rooms.filter((r) => r.status === "maintenance").length,
-    };
+    // const stats = {
+    //     total: tableProps?.pagination?.total,
+    //     available: rooms.filter((r) => r.operationalStatus === "available").length,
+    //     occupied: rooms.filter((r) => r.operationalStatus === "occupied").length,
+    //     cleaning: rooms.filter((r) => r.operationalStatus === "cleaning").length,
+    //     maintenance: rooms.filter((r) => r.operationalStatus === "maintenance").length,
+    // };
 
     return (
         <div>
@@ -207,8 +233,8 @@ export const PhongList: React.FC = () => {
                 <Table {...tableProps} rowKey="id">
                     <Table.Column
                         title="Số phòng"
-                        dataIndex="roomNumber"
-                        key="roomNumber"
+                        dataIndex="number"
+                        key="number"
                         render={(value) => (
                             <Space>
                                 <HomeOutlined />
@@ -227,7 +253,10 @@ export const PhongList: React.FC = () => {
                             <Space direction="vertical" size={0}>
                                 <Text>{value}</Text>
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                    Sức chứa: {record.roomType?.capacity} người
+                                    Sức chứa: {record.roomType?.maxAdults + record.roomType?.maxChildren} người
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Trong đó tối đa: {record.roomType?.maxAdults} người lớn, {record.roomType?.maxChildren} trẻ em
                                 </Text>
                             </Space>
                         )}
@@ -251,8 +280,8 @@ export const PhongList: React.FC = () => {
                     />
                     <Table.Column
                         title="Trạng thái"
-                        dataIndex="status"
-                        key="status"
+                        dataIndex="operationalStatus"
+                        key="operationalStatus"
                         render={(status: string) => {
                             const config = roomStatusConfig[status] || {
                                 label: status,
@@ -274,9 +303,9 @@ export const PhongList: React.FC = () => {
                         ]}
                     />
                     <Table.Column
-                        title="Ghi chú"
-                        dataIndex="notes"
-                        key="notes"
+                        title="Góc view"
+                        dataIndex="viewType"
+                        key="viewType"
                         render={(value) => (
                             <Text type="secondary" ellipsis style={{ maxWidth: 200 }}>
                                 {value || "-"}
