@@ -94,6 +94,10 @@ export const authProvider: AuthProvider = {
         permissions: permissions.permissions || [],
       };
       localStorage.setItem(USER_KEY, JSON.stringify(userWithPermissions));
+      
+      // Dispatch event to notify App about user update
+      window.dispatchEvent(new Event("userUpdated"));
+      
       return {
         success: true,
         redirectTo: "/",

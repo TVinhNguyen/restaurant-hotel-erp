@@ -1,4 +1,4 @@
-import { Authenticated, Refine } from "@refinedev/core";
+import { Authenticated, CanAccess, Refine } from "@refinedev/core";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import {
   ErrorComponent,
@@ -13,14 +13,15 @@ import routerProvider, {
   NavigateToResource,
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
-import { App as AntdApp } from "antd";
-import { BrowserRouter, Outlet, Route, Routes } from "react-router";
-import { authProvider } from "./authProvider";
+import { App as AntdApp, Result, Button } from "antd";
+import { BrowserRouter, Outlet, Route, Routes, useNavigate } from "react-router";
+import { useState, useEffect, useMemo } from "react";
+import { authProvider, USER_KEY } from "./authProvider";
 import { dataProvider } from "./providers/dataProvider";
 import { Header } from "./components/header";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import { getResourcesByPermissions } from "./utils/resources";
-import { DashboardAdmin } from "./pages/dashboards";
+import { DashboardWrapper } from "./pages/dashboards";
 import { Login } from "./pages/login";
 import { Register } from "./pages/register";
 import { ForgotPassword } from "./pages/forgotPassword";
@@ -29,8 +30,60 @@ import { PhongList } from "./pages/phong";
 import { NhanVienList } from "./pages/nhan-vien";
 import { KhachHangList, KhachHangCreate, KhachHangEdit, KhachHangShow } from "./pages/khach-hang";
 import { PropertyInfo } from "./pages/property";
+import { accessControlProvider } from "./accessControlProvider";
+
+// Component hiển thị khi không có quyền truy cập
+const AccessDenied = () => {
+  const navigate = useNavigate();
+  return (
+    <Result
+      status="403"
+      title="Không có quyền truy cập"
+      subTitle="Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị viên."
+      extra={<Button type="primary" onClick={() => navigate("/")}>Về trang chủ</Button>}
+    />
+  );
+};
 
 function App() {
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
+
+  // Listen for changes in localStorage (after login)
+  useEffect(() => {
+    const loadPermissions = () => {
+      const userStr = localStorage.getItem(USER_KEY);
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          setUserPermissions(user.permissions || []);
+        } catch (e) {
+          console.error("Error parsing user data", e);
+        }
+      } else {
+        setUserPermissions([]);
+      }
+    };
+
+    // Load initially
+    loadPermissions();
+
+    // Listen for storage changes
+    window.addEventListener("storage", loadPermissions);
+    
+    // Custom event for same-tab updates
+    window.addEventListener("userUpdated", loadPermissions);
+
+    return () => {
+      window.removeEventListener("storage", loadPermissions);
+      window.removeEventListener("userUpdated", loadPermissions);
+    };
+  }, []);
+
+  // Memoize resources based on permissions
+  const resources = useMemo(() => {
+    return getResourcesByPermissions(userPermissions);
+  }, [userPermissions]);
+
   return (
     <BrowserRouter>
       <RefineKbarProvider>
@@ -41,12 +94,13 @@ function App() {
               notificationProvider={useNotificationProvider}
               routerProvider={routerProvider}
               authProvider={authProvider}
+              accessControlProvider={accessControlProvider}
               options={{
                 syncWithLocation: true,
                 warnWhenUnsavedChanges: true,
                 title: { text: "Hotel Admin", icon: "🏨" },
               }}
-              resources={getResourcesByPermissions([])}
+              resources={resources}
             >
               <Routes>
                 <Route
@@ -58,37 +112,81 @@ function App() {
                     </Authenticated>
                   }
                 >
-                  <Route index element={<DashboardAdmin />} />
+                  <Route index element={<DashboardWrapper />} />
                   
                   {/* Đặt phòng */}
                   <Route path="/dat-phong">
-                    <Route index element={<DatPhongList />} />
-                    <Route path="create" element={<DatPhongCreate />} />
-                    <Route path="edit/:id" element={<DatPhongEdit />} />
-                    <Route path="show/:id" element={<DatPhongShow />} />
+                    <Route index element={
+                      <CanAccess resource="reservations" action="list" fallback={<AccessDenied />}>
+                        <DatPhongList />
+                      </CanAccess>
+                    } />
+                    <Route path="create" element={
+                      <CanAccess resource="reservations" action="create" fallback={<AccessDenied />}>
+                        <DatPhongCreate />
+                      </CanAccess>
+                    } />
+                    <Route path="edit/:id" element={
+                      <CanAccess resource="reservations" action="edit" fallback={<AccessDenied />}>
+                        <DatPhongEdit />
+                      </CanAccess>
+                    } />
+                    <Route path="show/:id" element={
+                      <CanAccess resource="reservations" action="show" fallback={<AccessDenied />}>
+                        <DatPhongShow />
+                      </CanAccess>
+                    } />
                   </Route>
                   
                   {/* Phòng */}
                   <Route path="/phong">
-                    <Route index element={<PhongList />} />
+                    <Route index element={
+                      <CanAccess resource="rooms" action="list" fallback={<AccessDenied />}>
+                        <PhongList />
+                      </CanAccess>
+                    } />
                   </Route>
                   
-                  {/* Nhân viên */}
+                  {/* Nhân viên - chỉ Admin/HR mới có quyền */}
                   <Route path="/nhan-vien">
-                    <Route index element={<NhanVienList />} />
+                    <Route index element={
+                      <CanAccess resource="nhan-vien" action="list" fallback={<AccessDenied />}>
+                        <NhanVienList />
+                      </CanAccess>
+                    } />
                   </Route>
                   
                   {/* Khách hàng */}
                   <Route path="/khach-hang">
-                    <Route index element={<KhachHangList />} />
-                    <Route path="create" element={<KhachHangCreate />} />
-                    <Route path="edit/:id" element={<KhachHangEdit />} />
-                    <Route path="show/:id" element={<KhachHangShow />} />
+                    <Route index element={
+                      <CanAccess resource="guests" action="list" fallback={<AccessDenied />}>
+                        <KhachHangList />
+                      </CanAccess>
+                    } />
+                    <Route path="create" element={
+                      <CanAccess resource="guests" action="create" fallback={<AccessDenied />}>
+                        <KhachHangCreate />
+                      </CanAccess>
+                    } />
+                    <Route path="edit/:id" element={
+                      <CanAccess resource="guests" action="edit" fallback={<AccessDenied />}>
+                        <KhachHangEdit />
+                      </CanAccess>
+                    } />
+                    <Route path="show/:id" element={
+                      <CanAccess resource="guests" action="show" fallback={<AccessDenied />}>
+                        <KhachHangShow />
+                      </CanAccess>
+                    } />
                   </Route>
                   
                   {/* Cơ sở */}
                   <Route path="/property">
-                    <Route index element={<PropertyInfo />} />
+                    <Route index element={
+                      <CanAccess resource="property" action="list" fallback={<AccessDenied />}>
+                        <PropertyInfo />
+                      </CanAccess>
+                    } />
                   </Route>
                   
                   <Route path="*" element={<ErrorComponent />} />

@@ -28,8 +28,8 @@ const permissionMapping: Record<string, { resource: string; actions: string[] }>
   "payment.refund": { resource: "thanh-toan", actions: ["delete"] },
   
   // FrontDesk - Properties
-  "property.view": { resource: "co-so", actions: ["list", "show"] },
-  "property.edit": { resource: "co-so", actions: ["edit"] },
+  "property.view": { resource: "property", actions: ["list", "show"] },
+  "property.edit": { resource: "property", actions: ["edit"] },
   
   // F&B
   "restaurant.view": { resource: "nha-hang", actions: ["list", "show"] },
@@ -68,6 +68,22 @@ const permissionMapping: Record<string, { resource: string; actions: string[] }>
   "permission.assign": { resource: "phan-quyen", actions: ["edit"] },
 };
 
+// Also map by resource name for direct lookup
+const resourceToPermission: Record<string, string[]> = {
+  "dat-phong": ["reservation.view", "reservation.create", "reservation.edit", "reservation.cancel"],
+  "reservations": ["reservation.view", "reservation.create", "reservation.edit", "reservation.cancel"],
+  "khach-hang": ["guest.view", "guest.edit"],
+  "guests": ["guest.view", "guest.edit"],
+  "phong": ["room.view", "room.edit"],
+  "rooms": ["room.view", "room.edit"],
+  "nhan-vien": ["employee.view", "employee.manage"],
+  "employees-view": ["employee.view", "employee.manage"],
+  "property": ["property.view", "property.edit"],
+  "thanh-toan": ["payment.view", "payment.process", "payment.refund"],
+  "check-in": ["reservation.checkin"],
+  "check-out": ["reservation.checkout"],
+};
+
 /**
  * Check if user has specific permission
  */
@@ -76,7 +92,17 @@ function hasPermission(
   resource: string,
   action: string
 ): boolean {
-  // Check each permission
+  // First check via resourceToPermission mapping
+  const requiredPerms = resourceToPermission[resource];
+  if (requiredPerms) {
+    // Check if user has ANY of the required permissions for this resource
+    const hasAnyPerm = requiredPerms.some(perm => userPermissions.includes(perm));
+    if (hasAnyPerm) {
+      return true;
+    }
+  }
+
+  // Check each permission via permissionMapping
   for (const permSlug of userPermissions) {
     const mapping = permissionMapping[permSlug];
     if (!mapping) continue;
