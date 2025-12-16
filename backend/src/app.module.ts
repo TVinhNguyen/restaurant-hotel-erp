@@ -43,6 +43,7 @@ import { MessagingModule } from './infra.messaging';
 import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolePermissionsModule } from './role-permissions/role-permissions.module';
+import { GeminiModule } from './gemini/gemini.module';
 
 @Module({
   imports: [
@@ -137,7 +138,8 @@ import { RolePermissionsModule } from './role-permissions/role-permissions.modul
     DeductionsModule,
     OvertimesModule,
     EmployeeEvaluationsModule,
-    PaymentModule
+    PaymentModule,
+    GeminiModule
   ],
   controllers: [AppController, HealthController],
   providers: [
