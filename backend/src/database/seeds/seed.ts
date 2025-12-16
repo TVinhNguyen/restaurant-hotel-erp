@@ -79,6 +79,28 @@ async function seed() {
 
     // Employees with proper role assignments
     const employees = [];
+    for (const user of employeeUsers) {
+      const emp = generators.generateEmployee(user.id);
+      const id = await insert(queryRunner, 'core.employees', emp);
+      employees.push({ ...emp, id });
+
+      // Assign Role
+      const roleName =
+        emp.department === 'Front Desk'
+          ? 'Receptionist'
+          : emp.department === 'HR'
+            ? 'Property Manager'
+            : emp.department === 'Housekeeping'
+              ? 'Housekeeper'
+              : 'Property Manager';
+      const roleId = roleMap.get(roleName) || roleMap.get('Receptionist');
+
+      await insert(queryRunner, 'core.employee_roles', {
+        employee_id: id,
+        property_id: properties[0].id,
+        role_id: roleId,
+        effective_from: new Date(),
+      });
     const employeeDepartments = [
       { count: 4, department: 'Front Desk', role: 'Receptionist' },
       { count: 3, department: 'Housekeeping', role: 'Housekeeper' },
