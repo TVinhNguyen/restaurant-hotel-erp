@@ -49,6 +49,7 @@ export const PhongList: React.FC = () => {
                             const employeeRoleData = await employeeRoleDataResponse.json();
                             const propertyIdFromApi = employeeRoleData[0]?.propertyId;
                             setPropertyId(propertyIdFromApi);
+                            localStorage.setItem("propertyId", propertyIdFromApi.toString());
                             if (propertyIdFromApi) {
                                 const roomsStatsResponse = await fetch(
                                     `${API_URL}/rooms?propertyId=${propertyIdFromApi}&limit=9999`,
@@ -94,119 +95,93 @@ export const PhongList: React.FC = () => {
             pageSize: 10,
         },
         filters: {
-            permanent: propertyId ? [
-                {
-                    field: "propertyId",
-                    operator: "eq",
-                    value: propertyId,
-                },
-            ] : [],
+            permanent: [
+                ...(propertyId ? [
+                    {
+                        field: "propertyId",
+                        operator: "eq" as const,
+                        value: propertyId,
+                    },
+                ] : []),
+                ...(statusFilter ? [
+                    {
+                        field: "status",
+                        operator: "eq" as const,
+                        value: statusFilter,
+                    },
+                ] : []),
+            ],
         },
     });
 
     console.log("Table Props:", tableProps);
 
-    // Room status configuration
     const roomStatusConfig: Record<string, { label: string; color: string; icon: string }> = {
         available: { label: "Trống", color: "success", icon: "✓" },
         occupied: { label: "Đang sử dụng", color: "error", icon: "●" },
-        cleaning: { label: "Đang dọn", color: "processing", icon: "⟳" },
         maintenance: { label: "Bảo trì", color: "warning", icon: "⚠" },
-        reserved: { label: "Đã đặt", color: "default", icon: "◐" },
     };
-
-    // Calculate room statistics
-    const rooms = (tableProps.dataSource as any[]) || [];
-    // const stats = {
-    //     total: tableProps?.pagination?.total,
-    //     available: rooms.filter((r) => r.operationalStatus === "available").length,
-    //     occupied: rooms.filter((r) => r.operationalStatus === "occupied").length,
-    //     cleaning: rooms.filter((r) => r.operationalStatus === "cleaning").length,
-    //     maintenance: rooms.filter((r) => r.operationalStatus === "maintenance").length,
-    // };
 
     return (
         <div>
-            <Row gutter={16} style={{ marginBottom: 24 }}>
-                <Col span={4}>
-                    <Card>
-                        <div style={{ textAlign: "center" }}>
-                            <HomeOutlined style={{ fontSize: 24, color: "#1890ff" }} />
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Tổng số phòng</Text>
-                                <div style={{ fontSize: 20, fontWeight: "bold" }}>
-                                    {stats.total}
+            <div className="flex">
+                <Row gutter={16} justify={"center"} style={{ marginBottom: 24 }}>
+                    <Col span={4}>
+                        <Card >
+                            <div style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: 24, color: "#c328a2ff" }}>
+                                    <HomeOutlined />
+                                </div>
+                                <div style={{ marginTop: 8 }}>
+                                    <Text type="secondary">Tổng số phòng</Text>
+                                    <div style={{ fontSize: 20, fontWeight: "bold", color: "#c328a2ff" }}>
+                                        {stats.total}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col span={4}>
-                    <Card onClick={() => setStatusFilter("available")} style={{ cursor: "pointer" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 24, color: "#52c41a" }}>✓</div>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Phòng trống</Text>
-                                <div style={{ fontSize: 20, fontWeight: "bold", color: "#52c41a" }}>
-                                    {stats.available}
+                        </Card>
+                    </Col>
+                    <Col span={5}>
+                        <Card onClick={() => setStatusFilter("available")} style={{ cursor: "pointer" }}>
+                            <div style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: 24, color: "#52c41a" }}>✓</div>
+                                <div style={{ marginTop: 8 }}>
+                                    <Text type="secondary">Phòng trống</Text>
+                                    <div style={{ fontSize: 20, fontWeight: "bold", color: "#52c41a" }}>
+                                        {stats.available}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col span={4}>
-                    <Card onClick={() => setStatusFilter("occupied")} style={{ cursor: "pointer" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 24, color: "#ff4d4f" }}>●</div>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Đang sử dụng</Text>
-                                <div style={{ fontSize: 20, fontWeight: "bold", color: "#ff4d4f" }}>
-                                    {stats.occupied}
+                        </Card>
+                    </Col>
+                    <Col span={5}>
+                        <Card onClick={() => setStatusFilter("occupied")} style={{ cursor: "pointer" }}>
+                            <div style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: 24, color: "#ff4d4f" }}>●</div>
+                                <div style={{ marginTop: 8 }}>
+                                    <Text type="secondary">Đang sử dụng</Text>
+                                    <div style={{ fontSize: 20, fontWeight: "bold", color: "#ff4d4f" }}>
+                                        {stats.occupied}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col span={4}>
-                    <Card onClick={() => setStatusFilter("cleaning")} style={{ cursor: "pointer" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 24, color: "#1890ff" }}>⟳</div>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Đang dọn</Text>
-                                <div style={{ fontSize: 20, fontWeight: "bold", color: "#1890ff" }}>
-                                    {stats.cleaning}
+                        </Card>
+                    </Col>
+                    <Col span={5}>
+                        <Card onClick={() => setStatusFilter("maintenance")} style={{ cursor: "pointer" }}>
+                            <div style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: 24, color: "#faad14" }}>⚠</div>
+                                <div style={{ marginTop: 8 }}>
+                                    <Text type="secondary">Bảo trì</Text>
+                                    <div style={{ fontSize: 20, fontWeight: "bold", color: "#faad14" }}>
+                                        {stats.maintenance}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col span={4}>
-                    <Card onClick={() => setStatusFilter("maintenance")} style={{ cursor: "pointer" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 24, color: "#faad14" }}>⚠</div>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Bảo trì</Text>
-                                <div style={{ fontSize: 20, fontWeight: "bold", color: "#faad14" }}>
-                                    {stats.maintenance}
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-                <Col span={4}>
-                    <Card onClick={() => setStatusFilter(undefined)} style={{ cursor: "pointer" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 24 }}>🔄</div>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary">Xem tất cả</Text>
-                                <div style={{ fontSize: 14 }}>
-                                    <Button type="link" size="small">Reset</Button>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-            </Row>
+                        </Card>
+                    </Col>
+                </Row>
+            </div>
 
             <List
                 title="Danh sách phòng"
@@ -222,9 +197,7 @@ export const PhongList: React.FC = () => {
                         >
                             <Select.Option value="available">Phòng trống</Select.Option>
                             <Select.Option value="occupied">Đang sử dụng</Select.Option>
-                            <Select.Option value="cleaning">Đang dọn</Select.Option>
                             <Select.Option value="maintenance">Bảo trì</Select.Option>
-                            <Select.Option value="reserved">Đã đặt</Select.Option>
                         </Select>
                         {defaultButtons}
                     </>
@@ -320,19 +293,19 @@ export const PhongList: React.FC = () => {
                                 <Button
                                     size="small"
                                     icon={<EyeOutlined />}
-                                    onClick={() => show("rooms", record.id)}
+                                    onClick={() => show("phong", record.id, "push", { propertyId })}
                                 >
                                     Xem
                                 </Button>
-                                {canEdit?.can && (
+                                {/* {canEdit?.can && (
                                     <Button
                                         size="small"
                                         icon={<EditOutlined />}
-                                        onClick={() => edit("rooms", record.id)}
+                                        onClick={() => edit("phong", record.id)}
                                     >
                                         Sửa
                                     </Button>
-                                )}
+                                )} */}
                             </Space>
                         )}
                     />
