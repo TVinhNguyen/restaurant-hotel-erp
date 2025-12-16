@@ -1,9 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
 import type { CreatePaymentDto } from './types/dto';
-import { HttpService } from '@nestjs/axios';
+// import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
-import { AxiosResponse } from 'axios';
+// import { AxiosResponse } from 'axios';
 import { PayosRequestPaymentPayload } from './dto/payos-request-payment.payload';
 import { createHmac } from 'node:crypto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -12,7 +12,7 @@ import type { Cache } from 'cache-manager';
 @Injectable()
 export class PaymentService {
   constructor(
-    private readonly httpService: HttpService,
+    // private readonly httpService: HttpService,
     private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
@@ -56,6 +56,9 @@ export class PaymentService {
     };
 
     try {
+      // TODO: Re-enable when @nestjs/axios is installed
+      throw new Error('Payment service temporarily disabled - @nestjs/axios required');
+      /*
       const response: AxiosResponse<any> = await firstValueFrom(
         this.httpService.post<any>(url, payload, config),
       );
@@ -91,6 +94,7 @@ export class PaymentService {
         ...response.data,
         orderId: payosOrderCode,
       };
+      */
     } catch (error: any) {
       console.error('PayOS error:', error.response?.data || error.message);
       throw error;

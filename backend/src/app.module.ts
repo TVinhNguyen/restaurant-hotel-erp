@@ -44,6 +44,7 @@ import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolePermissionsModule } from './role-permissions/role-permissions.module';
 import { GeminiModule } from './gemini/gemini.module';
+import { EmployeeRolesModule } from './employee-roles/employee-roles.module';
 
 @Module({
   imports: [
@@ -110,6 +111,7 @@ import { GeminiModule } from './gemini/gemini.module';
     RolesModule,
     PermissionsModule,
     RolePermissionsModule,
+    EmployeeRolesModule,
     PropertiesModule,
     GuestsModule,
     // ROOMS & INVENTORY modules (working ones)
