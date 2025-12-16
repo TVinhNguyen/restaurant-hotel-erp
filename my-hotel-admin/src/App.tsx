@@ -35,7 +35,7 @@ import { DatPhongList, DatPhongCreate, DatPhongEdit, DatPhongShow } from "./page
 import { KhachHangList, KhachHangCreate, KhachHangEdit, KhachHangShow } from "./pages/khach-hang";
 import { CheckInList } from "./pages/check-in";
 import { CheckOutList } from "./pages/check-out";
-import { PhongList } from "./pages/phong";
+import { PhongList, PhongShow } from "./pages/phong";
 import { ThanhToanList } from "./pages/thanh-toan";
 import { ForgotPassword } from "./pages/forgotPassword";
 import { Login } from "./pages/login";
@@ -147,6 +147,7 @@ function App() {
                     {/* Phòng routes */}
                     <Route path="/phong">
                       <Route index element={<PhongList />} />
+                      <Route path="chi-tiet/:id" element={<PhongShow />} />
                     </Route>
 
                     {/* Thanh toán routes */}
