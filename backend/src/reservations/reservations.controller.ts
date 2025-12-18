@@ -21,7 +21,7 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
-import { ReservationsService } from './reservations.service';
+import { ReservationsService, PriceCalculation } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 
@@ -49,8 +49,34 @@ export class ReservationsController {
       'no_show',
     ],
   })
-  @ApiQuery({ name: 'checkInFrom', required: false, type: String })
-  @ApiQuery({ name: 'checkInTo', required: false, type: String })
+  @ApiQuery({
+    name: 'checkInFrom',
+    required: false,
+    type: String,
+    description:
+      'Filter reservations with check-in date >= this date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'checkInTo',
+    required: false,
+    type: String,
+    description:
+      'Filter reservations with check-in date <= this date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'checkOutFrom',
+    required: false,
+    type: String,
+    description:
+      'Filter reservations with check-out date >= this date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'checkOutTo',
+    required: false,
+    type: String,
+    description:
+      'Filter reservations with check-out date <= this date (YYYY-MM-DD)',
+  })
   @ApiQuery({ name: 'guestId', required: false, type: String })
   @ApiResponse({ status: 200, description: 'Reservations retrieved' })
   async findAll(
@@ -60,6 +86,8 @@ export class ReservationsController {
     @Query('status') status?: string,
     @Query('checkInFrom') checkInFrom?: string,
     @Query('checkInTo') checkInTo?: string,
+    @Query('checkOutFrom') checkOutFrom?: string,
+    @Query('checkOutTo') checkOutTo?: string,
     @Query('guestId') guestId?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
@@ -72,8 +100,44 @@ export class ReservationsController {
       status,
       checkInFrom,
       checkInTo,
+      checkOutFrom,
+      checkOutTo,
       guestId,
     });
+  }
+
+  @Get('price-quote')
+  @ApiOperation({ summary: 'Get price quote for a potential reservation' })
+  @ApiQuery({ name: 'ratePlanId', required: true, type: String })
+  @ApiQuery({ name: 'propertyId', required: true, type: String })
+  @ApiQuery({
+    name: 'checkIn',
+    required: true,
+    type: String,
+    description: 'YYYY-MM-DD',
+  })
+  @ApiQuery({
+    name: 'checkOut',
+    required: true,
+    type: String,
+    description: 'YYYY-MM-DD',
+  })
+  @ApiQuery({ name: 'promotionCode', required: false, type: String })
+  @ApiResponse({ status: 200, description: 'Price quote calculated' })
+  async getPriceQuote(
+    @Query('ratePlanId') ratePlanId: string,
+    @Query('propertyId') propertyId: string,
+    @Query('checkIn') checkIn: string,
+    @Query('checkOut') checkOut: string,
+    @Query('promotionCode') promotionCode?: string,
+  ): Promise<PriceCalculation> {
+    return await this.reservationsService.getPriceQuote(
+      ratePlanId,
+      propertyId,
+      checkIn,
+      checkOut,
+      promotionCode,
+    );
   }
 
   @Get(':id')
@@ -124,11 +188,75 @@ export class ReservationsController {
 
   @Post(':id/checkout')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Check-out a reservation' })
+  @ApiOperation({ summary: 'Check-out a reservation with optional payment' })
   @ApiParam({ name: 'id', type: String })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        method: {
+          type: 'string',
+          enum: ['cash', 'card', 'bank', 'e_wallet', 'ota_virtual'],
+          description: 'Payment method',
+        },
+        amount: {
+          type: 'number',
+          description:
+            'Payment amount (optional, defaults to remaining balance)',
+        },
+        transactionId: {
+          type: 'string',
+          description: 'External transaction ID',
+        },
+        notes: { type: 'string', description: 'Payment notes' },
+      },
+    },
+  })
   @ApiResponse({ status: 200, description: 'Checked out successfully' })
-  async checkOut(@Param('id') id: string) {
-    return await this.reservationsService.checkOut(id);
+  async checkOut(
+    @Param('id') id: string,
+    @Body()
+    body?: {
+      method?: 'cash' | 'card' | 'bank' | 'e_wallet' | 'ota_virtual';
+      amount?: number;
+      transactionId?: string;
+      notes?: string;
+    },
+  ) {
+    return await this.reservationsService.checkOut(id, body);
+  }
+
+  @Post(':id/payment')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Add payment to a reservation' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['method', 'amount'],
+      properties: {
+        method: {
+          type: 'string',
+          enum: ['cash', 'card', 'bank', 'e_wallet', 'ota_virtual'],
+        },
+        amount: { type: 'number' },
+        transactionId: { type: 'string' },
+        notes: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Payment added successfully' })
+  async addPayment(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      method: 'cash' | 'card' | 'bank' | 'e_wallet' | 'ota_virtual';
+      amount: number;
+      transactionId?: string;
+      notes?: string;
+    },
+  ) {
+    return await this.reservationsService.completeWithPayment(id, body);
   }
 
   @Put(':id/room')
@@ -150,9 +278,18 @@ export class ReservationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancel a reservation' })
   @ApiParam({ name: 'id', type: String })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reason: { type: 'string', description: 'Cancellation reason' },
+      },
+    },
+    required: false,
+  })
   @ApiResponse({ status: 200, description: 'Reservation cancelled' })
-  async cancel(@Param('id') id: string) {
-    return await this.reservationsService.cancel(id);
+  async cancel(@Param('id') id: string, @Body() body?: { reason?: string }) {
+    return await this.reservationsService.cancel(id, body?.reason);
   }
 
   @Delete(':id')
