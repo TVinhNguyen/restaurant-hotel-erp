@@ -7,17 +7,10 @@ import {
   Body,
   Param,
   Query,
-  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RoomsService } from './rooms.service';
 import {
   CreateRoomDto,
@@ -66,26 +59,29 @@ export class RoomsController {
     return await this.roomsService.findOne(id);
   }
 
-  // @Get(':id/status-history')
-  // async getStatusHistory(
-  //   @Param('id') id: string,
-  //   @Query('statusType') statusType?: string,
-  //   @Query('dateFrom') dateFrom?: string,
-  //   @Query('dateTo') dateTo?: string,
-  //   @Query('page') page?: string,
-  //   @Query('limit') limit?: string,
-  // ) {
-  //   const pageNum = page ? parseInt(page, 10) : 1;
-  //   const limitNum = limit ? parseInt(limit, 10) : 10;
-  //
-  //   return await this.roomsService.getStatusHistory(id, {
-  //     statusType,
-  //     dateFrom,
-  //     dateTo,
-  //     page: pageNum,
-  //     limit: limitNum,
-  //   });
-  // }
+  @Get(':id/status-history')
+  @ApiOperation({ summary: 'Get room status history' })
+  @ApiResponse({ status: 200, description: 'Return status history.' })
+  @ApiResponse({ status: 404, description: 'Room not found.' })
+  async getStatusHistory(
+    @Param('id') id: string,
+    @Query('statusType') statusType?: 'operational' | 'housekeeping',
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+
+    return await this.roomsService.getStatusHistory(id, {
+      statusType,
+      dateFrom,
+      dateTo,
+      page: pageNum,
+      limit: limitNum,
+    });
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new room' })

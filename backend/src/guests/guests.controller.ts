@@ -6,48 +6,45 @@ import {
   Delete,
   Body,
   Param,
-  Query,
-  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { GuestsService } from './guests.service';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { UpdateGuestDto } from './dto/update-guest.dto';
 
+@ApiTags('Guests')
 @Controller('guests')
-@UseGuards(AuthGuard('jwt'))
 export class GuestsController {
   constructor(private readonly guestsService: GuestsService) {}
 
   @Get()
-  async findAll(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('search') search?: string,
-  ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
-
-    return await this.guestsService.findAll({
-      page: pageNum,
-      limit: limitNum,
-      search,
-    });
+  @ApiOperation({ summary: 'Get all guests' })
+  @ApiResponse({ status: 200, description: 'Return all guests.' })
+  async findAll() {
+    return await this.guestsService.findAll();
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a guest by id' })
+  @ApiResponse({ status: 200, description: 'Return the guest.' })
+  @ApiResponse({ status: 404, description: 'Guest not found.' })
   async findOne(@Param('id') id: string) {
     return await this.guestsService.findOne(id);
   }
 
   @Post()
+  @ApiOperation({ summary: 'Create a new guest' })
+  @ApiResponse({ status: 201, description: 'Guest created successfully.' })
   async create(@Body() createGuestDto: CreateGuestDto) {
     return await this.guestsService.create(createGuestDto);
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Update a guest' })
+  @ApiResponse({ status: 200, description: 'Guest updated successfully.' })
+  @ApiResponse({ status: 404, description: 'Guest not found.' })
   async update(
     @Param('id') id: string,
     @Body() updateGuestDto: UpdateGuestDto,
@@ -57,6 +54,9 @@ export class GuestsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a guest' })
+  @ApiResponse({ status: 200, description: 'Guest deleted successfully.' })
+  @ApiResponse({ status: 404, description: 'Guest not found.' })
   async remove(@Param('id') id: string) {
     await this.guestsService.remove(id);
     return { message: 'Guest deleted successfully' };

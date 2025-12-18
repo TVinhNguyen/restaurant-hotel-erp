@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Guest } from '../entities/core/guest.entity';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { UpdateGuestDto } from './dto/update-guest.dto';
@@ -12,40 +12,20 @@ export class GuestsService {
     private guestRepository: Repository<Guest>,
   ) {}
 
-  async findAll(query: { page?: number; limit?: number; search?: string }) {
-    const { page = 1, limit = 10, search } = query;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.guestRepository.createQueryBuilder('guest');
-
-    if (search) {
-      queryBuilder.where(
-        '(guest.name ILIKE :search OR guest.email ILIKE :search OR guest.phone ILIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    const [data, total] = await queryBuilder
-      .orderBy('guest.name', 'ASC')
-      .skip(skip)
-      .take(limit)
-      .getManyAndCount();
-
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-      hasNext: page * limit < total,
-      hasPrev: page > 1,
-    };
+  // --- Đã sửa đổi hàm findAll ---
+  async findAll(): Promise<Guest[]> {
+    return await this.guestRepository.find({
+      order: {
+        name: 'ASC', // Giữ lại sắp xếp theo tên cho dễ nhìn
+      },
+    });
   }
+  // -----------------------------
 
   async findOne(id: string): Promise<Guest> {
     const guest = await this.guestRepository.findOne({
       where: { id },
-      //relations: ['reservations', 'tableBookings']
+      // relations: ['reservations', 'tableBookings'] // Bỏ comment nếu muốn lấy dữ liệu liên quan
     });
 
     if (!guest) {
