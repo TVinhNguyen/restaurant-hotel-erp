@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Loader2, ArrowRight } from "lucide-react"
@@ -12,7 +12,7 @@ import { paymentService } from "@/lib/services/payments"
 import { reservationsService, type CreateReservationRequest } from "@/lib/services/reservations"
 import { showToast } from "@/lib/toast"
 
-export default function PaymentReturnPage() {
+function PaymentReturnContent() {
   const [status, setStatus] = useState<'checking' | 'success' | 'failed' | 'cancelled'>('checking')
   const [orderId, setOrderId] = useState<string | null>(null)
   const [isCreatingReservation, setIsCreatingReservation] = useState(false)
@@ -279,6 +279,35 @@ export default function PaymentReturnPage() {
 
       <Footer />
     </div>
+  )
+}
+
+export default function PaymentReturnPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ backgroundColor: colors.background }} className="min-h-screen">
+        <Header />
+        <div className="max-w-2xl mx-auto px-6 py-12">
+          <div
+            className="bg-white p-8 text-center"
+            style={{
+              borderRadius: borderRadius.card,
+              boxShadow: shadows.card,
+            }}
+          >
+            <div className="mb-6">
+              <Loader2 className="w-16 h-16 mx-auto animate-spin" style={{ color: colors.primary }} />
+            </div>
+            <h1 className="text-3xl font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              Đang tải...
+            </h1>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    }>
+      <PaymentReturnContent />
+    </Suspense>
   )
 }
 

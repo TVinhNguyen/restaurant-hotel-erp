@@ -20,7 +20,7 @@ import { reservationsService, type CreateReservationRequest } from "@/lib/servic
 import { promotionsService, type PromotionApplyResult } from "@/lib/services/promotions"
 import { authService } from "@/lib/auth"
 import { showToast } from "@/lib/toast"
-import { paymentService } from "@/lib/services/payments"
+import { paymentService, type CreatePaymentResponse } from "@/lib/services/payments"
 
 const bookingFormSchema = z.object({
   firstName: z.string().min(1, "Vui lòng nhập họ"),
@@ -264,6 +264,8 @@ export default function BookingPage() {
   }
 
   const handleRemovePromotion = () => {
+    if (!roomType) return
+    
     setPromotionCode("")
     setAppliedPromotion(null)
     setDiscountAmount(0)
@@ -396,10 +398,20 @@ export default function BookingPage() {
         localStorage.setItem("payment_orderId", String(finalOrderId))
       }
 
+      // Handle different response formats from PayOS
+      type PaymentResponseWithNestedData = CreatePaymentResponse & {
+        data?: {
+          data?: {
+            checkoutUrl?: string
+          }
+        }
+        checkoutUrl?: string
+      }
+      const response = paymentResponse as PaymentResponseWithNestedData
       const checkoutUrl =
-        paymentResponse.data?.checkoutUrl ||
-        (paymentResponse as any).data?.data?.checkoutUrl ||
-        (paymentResponse as any).checkoutUrl
+        response.data?.checkoutUrl ||
+        response.data?.data?.checkoutUrl ||
+        response.checkoutUrl
 
       if (!checkoutUrl) {
         throw new Error("Không nhận được checkout URL từ PayOS. Vui lòng thử lại.")

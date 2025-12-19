@@ -44,7 +44,7 @@ class PaymentService {
     const finalOrderId = orderId ?? Date.now()
     
     try {
-      const response = await apiClient.post<any>(
+      const response = await apiClient.post<CreatePaymentResponse>(
         '/payments-pos',
         {
           orderId: finalOrderId, // number
@@ -57,16 +57,41 @@ class PaymentService {
         throw new Error('Không nhận được response từ server')
       }
       
-      const checkoutUrl = response.data?.checkoutUrl || response.data?.data?.checkoutUrl || response.checkoutUrl
+      // Handle different response formats from PayOS
+      type PaymentResponseWithNestedData = CreatePaymentResponse & {
+        data?: {
+          data?: {
+            checkoutUrl?: string
+          }
+        }
+        checkoutUrl?: string
+      }
+      const responseWithNested = response as PaymentResponseWithNestedData
+      const checkoutUrl = 
+        responseWithNested.data?.checkoutUrl || 
+        responseWithNested.data?.data?.checkoutUrl || 
+        responseWithNested.checkoutUrl
       
       if (!checkoutUrl) {
         throw new Error('Response không có checkoutUrl từ PayOS')
       }
       
+      // Ensure response.data exists and has checkoutUrl
       if (!response.data) {
-        response.data = {}
-      }
-      if (!response.data.checkoutUrl) {
+        response.data = {
+          bin: '',
+          accountNumber: '',
+          accountName: '',
+          amount,
+          description,
+          orderCode: finalOrderId,
+          currency: 'VND',
+          paymentLinkId: '',
+          status: 'pending',
+          checkoutUrl,
+          qrCode: '',
+        }
+      } else if (!response.data.checkoutUrl) {
         response.data.checkoutUrl = checkoutUrl
       }
       

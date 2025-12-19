@@ -19,9 +19,9 @@ import { Footer } from "@/components/layout/footer"
 import PropertyDetailSkeleton from "@/components/skeletons/PropertyDetailSkeleton"
 import RoomCardSkeleton from "@/components/skeletons/RoomCardSkeleton"
 import { propertiesService, type Property, type RoomType, type Room } from "@/lib/services/properties"
-import { restaurantsService, type Restaurant } from "@/lib/services/restaurants"
+import { restaurantsService, type Restaurant, type Table } from "@/lib/services/restaurants"
 import { guestsService } from "@/lib/services/guests"
-import { reservationsService } from "@/lib/services/reservations"
+import { reservationsService, type CreateTableBookingRequest } from "@/lib/services/reservations"
 import { promotionsService, type Promotion } from "@/lib/services/promotions"
 import { authService } from "@/lib/auth"
 import { colors, shadows, borderRadius } from "@/lib/designTokens"
@@ -286,10 +286,10 @@ export default function PropertyDetailPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loadingRestaurants, setLoadingRestaurants] = useState(false)
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
-  const [restaurantTables, setRestaurantTables] = useState<any[]>([])
+  const [restaurantTables, setRestaurantTables] = useState<Table[]>([])
   const [loadingTables, setLoadingTables] = useState(false)
   const [isRestaurantModalOpen, setIsRestaurantModalOpen] = useState(false)
-  const [selectedTableForBooking, setSelectedTableForBooking] = useState<any | null>(null)
+  const [selectedTableForBooking, setSelectedTableForBooking] = useState<Table | null>(null)
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false)
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false)
   const [promotions, setPromotions] = useState<Promotion[]>([])
@@ -523,8 +523,8 @@ export default function PropertyDetailPage() {
       // Backend returns { restaurants: Restaurant[], total: number }
       if (response && 'restaurants' in response && Array.isArray(response.restaurants)) {
         setRestaurants(response.restaurants)
-      } else if (response && 'data' in response && Array.isArray((response as any).data)) {
-        setRestaurants((response as any).data)
+      } else if (response && 'data' in response && Array.isArray((response as { data: Restaurant[] }).data)) {
+        setRestaurants((response as { data: Restaurant[] }).data)
       } else {
         setRestaurants([])
       }
@@ -576,8 +576,8 @@ export default function PropertyDetailPage() {
     setIsRestaurantModalOpen(true)
     
     // Load tables if not already in restaurant data
-    if ((restaurant as any).tables && Array.isArray((restaurant as any).tables) && (restaurant as any).tables.length > 0) {
-      setRestaurantTables((restaurant as any).tables)
+    if (restaurant.tables && Array.isArray(restaurant.tables) && restaurant.tables.length > 0) {
+      setRestaurantTables(restaurant.tables)
     } else {
       try {
         setLoadingTables(true)
@@ -592,7 +592,7 @@ export default function PropertyDetailPage() {
     }
   }
 
-  const handleSelectTable = (table: any) => {
+  const handleSelectTable = (table: Table) => {
     if (table.status !== 'available') {
       showToast.error("Bàn này không khả dụng")
       return
@@ -661,13 +661,15 @@ export default function PropertyDetailPage() {
       }
 
       // Create table booking - map to backend format
-      const bookingPayload: any = {
+      const bookingPayload: CreateTableBookingRequest & { 
+        guestId?: string
+        assignedTableId?: string
+        numberOfGuests: number
+      } = {
         restaurantId: selectedRestaurant.id,
         bookingDate: data.bookingDate,
         bookingTime: data.bookingTime,
-        pax: data.numberOfGuests, // Backend expects 'pax' not 'numberOfGuests'
-        contactName: `${data.firstName} ${data.lastName}`.trim(),
-        contactPhone: data.phone || "",
+        numberOfGuests: data.numberOfGuests,
         specialRequests: data.specialRequests,
       }
 
@@ -681,7 +683,7 @@ export default function PropertyDetailPage() {
         bookingPayload.assignedTableId = selectedTableForBooking.id
       }
 
-      await reservationsService.createTableBooking(bookingPayload as any)
+      await reservationsService.createTableBooking(bookingPayload)
 
       showToast.success("Đặt bàn thành công!")
       
