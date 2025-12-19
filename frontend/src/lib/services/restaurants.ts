@@ -80,8 +80,8 @@ class RestaurantsService {
     // Handle different response formats
     if (response && 'tables' in response && Array.isArray(response.tables)) {
       return response.tables
-    } else if (response && 'data' in response && Array.isArray((response as any).data)) {
-      return (response as any).data
+    } else if (response && 'data' in response && Array.isArray((response as { data?: Table[] }).data)) {
+      return (response as { data: Table[] }).data
     }
     return []
   }
