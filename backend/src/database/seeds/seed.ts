@@ -101,6 +101,8 @@ async function seed() {
         role_id: roleId,
         effective_from: new Date(),
       });
+    }
+
     const employeeDepartments = [
       { count: 4, department: 'Front Desk', role: 'Receptionist' },
       { count: 3, department: 'Housekeeping', role: 'Housekeeper' },
