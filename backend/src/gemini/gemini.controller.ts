@@ -4,22 +4,17 @@ import {
   Body,
   HttpCode,
   HttpStatus,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
 } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
 import { GeminiService } from './gemini.service';
 import { ChatRequestDto, ChatResponseDto } from './dto/chat.dto';
 
 @ApiTags('Gemini AI Chatbot')
 @Controller('gemini')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
 export class GeminiController {
   constructor(private readonly geminiService: GeminiService) {}
 
