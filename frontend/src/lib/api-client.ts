@@ -23,9 +23,9 @@ class ApiClient {
     const url = `${this.baseUrl}${normalizedEndpoint}`
     const token = this.getToken()
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     }
 
     if (token) {
@@ -49,7 +49,14 @@ class ApiClient {
 
   async get<T>(endpoint: string, params?: Record<string, string | number | boolean | undefined>): Promise<T> {
     const queryString = params
-      ? '?' + new URLSearchParams(params).toString()
+      ? '?' + new URLSearchParams(
+          Object.entries(params)
+            .filter(([, value]) => value !== undefined)
+            .reduce((acc, [key, value]) => {
+              acc[key] = String(value)
+              return acc
+            }, {} as Record<string, string>)
+        ).toString()
       : ''
     return this.request<T>(`${endpoint}${queryString}`, {
       method: 'GET',

@@ -7,7 +7,7 @@ import { Footer } from "@/components/layout/footer"
 import SearchHero from "@/components/SearchHero"
 import HotelCard from "@/components/HotelCard"
 import PropertiesListSkeleton from "@/components/skeletons/PropertiesListSkeleton"
-import { colors, shadows } from "@/lib/designTokens"
+import { colors } from "@/lib/designTokens"
 import { propertiesService, type Property } from "@/lib/services/properties"
 
 export default function HomePage() {

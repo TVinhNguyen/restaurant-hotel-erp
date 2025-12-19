@@ -16,11 +16,11 @@ import { colors, shadows, borderRadius } from "@/lib/designTokens"
 import { propertiesService } from "@/lib/services/properties"
 import { ratePlansService } from "@/lib/services/rate-plans"
 import { guestsService } from "@/lib/services/guests"
-import { reservationsService, type CreateReservationRequest } from "@/lib/services/reservations"
+import { type CreateReservationRequest } from "@/lib/services/reservations"
 import { promotionsService, type PromotionApplyResult } from "@/lib/services/promotions"
 import { authService } from "@/lib/auth"
 import { showToast } from "@/lib/toast"
-import { paymentService } from "@/lib/services/payments"
+import { paymentService, type CreatePaymentResponse } from "@/lib/services/payments"
 
 const bookingFormSchema = z.object({
   firstName: z.string().min(1, "Vui lòng nhập họ"),
@@ -268,6 +268,7 @@ export default function BookingPage() {
     setAppliedPromotion(null)
     setDiscountAmount(0)
     // Reset to original price
+    if (!roomType) return
     const basePrice = typeof roomType.basePrice === 'string' ? parseFloat(roomType.basePrice) : roomType.basePrice
     const calculatedSubtotal = basePrice * nights
     const tax = calculatedSubtotal * 0.1
@@ -398,8 +399,8 @@ export default function BookingPage() {
 
       const checkoutUrl =
         paymentResponse.data?.checkoutUrl ||
-        (paymentResponse as any).data?.data?.checkoutUrl ||
-        (paymentResponse as any).checkoutUrl
+        (paymentResponse as CreatePaymentResponse & { data?: { data?: { checkoutUrl?: string } } }).data?.data?.checkoutUrl ||
+        (paymentResponse as CreatePaymentResponse & { checkoutUrl?: string }).checkoutUrl
 
       if (!checkoutUrl) {
         throw new Error("Không nhận được checkout URL từ PayOS. Vui lòng thử lại.")
@@ -465,6 +466,15 @@ export default function BookingPage() {
       )
     }
     // Still loading, show loader
+    return (
+      <div style={{ backgroundColor: colors.background }} className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: colors.primary }} />
+      </div>
+    )
+  }
+
+  // TypeScript guard: roomType is guaranteed to be non-null after the check above
+  if (!roomType) {
     return (
       <div style={{ backgroundColor: colors.background }} className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" style={{ color: colors.primary }} />
