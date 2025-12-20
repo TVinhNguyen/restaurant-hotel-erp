@@ -53,6 +53,18 @@ export class Employee {
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   salary: number;
 
+  @Column({ length: 255, nullable: true })
+  address: string;
+
+  @Column({ length: 20, nullable: true })
+  gender: 'male' | 'female' | 'other';
+
+  @Column({ name: 'date_of_birth', type: 'date', nullable: true })
+  dateOfBirth: Date;
+
+  @Column({ name: 'id_card_number', length: 50, nullable: true })
+  idCardNumber: string;
+
   // Relations
   @OneToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'user_id' })

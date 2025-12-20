@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { AppDataSource } from '../data-source';
 import * as generators from './generators';
 import * as bcrypt from 'bcryptjs';
+import { faker } from '@faker-js/faker';
 
 async function seed() {
   console.log('Initializing DataSource...');
@@ -79,35 +80,11 @@ async function seed() {
 
     // Employees with proper role assignments
     const employees = [];
-    for (const user of employeeUsers) {
-      const emp = generators.generateEmployee(user.id);
-      const id = await insert(queryRunner, 'core.employees', emp);
-      employees.push({ ...emp, id });
-
-      // Assign Role
-      const roleName =
-        emp.department === 'Front Desk'
-          ? 'Receptionist'
-          : emp.department === 'HR'
-            ? 'Property Manager'
-            : emp.department === 'Housekeeping'
-              ? 'Housekeeper'
-              : 'Property Manager';
-      const roleId = roleMap.get(roleName) || roleMap.get('Receptionist');
-
-      await insert(queryRunner, 'core.employee_roles', {
-        employee_id: id,
-        property_id: properties[0].id,
-        role_id: roleId,
-        effective_from: new Date(),
-      });
-    }
-
     const employeeDepartments = [
       { count: 4, department: 'Front Desk', role: 'Receptionist' },
       { count: 3, department: 'Housekeeping', role: 'Housekeeper' },
       { count: 2, department: 'HR', role: 'Property Manager' },
-      { count: 3, department: 'F&B', role: 'Receptionist' }, // F&B staff can use Receptionist role or create dedicated F&B role later
+      { count: 3, department: 'F&B', role: 'Receptionist' },
     ];
 
     let userIndex = 0;
@@ -116,14 +93,7 @@ async function seed() {
         if (userIndex >= employeeUsers.length) break;
         
         const user = employeeUsers[userIndex];
-        const emp = {
-          user_id: user.id,
-          employee_code: 'EMP-' + String(10001 + userIndex).padStart(5, '0'),
-          full_name: user.name,
-          department: dept.department,
-          status: 'active',
-          hire_date: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000 * 3), // Random hire date within last 3 years
-        };
+        const emp = generators.generateEmployee(user.id, dept.department);
         
         const id = await insert(queryRunner, 'core.employees', emp);
         employees.push({ ...emp, id });
@@ -243,21 +213,22 @@ async function seed() {
       const rp = ratePlans.find((r) => r.room_type_id === rt.id);
       if (!rp) continue;
 
-      const res = generators.generateReservation(
+      let res = generators.generateReservation(
         rt.property_id,
         guest.id,
         rt.id,
         rp.id,
         null,
       );
+      res.currency = 'VND';
       const resId = await insert(queryRunner, 'reservation.reservations', res);
 
       // Payment
       await insert(queryRunner, 'reservation.payments', {
         reservation_id: resId,
         amount: res.total_amount,
-        currency: 'USD',
-        method: 'card',
+        currency: 'VND',
+        method: faker.helpers.arrayElement(['cash', 'card', 'bank', 'e_wallet']),
         status: 'captured',
         paid_at: new Date(),
       });

@@ -4,7 +4,8 @@ import {
   IsUUID,
   IsIn,
   IsDateString,
-  IsNumber
+  IsNumber,
+  MaxLength
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -94,4 +95,43 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsNumber()
   salary?: number;
+
+  @ApiProperty({
+    description: 'Địa chỉ của nhân viên',
+    example: '123 Nguyen Hue Street, District 1, Ho Chi Minh City',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  address?: string;
+
+  @ApiProperty({
+    description: 'Giới tính',
+    enum: ['male', 'female', 'other'],
+    example: 'male',
+    required: false,
+  })
+  @IsOptional()
+  @IsIn(['male', 'female', 'other'])
+  gender?: 'male' | 'female' | 'other';
+
+  @ApiProperty({
+    description: 'Ngày sinh (YYYY-MM-DD)',
+    example: '1990-05-15',
+    required: false,
+  })
+  @IsOptional()
+  @IsDateString()
+  dateOfBirth?: string;
+
+  @ApiProperty({
+    description: 'Số chứng minh nhân dân/CCCD',
+    example: '123456789',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  idCardNumber?: string;
 }

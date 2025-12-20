@@ -43,7 +43,7 @@ npm run migration:create -- src/database/migrations/AddCustomIndexes
 Apply all pending migrations:
 
 ```bash
-npm run migration:run
+docker-compose exec backend npm run migration:run
 ```
 
 This executes the `up()` method of all pending migrations in chronological order.

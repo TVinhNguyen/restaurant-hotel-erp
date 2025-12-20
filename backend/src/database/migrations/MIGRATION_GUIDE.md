@@ -87,6 +87,8 @@ npm run migration:create -- src/database/migrations/YourMigrationName
 
 # Chạy migration
 npm run migration:run
+docker compose exec backend npm run migration:run
+docker compose exec backend npm run seed
 ```
 
 ## Các lệnh thông dụng
