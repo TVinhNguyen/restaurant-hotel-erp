@@ -1,9 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
 import type { CreatePaymentDto } from './types/dto';
-// import { HttpService } from '@nestjs/axios';
+import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
-// import { AxiosResponse } from 'axios';
+import type { AxiosResponse } from 'axios';
 import { PayosRequestPaymentPayload } from './dto/payos-request-payment.payload';
 import { createHmac } from 'node:crypto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -12,7 +12,7 @@ import type { Cache } from 'cache-manager';
 @Injectable()
 export class PaymentService {
   constructor(
-    // private readonly httpService: HttpService,
+    private readonly httpService: HttpService,
     private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
@@ -56,13 +56,10 @@ export class PaymentService {
     };
 
     try {
-      // TODO: Re-enable when @nestjs/axios is installed
-      throw new Error('Payment service temporarily disabled - @nestjs/axios required');
-      /*
       const response: AxiosResponse<any> = await firstValueFrom(
         this.httpService.post<any>(url, payload, config),
       );
-      console.log('PayOS response:', response.data);
+      console.log('[PayOS] Response:', response.data);
 
       // ⚠️ QUAN TRỌNG: Dùng orderCode từ PayOS response, không phải từ body.orderId
       // PayOS có thể trả về orderCode khác (number) so với orderId gửi lên (string)
@@ -70,7 +67,7 @@ export class PaymentService {
       
       // Store initial payment status in Redis với orderCode từ PayOS
       const paymentKey = `payment:${payosOrderCode}`;
-      console.log(`Storing payment in Redis with key: ${paymentKey}`);
+      console.log(`[Cache] Storing payment with key: ${paymentKey}`);
       
       const paymentData = {
         orderId: payosOrderCode,
@@ -83,20 +80,20 @@ export class PaymentService {
       };
       
       // TTL in milliseconds for cache-manager v5+
-      await this.cacheManager.set(paymentKey, paymentData, 1800 * 1000);
-      
-      // Verify data was stored
-      const verifyData = await this.cacheManager.get(paymentKey);
-      console.log(`Redis stored verification: ${verifyData ? 'SUCCESS' : 'FAILED'}`);
+      try {
+        await this.cacheManager.set(paymentKey, paymentData, 1800 * 1000);
+        console.log(`[Cache] Payment stored successfully`);
+      } catch (cacheError) {
+        console.warn(`[Cache] Warning - cache store failed:`, cacheError.message);
+      }
 
       // Return response with orderId for frontend to track
       return {
         ...response.data,
         orderId: payosOrderCode,
       };
-      */
     } catch (error: any) {
-      console.error('PayOS error:', error.response?.data || error.message);
+      console.error('[PayOS] Error:', error.message);
       throw error;
     }
   }
