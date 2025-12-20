@@ -3,6 +3,8 @@ import {
   ConflictException,
   UnauthorizedException,
   Logger,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -10,6 +12,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from '../entities/auth/user.entity';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { UserPayload } from './interfaces/user.interface';
 
 @Injectable()
@@ -150,6 +153,75 @@ export class AuthService {
     } catch (error) {
       this.logger.error(`Find user by ID failed: ${id}`, error.stack);
       return null;
+    }
+  }
+
+  async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    const { currentPassword, newPassword, confirmPassword } = changePasswordDto;
+
+    try {
+      // Validate that passwords match
+      if (newPassword !== confirmPassword) {
+        throw new BadRequestException(
+          'New password and confirmation do not match',
+        );
+      }
+
+      // Validate that new password is different from old password
+      if (currentPassword === newPassword) {
+        throw new BadRequestException(
+          'New password must be different from the current password',
+        );
+      }
+
+      // Find user
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Verify current password
+      const isPasswordValid = await bcrypt.compare(
+        currentPassword,
+        user.passwordHash,
+      );
+
+      if (!isPasswordValid) {
+        this.logger.warn(
+          `Failed password change attempt for user: ${user.email}`,
+        );
+        throw new UnauthorizedException('Current password is incorrect');
+      }
+
+      // Hash new password with same salt rounds as registration
+      const saltRounds = 12;
+      const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update password
+      user.passwordHash = newPasswordHash;
+      user.updatedAt = new Date();
+
+      await this.userRepository.save(user);
+
+      this.logger.log(`Password changed successfully for user: ${user.email}`);
+
+      return {
+        message: 'Password changed successfully',
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      this.logger.error(`Password change failed for user: ${userId}`, error.stack);
+      throw new Error('Password change failed. Please try again.');
     }
   }
 }

@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import type { AuthRequest } from './interfaces/user.interface';
 
 @ApiTags('Auth')
@@ -130,6 +131,58 @@ export class AuthController {
     return {
       message: 'Profile retrieved successfully',
       user,
+    };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
+  @ApiOperation({
+    summary: 'Change user password',
+    description: 'Change the password of the authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input or passwords do not match',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid token or incorrect current password',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many password change attempts',
+  })
+  async changePassword(
+    @Request() req: AuthRequest,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    if (!req.user) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    this.logger.log(
+      `Password change attempt for user: ${req.user.email}`,
+    );
+
+    const result = await this.authService.changePassword(
+      req.user.id,
+      changePasswordDto,
+    );
+
+    return {
+      message: result.message,
+      timestamp: new Date().toISOString(),
     };
   }
 }
