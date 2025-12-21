@@ -88,14 +88,9 @@ export function Header() {
             >
               <Hotel className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight" style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                LuxStay
-              </h1>
-              <p className="text-xs font-medium" style={{ color: colors.accent, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                PREMIUM STAYS
-              </p>
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              LuxStay
+            </h1>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
