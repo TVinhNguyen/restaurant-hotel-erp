@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Calendar, MapPin, User as UserIcon, Heart, Settings, LogOut, X, Loader2, CheckCircle, XCircle, Clock, ChevronRight } from "lucide-react"
+import { Calendar, MapPin, User as UserIcon, Heart, Settings, LogOut, X, Loader2, CheckCircle, XCircle, Clock, ChevronRight, KeyRound } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -509,8 +509,9 @@ export default function ProfilePage() {
                   </p>
                 </div>
 
+                {/* Personal Information Card */}
                 <div
-                  className="bg-white p-6"
+                  className="bg-white p-6 mb-6"
                   style={{
                     borderRadius: borderRadius.card,
                     boxShadow: shadows.card,
@@ -573,6 +574,49 @@ export default function ProfilePage() {
                         />
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Security Settings Card */}
+                <div
+                  className="bg-white p-6"
+                  style={{
+                    borderRadius: borderRadius.card,
+                    boxShadow: shadows.card,
+                  }}
+                >
+                  <h3 className="text-lg font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Bảo mật
+                  </h3>
+
+                  <div className="space-y-3">
+                    <Link href="/change-password">
+                      <div
+                        className="flex items-center justify-between p-4 rounded-xl hover:shadow-md transition-all cursor-pointer"
+                        style={{ 
+                          backgroundColor: colors.background,
+                          border: `1px solid ${colors.border}`,
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-10 h-10 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: colors.lightBlue }}
+                          >
+                            <KeyRound className="w-5 h-5" style={{ color: colors.primary }} />
+                          </div>
+                          <div>
+                            <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                              Đổi mật khẩu
+                            </p>
+                            <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                              Cập nhật mật khẩu của bạn
+                            </p>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5" style={{ color: colors.textSecondary }} />
+                      </div>
+                    </Link>
                   </div>
                 </div>
               </div>
