@@ -31,7 +31,7 @@ export const dataProvider = (apiUrl: string = API_BASE_URL): DataProvider => ({
       method: "GET",
     });
     // Handle different response formats
-    const data = response.data || response.items || response;
+    const data = response.data || response.restaurants || response.bookings || response.items || response;
     const total = response.total || response.meta?.total || data.length;
     return {
       data,

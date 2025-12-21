@@ -36,6 +36,14 @@ import { KhachHangList, KhachHangCreate, KhachHangEdit, KhachHangShow } from "./
 import { CheckInList } from "./pages/check-in";
 import { CheckOutList } from "./pages/check-out";
 import { PhongList, PhongShow } from "./pages/phong";
+import { NhaHangList } from "./pages/nha-hang/list";
+import { NhaHangCreate } from "./pages/nha-hang/create";
+import { NhaHangEdit } from "./pages/nha-hang/edit";
+import { NhaHangShow } from "./pages/nha-hang/show";
+import { DatBanList } from "./pages/dat-ban/list";
+import { DatBanCreate } from "./pages/dat-ban/create";
+import { DatBanEdit } from "./pages/dat-ban/edit";
+import { DatBanShow } from "./pages/dat-ban/show";
 import { ThanhToanList } from "./pages/thanh-toan";
 import { ForgotPassword } from "./pages/forgotPassword";
 import { Login } from "./pages/login";
@@ -148,6 +156,22 @@ function App() {
                     <Route path="/phong">
                       <Route index element={<PhongList />} />
                       <Route path="chi-tiet/:id" element={<PhongShow />} />
+                    </Route>
+
+                    {/* Nhà hàng routes */}
+                    <Route path="/nha-hang">
+                      <Route index element={<NhaHangList />} />
+                      <Route path="tao-moi" element={<NhaHangCreate />} />
+                      <Route path="chinh-sua/:id" element={<NhaHangEdit />} />
+                      <Route path="chi-tiet/:id" element={<NhaHangShow />} />
+                    </Route>
+
+                    {/* Đặt bàn routes */}
+                    <Route path="/dat-ban">
+                      <Route index element={<DatBanList />} />
+                      <Route path="tao-moi" element={<DatBanCreate />} />
+                      <Route path="chinh-sua/:id" element={<DatBanEdit />} />
+                      <Route path="chi-tiet/:id" element={<DatBanShow />} />
                     </Route>
 
                     {/* Thanh toán routes */}
