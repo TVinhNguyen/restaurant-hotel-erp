@@ -5,6 +5,9 @@ node_modules/
 packages/node_modules/
 pnpm-lock.yaml
 package-lock.json
+!frontend/package-lock.json
+admin/package-lock.json
+backend/package-lock.json
 yarn.lock
 
 # Build outputs

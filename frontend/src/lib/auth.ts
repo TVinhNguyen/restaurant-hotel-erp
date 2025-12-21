@@ -42,6 +42,16 @@ export interface RegisterResponse {
   user: User
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export interface ChangePasswordResponse {
+  message: string
+}
+
 class AuthService {
   async login(data: LoginRequest): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE}/v1/auth/login`, {
@@ -131,6 +141,29 @@ class AuthService {
     } finally {
       localStorage.removeItem('access_token')
     }
+  }
+
+  async changePassword(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+    const token = this.getToken()
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const response = await fetch(`${API_BASE}/v1/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || errorData.error?.message || 'Failed to change password')
+    }
+
+    return response.json()
   }
 
   getToken(): string | null {

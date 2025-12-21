@@ -1,4 +1,5 @@
 import { apiClient } from '../api-client'
+import type { Restaurant } from './restaurants'
 
 export interface Property {
   id: string
@@ -94,8 +95,8 @@ class PropertiesService {
     return apiClient.get<{ rooms?: Room[], roomTypes?: RoomType[] }>(`/properties/${propertyId}/rooms`)
   }
 
-  async getPropertyRestaurants(propertyId: string): Promise<Property & { restaurants?: any[] }> {
-    return apiClient.get<Property & { restaurants?: any[] }>(`/properties/${propertyId}/restaurants`)
+  async getPropertyRestaurants(propertyId: string): Promise<Property & { restaurants?: Restaurant[] }> {
+    return apiClient.get<Property & { restaurants?: Restaurant[] }>(`/properties/${propertyId}/restaurants`)
   }
 
   async getAvailableRooms(
