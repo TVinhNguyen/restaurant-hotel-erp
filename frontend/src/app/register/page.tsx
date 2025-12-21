@@ -21,9 +21,7 @@ const registerSchema = z.object({
   lastName: z.string().min(2, "Tên phải có ít nhất 2 ký tự"),
   email: z.string().email("Vui lòng nhập email hợp lệ"),
   phone: z.string()
-    .min(8, "Số điện thoại phải có ít nhất 8 ký tự")
-    .max(16, "Số điện thoại không được vượt quá 16 ký tự")
-    .regex(/^[\+]?[0-9]{8,15}$/, "Vui lòng nhập số điện thoại hợp lệ"),
+    .regex(/^[0-9]{9}$/, "Số điện thoại phải có đúng 9 chữ số"),
   password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
   confirmPassword: z.string(),
   agreeToTerms: z.boolean().refine(val => val === true, {

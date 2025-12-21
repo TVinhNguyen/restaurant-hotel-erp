@@ -2,26 +2,145 @@ import { Card, Col, Row, Statistic, Typography } from "antd";
 import {
     UserOutlined,
     HomeOutlined,
-    DollarOutlined,
-    TeamOutlined
+    TeamOutlined,
+    CalendarOutlined,
+    CheckCircleOutlined
 } from "@ant-design/icons";
-import { useCustom } from "@refinedev/core";
+import { useState, useEffect } from "react";
+import { USER_KEY } from "../../authProvider";
 
 const { Title } = Typography;
 
-export const DashboardAdmin: React.FC = () => {
-    const statsQuery = useCustom<any>({
-        url: "/reports/dashboard",
-        method: "get",
-        config: {
-            headers: {
-                "Content-Type": "application/json",
-            },
-        },
-    });
+interface DashboardStats {
+    totalRooms: number;
+    totalEmployees: number;
+    totalGuests: number;
+    totalReservations: number;
+    checkedInCount: number;
+    occupancyRate: number;
+}
 
-    const stats = (statsQuery as any)?.data?.data || {};
-    const isLoading = (statsQuery as any)?.isFetching || false;
+export const DashboardAdmin: React.FC = () => {
+    const [stats, setStats] = useState<DashboardStats>({
+        totalRooms: 0,
+        totalEmployees: 0,
+        totalGuests: 0,
+        totalReservations: 0,
+        checkedInCount: 0,
+        occupancyRate: 0,
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboardStats = async () => {
+            try {
+                const userStr = localStorage.getItem(USER_KEY);
+                const token = localStorage.getItem("refine-auth");
+                const API_URL = import.meta.env.VITE_API_URL;
+
+                if (!userStr || !token) {
+                    setLoading(false);
+                    return;
+                }
+
+                const user = JSON.parse(userStr);
+                const userId = user.id;
+                
+                // Fetch employee data
+                const employeeResponse = await fetch(
+                    `${API_URL}/employees/get-employee-by-user-id/${userId}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+                
+                if (!employeeResponse.ok) {
+                    setLoading(false);
+                    return;
+                }
+
+                const employeeData = await employeeResponse.json();
+                const employeeId = employeeData.id;
+                
+                // Fetch employee roles để lấy propertyId
+                const rolesResponse = await fetch(
+                    `${API_URL}/employee-roles?employeeId=${employeeId}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+                
+                if (!rolesResponse.ok) {
+                    setLoading(false);
+                    return;
+                }
+
+                const rolesData = await rolesResponse.json();
+                if (!rolesData || rolesData.length === 0) {
+                    setLoading(false);
+                    return;
+                }
+
+                const propId = rolesData[0].propertyId;
+
+                // Fetch all statistics
+                const [roomsRes, employeesRes, guestsRes, reservationsRes, checkedInRes] = await Promise.all([
+                    fetch(`${API_URL}/rooms?propertyId=${propId}`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }),
+                    fetch(`${API_URL}/employees`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }),
+                    fetch(`${API_URL}/guests`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }),
+                    fetch(`${API_URL}/reservations?propertyId=${propId}`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }),
+                    fetch(`${API_URL}/reservations?propertyId=${propId}&status=checked_in`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }),
+                ]);
+
+                const [roomsData, employeesData, guestsData, reservationsData, checkedInData] = await Promise.all([
+                    roomsRes.json(),
+                    employeesRes.json(),
+                    guestsRes.json(),
+                    reservationsRes.json(),
+                    checkedInRes.json(),
+                ]);
+
+                const totalRooms = roomsData.total || 0;
+                const totalEmployees = employeesData.total || 0;
+                const totalGuests = Array.isArray(guestsData) ? guestsData.length : (guestsData.total || 0);
+                const totalReservations = reservationsData.total || 0;
+                const checkedInCount = checkedInData.total || 0;
+                const occupancyRate = totalRooms > 0 ? Math.round((checkedInCount / totalRooms) * 100) : 0;
+
+                setStats({
+                    totalRooms,
+                    totalEmployees,
+                    totalGuests,
+                    totalReservations,
+                    checkedInCount,
+                    occupancyRate,
+                });
+
+            } catch (error) {
+                console.error("Error fetching dashboard stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardStats();
+    }, []);
 
     return (
         <div style={{ padding: "24px" }}>
@@ -29,43 +148,42 @@ export const DashboardAdmin: React.FC = () => {
 
             <Row gutter={16} style={{ marginBottom: "24px" }}>
                 <Col span={6}>
-                    <Card loading={isLoading}>
-                        <Statistic
-                            title="Tổng doanh thu tháng này"
-                            value={stats?.monthlyRevenue || 0}
-                            prefix={<DollarOutlined />}
-                            suffix="VNĐ"
-                            valueStyle={{ color: "#3f8600" }}
-                        />
-                    </Card>
-                </Col>
-                <Col span={6}>
-                    <Card loading={isLoading}>
+                    <Card loading={loading}>
                         <Statistic
                             title="Tổng số phòng"
-                            value={stats?.totalRooms || 0}
+                            value={stats.totalRooms}
                             prefix={<HomeOutlined />}
                             valueStyle={{ color: "#1890ff" }}
                         />
                     </Card>
                 </Col>
                 <Col span={6}>
-                    <Card loading={isLoading}>
+                    <Card loading={loading}>
                         <Statistic
                             title="Nhân viên"
-                            value={stats?.totalEmployees || 0}
+                            value={stats.totalEmployees}
                             prefix={<TeamOutlined />}
                             valueStyle={{ color: "#52c41a" }}
                         />
                     </Card>
                 </Col>
                 <Col span={6}>
-                    <Card loading={isLoading}>
+                    <Card loading={loading}>
                         <Statistic
                             title="Khách hàng"
-                            value={stats?.totalGuests || 0}
+                            value={stats.totalGuests}
                             prefix={<UserOutlined />}
                             valueStyle={{ color: "#faad14" }}
+                        />
+                    </Card>
+                </Col>
+                <Col span={6}>
+                    <Card loading={loading}>
+                        <Statistic
+                            title="Tổng đặt phòng"
+                            value={stats.totalReservations}
+                            prefix={<CalendarOutlined />}
+                            valueStyle={{ color: "#722ed1" }}
                         />
                     </Card>
                 </Col>
@@ -73,19 +191,22 @@ export const DashboardAdmin: React.FC = () => {
 
             <Row gutter={16}>
                 <Col span={12}>
-                    <Card title="Tỷ lệ lấp đầy phòng" loading={isLoading} style={{ marginBottom: "24px" }}>
+                    <Card title="Tỷ lệ lấp đầy phòng" loading={loading} style={{ marginBottom: "24px" }}>
                         <Statistic
-                            value={stats?.occupancyRate || 0}
+                            value={stats.occupancyRate}
                             suffix="%"
                             valueStyle={{ color: "#1890ff", fontSize: "36px" }}
                         />
+                        <Typography.Text type="secondary">
+                            {stats.checkedInCount} / {stats.totalRooms} phòng đang có khách
+                        </Typography.Text>
                     </Card>
                 </Col>
                 <Col span={12}>
-                    <Card title="Doanh thu trung bình mỗi phòng" loading={isLoading} style={{ marginBottom: "24px" }}>
+                    <Card title="Phòng đang có khách (Checked In)" loading={loading} style={{ marginBottom: "24px" }}>
                         <Statistic
-                            value={stats?.averageRoomRevenue || 0}
-                            suffix="VNĐ"
+                            value={stats.checkedInCount}
+                            prefix={<CheckCircleOutlined />}
                             valueStyle={{ color: "#3f8600", fontSize: "36px" }}
                         />
                     </Card>
