@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
+import { ChatBot } from '@/components/chat/ChatBot'
 import './globals.css'
 
 const geistSans = Geist({
@@ -14,9 +15,14 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'LuxStay',
+  description: 'Hệ thống quản lý khách sạn và nhà hàng - Property Management System',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', type: 'image/x-icon' }
+    ],
+  },
 }
 
 export default function RootLayout({
@@ -28,6 +34,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${geistSans.variable} ${geistMono.variable}`}>
         {children}
+        <ChatBot />
         <Toaster 
           position="top-right" 
           theme="dark"
