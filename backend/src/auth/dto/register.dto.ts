@@ -44,14 +44,14 @@ export class RegisterDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'User phone number',
-    example: '+1234567890',
-    pattern: '^[\\+]?[1-9][\\d]{0,15}$',
+    description: 'User phone number (9 digits)',
+    example: '0123456789',
+    pattern: '^[0-9]{9}$',
   })
   @IsOptional()
   @IsString()
-  @Matches(/^[+]?[1-9][\d]{0,15}$/, {
-    message: 'Please provide a valid phone number',
+  @Matches(/^[0-9]{9}$/, {
+    message: 'Please provide a valid phone number (9 digits)',
   })
   phone?: string;
 }
