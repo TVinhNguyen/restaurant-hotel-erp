@@ -1,25 +1,29 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/ui/back-button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Calendar, Users, Clock, Utensils, Star } from "lucide-react"
+import { Calendar, Users, Clock, Utensils, Star, Loader2, MapPin } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
+import { restaurantsService, type Restaurant } from "@/lib/services/restaurants"
+import { colors, shadows, borderRadius } from "@/lib/designTokens"
 
 const restaurantBookingSchema = z.object({
-  date: z.string().min(1, "Reservation date is required"),
-  time: z.string().min(1, "Reservation time is required"),
-  guests: z.number().min(1, "At least 1 guest is required").max(12, "Maximum 12 guests per table"),
+  date: z.string().min(1, "Vui lòng chọn ngày đặt bàn"),
+  time: z.string().min(1, "Vui lòng chọn thời gian"),
+  guests: z.number().min(1, "Cần ít nhất 1 khách").max(12, "Tối đa 12 khách mỗi bàn"),
+  tableId: z.string().min(1, "Vui lòng chọn bàn"),
   occasion: z.string().optional(),
   specialRequests: z.string().optional(),
 })
@@ -29,41 +33,148 @@ type RestaurantBookingFormValues = z.infer<typeof restaurantBookingSchema>
 export default function RestaurantBookingPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
+  const [isLoadingRestaurant, setIsLoadingRestaurant] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const restaurantId = searchParams.get('id')
+
+  // ✅ Load saved form data for default values
+  const getSavedFormData = () => {
+    try {
+      const savedFormStr = localStorage.getItem("restaurant_booking_form")
+      if (savedFormStr) {
+        return JSON.parse(savedFormStr)
+      }
+    } catch (err) {
+      console.error("Failed to load saved form:", err)
+    }
+    return null
+  }
+
+  const savedForm = getSavedFormData()
 
   const form = useForm<RestaurantBookingFormValues>({
     resolver: zodResolver(restaurantBookingSchema),
     defaultValues: {
-      date: "",
-      time: "",
-      guests: 2,
-      occasion: "",
-      specialRequests: "",
+      date: savedForm?.date || "",
+      time: savedForm?.time || "",
+      guests: savedForm?.guests || 2,
+      tableId: savedForm?.tableId || "",
+      occasion: savedForm?.occasion || "",
+      specialRequests: savedForm?.specialRequests || "",
     },
   })
 
-  const timeSlots = [
-    "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM",
-    "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM", "9:00 PM", "9:30 PM"
-  ]
+  // Fetch restaurant data
+  useEffect(() => {
+    const loadRestaurant = async () => {
+      if (!restaurantId) {
+        setError("Restaurant ID is required")
+        setIsLoadingRestaurant(false)
+        return
+      }
+
+      try {
+        setIsLoadingRestaurant(true)
+        const data = await restaurantsService.getRestaurantById(restaurantId)
+        setRestaurant(data)
+      } catch (err) {
+        console.error("Failed to load restaurant:", err)
+        setError("Failed to load restaurant details")
+      } finally {
+        setIsLoadingRestaurant(false)
+      }
+    }
+
+    loadRestaurant()
+  }, [restaurantId])
+
+  // ✅ Auto-save form data when user types
+  useEffect(() => {
+    const subscription = form.watch((formData) => {
+      if (formData) {
+        localStorage.setItem("restaurant_booking_form", JSON.stringify(formData))
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [form])
+
+  // Generate time slots from restaurant opening hours
+  const generateTimeSlots = (openingHours: string | undefined): string[] => {
+    if (!openingHours) return []
+    
+    try {
+      // Parse "06:00 - 23:00" or "17:00 - 02:00" format
+      const [startTime, endTime] = openingHours.split('-').map(t => t.trim())
+      
+      const parseTime = (timeStr: string) => {
+        const [hours, minutes] = timeStr.split(':').map(Number)
+        return hours * 60 + minutes // Convert to minutes
+      }
+      
+      const formatTime = (totalMinutes: number) => {
+        const hours = Math.floor(totalMinutes / 60) % 24 // Handle overflow past midnight
+        const minutes = totalMinutes % 60
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+      }
+      
+      let startMinutes = parseTime(startTime)
+      let endMinutes = parseTime(endTime)
+      const slots: string[] = []
+      
+      // If end time is less than start time, restaurant is open past midnight
+      // Add 24 hours (1440 minutes) to end time for calculation
+      if (endMinutes < startMinutes) {
+        endMinutes += 24 * 60
+      }
+      
+      // Generate slots every 30 minutes
+      for (let time = startMinutes; time <= endMinutes - 30; time += 30) {
+        slots.push(formatTime(time))
+      }
+      
+      return slots
+    } catch (error) {
+      console.error('Error parsing opening hours:', error)
+      return []
+    }
+  }
+
+  const timeSlots = generateTimeSlots(restaurant?.openingHours)
 
   const occasions = [
-    "Birthday celebration",
-    "Anniversary",
-    "Business dinner", 
-    "Romantic dinner",
-    "Family gathering",
-    "Special occasion",
-    "Casual dining"
+    "Sinh nhật",
+    "Kỷ niệm",
+    "Bữa tối công việc", 
+    "Bữa tối lãng mạn",
+    "Họp mặt gia đình",
+    "Dịp đặc biệt",
+    "Bữa ăn thường"
   ]
 
   const onSubmit = async (data: RestaurantBookingFormValues) => {
+    if (!restaurantId || !restaurant) {
+      setError("Restaurant information is missing")
+      return
+    }
+
     setIsLoading(true)
     setError("")
     
     try {
-      localStorage.setItem("restaurant_booking", JSON.stringify(data))
-      router.push("/restaurant/confirmation")
+      // Find selected table
+      const selectedTable = restaurant.tables?.find(t => t.id === data.tableId)
+      
+      const bookingData = {
+        ...data,
+        restaurantId,
+        restaurantName: restaurant.name,
+        tableNumber: selectedTable?.tableNumber,
+        tableCapacity: selectedTable?.capacity,
+      }
+      localStorage.setItem("restaurant_booking", JSON.stringify(bookingData))
+      router.push(`/restaurant/confirmation?id=${restaurantId}`)
     } catch {
       setError("Failed to make reservation. Please try again.")
     } finally {
@@ -76,29 +187,42 @@ export default function RestaurantBookingPage() {
       <Header />
 
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center space-x-4 mb-6">
-          <Link href="/property/1">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to hotel
-            </Button>
-          </Link>
+        <div className="mb-6">
+          <BackButton variant="ghost" />
         </div>
 
-        <h2 className="text-2xl font-bold mb-8">Reserve a table</h2>
+        <h2 className="text-2xl font-bold mb-8" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          Đặt bàn nhà hàng
+        </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Utensils className="h-5 w-5" />
-                  <span>Table Reservation</span>
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Book your table at Norrebro Restaurant
-                </p>
-              </CardHeader>
+        {isLoadingRestaurant ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: colors.primary }} />
+          </div>
+        ) : !restaurant ? (
+          <div className="text-center py-12">
+            <p className="text-lg mb-4" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              {error || "Không tìm thấy nhà hàng"}
+            </p>
+            <Link href="/restaurants">
+              <Button style={{ backgroundColor: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Xem danh sách nhà hàng
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <Card className="bg-white" style={{ borderRadius: borderRadius.card, boxShadow: shadows.card, border: `1px solid ${colors.border}` }}>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    <Utensils className="h-5 w-5" />
+                    <span>Đặt bàn</span>
+                  </CardTitle>
+                  <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Đặt bàn tại {restaurant.name}
+                  </p>
+                </CardHeader>
               <CardContent>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -108,7 +232,7 @@ export default function RestaurantBookingPage() {
                         name="date"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Reservation date</FormLabel>
+                            <FormLabel style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>Ngày đặt bàn</FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -130,7 +254,7 @@ export default function RestaurantBookingPage() {
                         name="guests"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Number of guests</FormLabel>
+                            <FormLabel style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>Số khách</FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -140,7 +264,19 @@ export default function RestaurantBookingPage() {
                                   min="1"
                                   max="12"
                                   {...field}
-                                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                  onChange={(e) => {
+                                    const newGuestCount = parseInt(e.target.value)
+                                    field.onChange(newGuestCount)
+                                    
+                                    // Reset table selection if current table can't accommodate new guest count
+                                    const currentTableId = form.getValues("tableId")
+                                    if (currentTableId && restaurant?.tables) {
+                                      const currentTable = restaurant.tables.find(t => t.id === currentTableId)
+                                      if (currentTable && currentTable.capacity < newGuestCount) {
+                                        form.setValue("tableId", "")
+                                      }
+                                    }
+                                  }}
                                 />
                               </div>
                             </FormControl>
@@ -150,22 +286,107 @@ export default function RestaurantBookingPage() {
                       />
                     </div>
 
+                    {/* Table Selection */}
+                    <FormField
+                      control={form.control}
+                      name="tableId"
+                      render={({ field }) => {
+                        const guestCount = form.watch("guests") || 2
+                        const availableTables = restaurant?.tables?.filter(
+                          table => table.status === 'available' && table.capacity >= guestCount
+                        ) || []
+
+                        return (
+                          <FormItem>
+                            <FormLabel style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                              Chọn bàn ({availableTables.length} bàn phù hợp)
+                            </FormLabel>
+                            <FormControl>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {availableTables.length === 0 ? (
+                                  <p className="col-span-full text-sm text-center py-4" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    Không có bàn phù hợp với số lượng khách
+                                  </p>
+                                ) : (
+                                  availableTables.map((table) => (
+                                    <Button
+                                      key={table.id}
+                                      type="button"
+                                      onClick={() => field.onChange(table.id)}
+                                      className="h-auto py-4 flex flex-col items-center space-y-2 transition-all"
+                                      style={{
+                                        backgroundColor: field.value === table.id ? colors.primary : '#FFFFFF',
+                                        color: field.value === table.id ? '#FFFFFF' : colors.textPrimary,
+                                        border: `2px solid ${field.value === table.id ? colors.primary : colors.border}`,
+                                        borderRadius: borderRadius.card,
+                                        fontFamily: 'system-ui, -apple-system, sans-serif'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        if (field.value !== table.id) {
+                                          e.currentTarget.style.backgroundColor = colors.lightBlue
+                                          e.currentTarget.style.borderColor = colors.primary
+                                        }
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        if (field.value !== table.id) {
+                                          e.currentTarget.style.backgroundColor = '#FFFFFF'
+                                          e.currentTarget.style.borderColor = colors.border
+                                        }
+                                      }}
+                                    >
+                                      <Utensils className="h-5 w-5" />
+                                      <div className="text-center">
+                                        <p className="font-bold text-base">Bàn {table.tableNumber}</p>
+                                        <p className="text-xs opacity-80">
+                                          <Users className="h-3 w-3 inline mr-1" />
+                                          {table.capacity} khách
+                                        </p>
+                                      </div>
+                                    </Button>
+                                  ))
+                                )}
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )
+                      }}
+                    />
+
                     <FormField
                       control={form.control}
                       name="time"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Preferred time</FormLabel>
+                          <FormLabel style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>Thời gian</FormLabel>
                           <FormControl>
                             <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
                               {timeSlots.map((time) => (
                                 <Button
                                   key={time}
                                   type="button"
-                                  variant={field.value === time ? "default" : "outline"}
                                   size="sm"
                                   onClick={() => field.onChange(time)}
-                                  className="text-xs"
+                                  className="text-xs transition-all"
+                                  style={{
+                                    backgroundColor: field.value === time ? colors.primary : '#FFFFFF',
+                                    color: field.value === time ? '#FFFFFF' : colors.textPrimary,
+                                    border: `1px solid ${field.value === time ? colors.primary : colors.border}`,
+                                    borderRadius: borderRadius.button,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (field.value !== time) {
+                                      e.currentTarget.style.backgroundColor = colors.lightBlue
+                                      e.currentTarget.style.borderColor = colors.primary
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (field.value !== time) {
+                                      e.currentTarget.style.backgroundColor = '#FFFFFF'
+                                      e.currentTarget.style.borderColor = colors.border
+                                    }
+                                  }}
                                 >
                                   {time}
                                 </Button>
@@ -182,17 +403,35 @@ export default function RestaurantBookingPage() {
                       name="occasion"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Occasion (optional)</FormLabel>
+                          <FormLabel style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>Dịp đặc biệt (tùy chọn)</FormLabel>
                           <FormControl>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                               {occasions.map((occasion) => (
                                 <Button
                                   key={occasion}
                                   type="button"
-                                  variant={field.value === occasion ? "default" : "outline"}
                                   size="sm"
                                   onClick={() => field.onChange(field.value === occasion ? "" : occasion)}
-                                  className="text-xs"
+                                  className="text-xs transition-all"
+                                  style={{
+                                    backgroundColor: field.value === occasion ? colors.primary : '#FFFFFF',
+                                    color: field.value === occasion ? '#FFFFFF' : colors.textPrimary,
+                                    border: `1px solid ${field.value === occasion ? colors.primary : colors.border}`,
+                                    borderRadius: borderRadius.button,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (field.value !== occasion) {
+                                      e.currentTarget.style.backgroundColor = colors.lightBlue
+                                      e.currentTarget.style.borderColor = colors.primary
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (field.value !== occasion) {
+                                      e.currentTarget.style.backgroundColor = '#FFFFFF'
+                                      e.currentTarget.style.borderColor = colors.border
+                                    }
+                                  }}
                                 >
                                   {occasion}
                                 </Button>
@@ -209,11 +448,12 @@ export default function RestaurantBookingPage() {
                       name="specialRequests"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Special requests (optional)</FormLabel>
+                          <FormLabel style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>Yêu cầu đặc biệt (tùy chọn)</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Dietary restrictions, seating preferences, etc."
+                              placeholder="Hạn chế về chế độ ăn, vị trí ngồi, v.v."
                               {...field}
+                              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                             />
                           </FormControl>
                           <FormMessage />
@@ -232,8 +472,13 @@ export default function RestaurantBookingPage() {
                       className="w-full" 
                       size="lg"
                       disabled={isLoading}
+                      style={{ 
+                        backgroundColor: colors.primary, 
+                        borderRadius: borderRadius.button,
+                        fontFamily: 'system-ui, -apple-system, sans-serif' 
+                      }}
                     >
-                      {isLoading ? "Making reservation..." : "Reserve table"}
+                      {isLoading ? "Đang đặt bàn..." : "Đặt bàn ngay"}
                     </Button>
                   </form>
                 </Form>
@@ -241,68 +486,136 @@ export default function RestaurantBookingPage() {
             </Card>
           </div>
 
-          <div className="lg:col-span-1">
-            <Card className="sticky top-6">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="relative">
-                    <img
-                      src="/modern-hotel-room-with-city-view-london.jpg"
-                      alt="Norrebro Restaurant"
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-1">Norrebro Restaurant</h3>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="flex text-yellow-400">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="h-3 w-3 fill-current" />
-                        ))}
-                      </div>
-                      <Badge className="bg-accent text-accent-foreground">4.8</Badge>
+            <div className="lg:col-span-1">
+              <Card 
+                className="sticky top-6 bg-white" 
+                style={{ 
+                  borderRadius: borderRadius.card, 
+                  boxShadow: shadows.card,
+                  border: `1px solid ${colors.border}` 
+                }}
+              >
+                <CardContent className="p-6 bg-white">
+                  <div className="space-y-4">
+                    {/* Restaurant Image */}
+                    <div className="relative">
+                      <img
+                        src={restaurant.images?.[0] || "/modern-hotel-room-with-city-view-london.jpg"}
+                        alt={restaurant.name}
+                        className="w-full h-48 object-cover"
+                        style={{ borderRadius: borderRadius.image }}
+                      />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Fine dining experience with Nordic cuisine
-                    </p>
-                  </div>
 
-                  <Separator />
-
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <div className="text-sm">
-                        <p className="font-medium">Opening Hours</p>
-                        <p className="text-muted-foreground">11:30 AM - 10:00 PM</p>
-                      </div>
+                    {/* Restaurant Name & Rating */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        {restaurant.name}
+                      </h3>
+                      {restaurant.rating && (
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="flex" style={{ color: '#FFD700' }}>
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className="h-3 w-3 fill-current" />
+                            ))}
+                          </div>
+                          <Badge style={{ backgroundColor: colors.primary, color: '#FFFFFF' }}>
+                            {restaurant.rating.toFixed(1)}
+                          </Badge>
+                        </div>
+                      )}
+                      {restaurant.description && (
+                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          {restaurant.description}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Utensils className="h-4 w-4 text-muted-foreground" />
-                      <div className="text-sm">
-                        <p className="font-medium">Cuisine</p>
-                        <p className="text-muted-foreground">Modern European, Nordic</p>
-                      </div>
+
+                    <Separator />
+
+                    {/* Restaurant Info */}
+                    <div className="space-y-3">
+                      {restaurant.openingHours && (
+                        <div className="flex items-start space-x-3">
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: colors.lightBlue }}
+                          >
+                            <Clock className="h-4 w-4" style={{ color: colors.primary }} />
+                          </div>
+                          <div className="text-sm">
+                            <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                              Giờ mở cửa
+                            </p>
+                            <p style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                              {restaurant.openingHours}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {restaurant.cuisineType && (
+                        <div className="flex items-start space-x-3">
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: colors.lightBlue }}
+                          >
+                            <Utensils className="h-4 w-4" style={{ color: colors.primary }} />
+                          </div>
+                          <div className="text-sm">
+                            <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                              Loại món ăn
+                            </p>
+                            <p style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                              {restaurant.cuisineType}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {restaurant.location && (
+                        <div className="flex items-start space-x-3">
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: colors.lightBlue }}
+                          >
+                            <MapPin className="h-4 w-4" style={{ color: colors.primary }} />
+                          </div>
+                          <div className="text-sm">
+                            <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                              Vị trí
+                            </p>
+                            <p style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                              {restaurant.location}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
 
-                  <Separator />
+                    <Separator />
 
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-sm">Reservation Policy</h4>
-                    <ul className="text-xs text-muted-foreground space-y-1">
-                      <li>• Free cancellation up to 2 hours before</li>
-                      <li>• Maximum 12 guests per table</li>
-                      <li>• Smart casual dress code</li>
-                      <li>• Children welcome until 8:00 PM</li>
-                    </ul>
+                    {/* Table Info */}
+                    {restaurant.tables && restaurant.tables.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          Thông tin bàn
+                        </h4>
+                        <ul className="text-xs space-y-1" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          <li>• Tổng số bàn: {restaurant.tables.length}</li>
+                          <li>• Bàn trống: {restaurant.tables.filter(t => t.status === 'available').length}</li>
+                          <li>
+                            • Sức chứa: {Math.min(...restaurant.tables.map(t => t.capacity))} - {Math.max(...restaurant.tables.map(t => t.capacity))} khách
+                          </li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <Footer />

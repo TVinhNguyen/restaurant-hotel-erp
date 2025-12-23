@@ -3,26 +3,61 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loader2, SlidersHorizontal, Building2 } from "lucide-react"
+import { Loader2, SlidersHorizontal, Building2, MapPin, Calendar, Users } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import HotelCard from "@/components/HotelCard"
 import PropertiesListSkeleton from "@/components/skeletons/PropertiesListSkeleton"
 import { propertiesService, type Property } from "@/lib/services/properties"
 import { colors, shadows, borderRadius } from "@/lib/designTokens"
+import type { SearchParams } from "@/components/SearchHero"
+
+// Normalize text function for Vietnamese search
+const normalizeText = (text: string = '') => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')                 // Tách dấu
+    .replace(/[\u0300-\u036f]/g, '') // Xoá dấu
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+}
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([])
+  const [filteredProperties, setFilteredProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
+  const [filteringCapacity, setFilteringCapacity] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [showFilters, setShowFilters] = useState(true)
   const [selectedType, setSelectedType] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useState<SearchParams | null>(null)
+  const [roomTypesCache, setRoomTypesCache] = useState<Map<string, any[]>>(new Map())
 
   useEffect(() => {
     loadProperties()
+    // Load search params from localStorage
+    const storedParams = localStorage.getItem("search_params")
+    if (storedParams) {
+      try {
+        const params = JSON.parse(storedParams)
+        setSearchParams(params)
+      } catch (err) {
+        console.error("Failed to parse search params:", err)
+      }
+    }
   }, [page, selectedType])
+
+  // Apply filters when properties or searchParams change
+  useEffect(() => {
+    const runFilters = async () => {
+      await applyFilters()
+    }
+    runFilters()
+  }, [properties, searchParams])
 
   const loadProperties = async () => {
     try {
@@ -30,17 +65,45 @@ export default function PropertiesPage() {
       setError(null)
       const params: { page: number; limit: number; type?: string } = {
         page,
-        limit: 10,
+        limit: 100, // Load more to filter client-side
       }
       if (selectedType) {
         params.type = selectedType
       }
       const response = await propertiesService.getProperties(params)
-      console.log("Properties response:", response)
-      console.log("Properties data:", response.data)
-      console.log("Properties count:", response.data?.length)
-      setProperties(response.data || [])
-      setTotal(response.total || 0)
+      
+      const enrichedProperties = await Promise.all(
+        (response.data || []).map(async (property) => {
+          try {
+            // Check cache first
+            let roomTypes = roomTypesCache.get(property.id)
+            
+            if (!roomTypes) {
+              roomTypes = await propertiesService.getRoomTypes(property.id)
+              // Cache it
+              setRoomTypesCache(prev => new Map(prev).set(property.id, roomTypes || []))
+            }
+            
+            // Calculate min price from room types
+            const minPrice = roomTypes && roomTypes.length > 0
+              ? Math.min(...roomTypes.map(rt => {
+                  const price = typeof rt.basePrice === 'string' ? parseFloat(rt.basePrice) : rt.basePrice
+                  return isNaN(price) ? 0 : price
+                }).filter(p => p > 0))
+              : undefined
+
+            return {
+              ...property,
+              basePrice: minPrice ?? undefined,
+            }
+          } catch (err) {
+            console.error(`Failed to enrich property ${property.name}:`, err)
+            return property
+          }
+        })
+      )
+      
+      setProperties(enrichedProperties)
     } catch (err) {
       console.error("Failed to load properties:", err)
       setError(err instanceof Error ? err.message : "Failed to load properties")
@@ -49,9 +112,105 @@ export default function PropertiesPage() {
     }
   }
 
+  const applyFilters = async () => {
+    try {
+      let filtered = [...properties]
+
+      // 🔍 Search theo location (like mobile app)
+      if (searchParams?.location) {
+        const searchNormalized = normalizeText(searchParams.location)
+
+        filtered = filtered.filter(prop => {
+          const fields = [
+            prop.name,
+            prop.city,
+            prop.country,
+            prop.address,
+          ]
+
+          return fields.some(field =>
+            normalizeText(field || '').includes(searchNormalized)
+          )
+        })
+      }
+
+      // 👥 Filter theo số khách (check room capacity)
+      if (searchParams && (searchParams.adults + searchParams.children) > 0) {
+        setFilteringCapacity(true)
+        const totalGuests = searchParams.adults + searchParams.children
+        
+        console.log(`🔍 Filtering ${filtered.length} properties for ${totalGuests} guests`)
+        
+        // Load room types cho tất cả properties (parallel)
+        const results = await Promise.allSettled(
+          filtered.map(async (prop) => {
+            // Check cache first
+            if (roomTypesCache.has(prop.id)) {
+              const roomTypes = roomTypesCache.get(prop.id)!
+              const hasCapacity = roomTypes.some(rt => {
+                const maxOccupancy = rt.maxOccupancy || 0
+                return maxOccupancy >= totalGuests
+              })
+              return hasCapacity ? prop : null
+            }
+
+            // Load from API
+            try {
+              const roomTypes = await propertiesService.getRoomTypes(prop.id)
+              
+              // Cache result
+              setRoomTypesCache(prev => new Map(prev).set(prop.id, roomTypes))
+              
+              const hasCapacity = roomTypes.some(rt => {
+                const maxOccupancy = rt.maxOccupancy || 0
+                return maxOccupancy >= totalGuests
+              })
+              
+              return hasCapacity ? prop : null
+            } catch (err) {
+              console.error(`Failed to load room types for ${prop.name}:`, err)
+              // Keep property if API fails (better UX)
+              return prop
+            }
+          })
+        )
+
+        filtered = results.reduce<Property[]>((acc, result) => {
+          if (result.status === 'fulfilled' && result.value !== null) {
+            acc.push(result.value)
+          }
+          return acc
+        }, [])
+
+        console.log(`✅ Found ${filtered.length} properties with capacity for ${totalGuests} guests`)
+      }
+
+      setFilteredProperties(filtered)
+      setTotal(filtered.length)
+    } finally {
+      setFilteringCapacity(false)
+    }
+  }
+
+  const clearSearch = () => {
+    localStorage.removeItem("search_params")
+    setSearchParams(null)
+    applyFilters()
+  }
+
   const handleApplyFilter = () => {
     setPage(1) // Reset to first page when filter changes
     loadProperties()
+  }
+
+  const getPropertyTypeText = () => {
+    const typeMap: Record<string, string> = {
+      'Hotel': 'khách sạn',
+      'Resort': 'resort',
+      'Apartment': 'căn hộ',
+      'Villa': 'villa',
+    }
+    return selectedType ? typeMap[selectedType] || 'khách sạn' : 'khách sạn'
   }
 
 
@@ -71,10 +230,51 @@ export default function PropertiesPage() {
         }}
       >
         <div className="max-w-7xl mx-auto px-6">
+          {/* Search Summary */}
+          {searchParams && (
+            <div className="mb-6 p-4 rounded-xl animate-slide-in-left" style={{ backgroundColor: colors.lightBlue }}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-semibold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Kết quả tìm kiếm
+                  </h3>
+                  <div className="flex flex-wrap gap-3 text-sm">
+                    <div className="flex items-center gap-1" style={{ color: colors.textSecondary }}>
+                      <MapPin className="w-4 h-4" />
+                      <span className="font-medium">{searchParams.location}</span>
+                    </div>
+                    {searchParams.checkIn && searchParams.checkOut && (
+                      <div className="flex items-center gap-1" style={{ color: colors.textSecondary }}>
+                        <Calendar className="w-4 h-4" />
+                        <span>{new Date(searchParams.checkIn).toLocaleDateString('vi-VN')} - {new Date(searchParams.checkOut).toLocaleDateString('vi-VN')}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1" style={{ color: colors.textSecondary }}>
+                      <Users className="w-4 h-4" />
+                      <span className="font-medium">{searchParams.adults + searchParams.children} khách</span>
+                      {searchParams.adults > 0 && (
+                        <span className="text-xs ml-1">
+                          ({searchParams.adults} người lớn{searchParams.children > 0 ? `, ${searchParams.children} trẻ em` : ''})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={clearSearch}
+                  className="text-sm px-3 py-1 rounded-lg hover:opacity-80 transition-opacity"
+                  style={{ backgroundColor: 'white', color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                >
+                  Xóa bộ lọc
+                </button>
+              </div>
+            </div>
+          )}
+          
           <div className="flex items-center justify-between mb-4">
             <div className="animate-slide-in-left">
-              <h1 className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary }}>
-                Khách sạn
+              <h1 className="text-3xl font-bold mb-2 capitalize" style={{ color: colors.textPrimary }}>
+                {selectedType ? getPropertyTypeText() : 'Khách sạn'}
               </h1>
               <p style={{ color: colors.textSecondary }}>
                 {total} kết quả tìm thấy
@@ -215,8 +415,18 @@ export default function PropertiesPage() {
           )}
 
           <div className={showFilters ? "lg:col-span-3" : "lg:col-span-4"}>
-            {loading ? (
-              <PropertiesListSkeleton count={10} />
+            {(loading || filteringCapacity) ? (
+              <>
+                {filteringCapacity && searchParams && (
+                  <div className="mb-4 p-4 rounded-xl flex items-center gap-3" style={{ backgroundColor: colors.lightBlue }}>
+                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: colors.primary }} />
+                    <span style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Đang kiểm tra phòng phù hợp với {searchParams.adults + searchParams.children} khách...
+                    </span>
+                  </div>
+                )}
+                <PropertiesListSkeleton count={10} />
+              </>
           ) : error ? (
             <Card>
               <CardContent className="p-6 text-center">
@@ -227,15 +437,24 @@ export default function PropertiesPage() {
               </CardContent>
             </Card>
           ) : properties.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <p style={{ color: colors.textSecondary }}>Không tìm thấy khách sạn</p>
-              </CardContent>
-            </Card>
+            <div className="p-12 rounded-xl text-center" style={{ backgroundColor: colors.lightBlue }}>
+              <p className="text-lg" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Không tìm thấy {getPropertyTypeText()}
+              </p>
+            </div>
+          ) : (searchParams && filteredProperties.length === 0) ? (
+            <div className="p-12 rounded-xl text-center" style={{ backgroundColor: colors.lightBlue }}>
+              <p className="text-lg mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Không tìm thấy {getPropertyTypeText()}
+              </p>
+              <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Thử thay đổi bộ lọc hoặc tìm kiếm với điều kiện khác
+              </p>
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {properties.map((property, index) => (
+                {(searchParams ? filteredProperties : properties).map((property, index) => (
                   <HotelCard key={property.id} property={property} />
                 ))}
               </div>

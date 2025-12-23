@@ -15,28 +15,20 @@ export interface Restaurant {
   phone?: string
   email?: string
   tables?: Table[] // Tables from API response
+  areas?: any[] // Restaurant areas
+  property?: {
+    id: string
+    name: string
+    address?: string
+    city?: string
+    country?: string
+    phone?: string
+    email?: string
+    website?: string
+    propertyType?: string
+  }
   createdAt?: string
   updatedAt?: string
-}
-
-export interface MenuCategory {
-  id: string
-  restaurantId: string
-  name: string
-  description?: string
-  displayOrder?: number
-  items?: MenuItem[]
-}
-
-export interface MenuItem {
-  id: string
-  categoryId: string
-  name: string
-  description?: string
-  price: number
-  image?: string
-  isAvailable?: boolean
-  displayOrder?: number
 }
 
 export interface Table {
@@ -59,16 +51,6 @@ class RestaurantsService {
 
   async getRestaurantById(id: string): Promise<Restaurant> {
     return apiClient.get<Restaurant>(`/restaurants/${id}`)
-  }
-
-  async getMenu(restaurantId: string): Promise<{
-    categories: MenuCategory[]
-    items: MenuItem[]
-  }> {
-    return apiClient.get<{
-      categories: MenuCategory[]
-      items: MenuItem[]
-    }>(`/restaurants/${restaurantId}/menu`)
   }
 
   async getTables(restaurantId: string): Promise<Table[]> {

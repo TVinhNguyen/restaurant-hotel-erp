@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/ui/back-button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Eye, EyeOff, Lock, Loader2, CheckCircle } from "lucide-react"
-import Link from "next/link"
+import { Eye, EyeOff, Lock, Loader2, CheckCircle } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { authService } from "@/lib/auth"
@@ -72,12 +72,10 @@ export default function ChangePasswordPage() {
 
       showToast.success("Đổi mật khẩu thành công!")
       
-      // Clear form
       setOldPassword("")
       setNewPassword("")
       setConfirmPassword("")
       
-      // Redirect to profile after 1.5 seconds
       setTimeout(() => {
         router.push("/profile")
       }, 1500)
@@ -94,15 +92,9 @@ export default function ChangePasswordPage() {
       <Header />
 
       <div className="max-w-md mx-auto px-6 py-12">
-        {/* Back Button */}
-        <Link
-          href="/profile"
-          className="inline-flex items-center gap-2 mb-6 hover:opacity-70 transition-opacity"
-          style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="font-medium">Quay lại trang cá nhân</span>
-        </Link>
+        <div className="mb-6">
+          <BackButton variant="ghost" text="Quay lại trang cá nhân" onClick={() => router.push('/profile')} />
+        </div>
 
         <Card
           className="border-0"
@@ -112,7 +104,6 @@ export default function ChangePasswordPage() {
           }}
         >
           <CardContent className="p-8">
-            {/* Header */}
             <div className="text-center mb-8">
               <div
                 className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
@@ -188,7 +179,6 @@ export default function ChangePasswordPage() {
                 )}
               </div>
 
-              {/* New Password */}
               <div>
                 <Label
                   htmlFor="newPassword"
@@ -240,7 +230,6 @@ export default function ChangePasswordPage() {
                 )}
               </div>
 
-              {/* Confirm Password */}
               <div>
                 <Label
                   htmlFor="confirmPassword"
@@ -292,7 +281,6 @@ export default function ChangePasswordPage() {
                 )}
               </div>
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -317,7 +305,6 @@ export default function ChangePasswordPage() {
               </Button>
             </form>
 
-            {/* Security Tips */}
             <div
               className="mt-6 p-4 rounded-lg"
               style={{ backgroundColor: colors.lightBlue }}

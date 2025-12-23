@@ -16,6 +16,7 @@ export interface Property {
   rating?: number
   images?: string[]
   amenities?: string[]
+  basePrice?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -25,6 +26,18 @@ export interface PropertyListResponse {
   total?: number
   page?: number
   limit?: number
+}
+
+export interface Amenity {
+  id: string
+  name: string
+  category?: string
+}
+
+export interface RoomTypeAmenity {
+  roomTypeId: string
+  amenityId: string
+  amenity: Amenity
 }
 
 export interface RoomType {
@@ -38,7 +51,8 @@ export interface RoomType {
   basePrice: number | string
   bedType?: string
   images?: string[]
-  amenities?: string[]
+  amenities?: string[] | RoomTypeAmenity[]
+  roomTypeAmenities?: RoomTypeAmenity[]
 }
 
 export interface Room {
