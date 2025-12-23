@@ -233,10 +233,10 @@ export default function HomePage() {
 
         {/* Featured Properties */}
         <div className="mb-12 scroll-reveal opacity-0 translate-y-10">
-          <h2 className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary }}>
+          <h2 className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             Các cơ sở của chúng tôi
           </h2>
-          <p className="text-lg" style={{ color: colors.textSecondary }}>
+          <p className="text-lg" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             Lướt các dịch vụ bạn yêu thích với mức giá đặc biệt
           </p>
         </div>

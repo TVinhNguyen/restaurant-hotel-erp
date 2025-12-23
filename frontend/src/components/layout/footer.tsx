@@ -7,22 +7,22 @@ export function Footer() {
     <footer className="bg-white border-t mt-20" style={{ borderColor: colors.border }}>
       <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Sứ mệnh của chúng tôi */}
-        <div className="mb-12">
+        <div className="mb-12 text-center">
           <h3 className="text-2xl font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             Sứ mệnh của chúng tôi
           </h3>
-          <p className="text-base leading-relaxed max-w-4xl" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          <p className="text-base leading-relaxed max-w-4xl mx-auto" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             Mang đến trải nghiệm đặt phòng và ẩm thực tuyệt vời nhất, kết nối bạn với những địa điểm sang trọng và dịch vụ đẳng cấp. 
             Chúng tôi cam kết mang lại sự hài lòng tối đa cho mọi khách hàng.
           </p>
         </div>
 
         {/* Tính năng nổi bật */}
-        <div className="mb-12">
+        <div className="mb-12 text-center">
           <h3 className="text-2xl font-bold mb-6" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             Tính năng nổi bật
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {/* Đặt phòng dễ dàng */}
             <div className="text-center p-6 rounded-2xl transition-all hover:shadow-lg" style={{ backgroundColor: colors.background }}>
               <div 
@@ -33,7 +33,7 @@ export function Footer() {
               </div>
               <h4 className="font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 Đặt phòng dễ dàng
-            </h4>
+              </h4>
               <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 Tìm và đặt phòng khách sạn chỉ trong vài thao tác đơn giản
               </p>
@@ -46,10 +46,10 @@ export function Footer() {
                 style={{ backgroundColor: colors.lightBlue }}
               >
                 <Utensils className="w-8 h-8" style={{ color: colors.primary }} />
-          </div>
+              </div>
               <h4 className="font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 Nhà hàng đẳng cấp
-            </h4>
+              </h4>
               <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 Khám phá và đặt bàn tại các nhà hàng cao cấp
               </p>
@@ -62,10 +62,10 @@ export function Footer() {
                 style={{ backgroundColor: colors.lightBlue }}
               >
                 <CreditCard className="w-8 h-8" style={{ color: colors.primary }} />
-          </div>
+              </div>
               <h4 className="font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 Thanh toán an toàn
-            </h4>
+              </h4>
               <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 Hỗ trợ phương thức thanh toán tiện lợi và bảo mật
               </p>
@@ -78,10 +78,10 @@ export function Footer() {
                 style={{ backgroundColor: colors.lightBlue }}
               >
                 <Star className="w-8 h-8" style={{ color: colors.primary }} />
-          </div>
+              </div>
               <h4 className="font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 Ưu đãi hấp dẫn
-            </h4>
+              </h4>
               <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 Nhận ngay các chương trình khuyến mãi độc quyền
               </p>
@@ -89,12 +89,51 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Copyright */}
-        <div
-          className="border-t pt-8 text-center text-sm"
-          style={{ borderColor: colors.border, color: colors.textSecondary }}
-        >
-          © 2025 LuxStay. Đã đăng ký bản quyền.
+        {/* Footer Bottom */}
+        <div className="border-t mt-8 pt-8" style={{ borderColor: colors.border }}>
+          <div className="flex flex-col items-center gap-4 text-center">
+            {/* Links */}
+            <div className="flex flex-wrap justify-center gap-6 text-sm">
+              <Link 
+                href="/about" 
+                className="hover:underline transition-colors"
+                style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                Về chúng tôi
+              </Link>
+              <Link 
+                href="/privacy" 
+                className="hover:underline transition-colors"
+                style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                Chính sách bảo mật
+              </Link>
+              <Link 
+                href="/terms" 
+                className="hover:underline transition-colors"
+                style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                Điều khoản sử dụng
+              </Link>
+              <Link 
+                href="/contact" 
+                className="hover:underline transition-colors"
+                style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                Liên hệ
+              </Link>
+            </div>
+
+            {/* Contact Info */}
+            <div className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              Hotline: <span style={{ color: colors.primary, fontWeight: 600 }}>1900-xxxx</span>
+            </div>
+
+            {/* Copyright */}
+            <div className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              © 2025 LuxStay. Đã đăng ký bản quyền.
+            </div>
+          </div>
         </div>
       </div>
     </footer>

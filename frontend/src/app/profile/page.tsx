@@ -15,24 +15,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Calendar, MapPin, User as UserIcon, Heart, Settings, LogOut, X, Loader2, CheckCircle, XCircle, Clock, ChevronRight, KeyRound } from "lucide-react"
+import { Calendar, MapPin, User as UserIcon, Heart, Settings, LogOut, X, Loader2, CheckCircle, XCircle, Clock, ChevronRight, KeyRound, Utensils } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { authService, type User } from "@/lib/auth"
-import { reservationsService, type Reservation } from "@/lib/services/reservations"
+import { reservationsService, type Reservation, type TableBooking } from "@/lib/services/reservations"
 import { guestsService } from "@/lib/services/guests"
 import { colors, shadows, borderRadius } from "@/lib/designTokens"
 import { showToast } from "@/lib/toast"
 
-type TabType = "bookings" | "personal"
+type TabType = "bookings" | "table-bookings" | "personal"
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>("bookings")
   const [reservations, setReservations] = useState<Reservation[]>([])
+  const [tableBookings, setTableBookings] = useState<TableBooking[]>([])
   const [loadingReservations, setLoadingReservations] = useState(false)
+  const [loadingTableBookings, setLoadingTableBookings] = useState(false)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [reservationToCancel, setReservationToCancel] = useState<string | null>(null)
@@ -60,6 +62,8 @@ export default function ProfilePage() {
   useEffect(() => {
     if (activeTab === "bookings" && user) {
       loadReservations()
+    } else if (activeTab === "table-bookings" && user) {
+      loadTableBookings()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, user])
@@ -83,6 +87,30 @@ export default function ProfilePage() {
       console.error("Failed to load reservations:", error)
     } finally {
       setLoadingReservations(false)
+    }
+  }
+
+  const loadTableBookings = async () => {
+    if (!user) return
+    
+    setLoadingTableBookings(true)
+    try {
+      // Find guest by user email
+      const guest = await guestsService.findGuestByEmail(user.email)
+      
+      if (guest) {
+        const response = await reservationsService.getTableBookings({
+          guestId: guest.id,
+          limit: 50,
+        })
+        // Backend may return { data: [] } or { bookings: [] }
+        const bookings = response.data || response.bookings || []
+        setTableBookings(bookings)
+      }
+    } catch (error) {
+      console.error("Failed to load table bookings:", error)
+    } finally {
+      setLoadingTableBookings(false)
     }
   }
 
@@ -259,6 +287,21 @@ export default function ProfilePage() {
                 >
                   <Calendar className="w-5 h-5" />
                   <span>Đặt phòng của tôi</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("table-bookings")}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors cursor-pointer ${
+                    activeTab === "table-bookings" ? "font-semibold" : ""
+                  }`}
+                  style={{
+                    backgroundColor: activeTab === "table-bookings" ? colors.lightBlue : "transparent",
+                    color: activeTab === "table-bookings" ? colors.primary : colors.textSecondary,
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                  }}
+                >
+                  <Utensils className="w-5 h-5" />
+                  <span>Đặt bàn của tôi</span>
                 </button>
 
                 <button
@@ -525,6 +568,132 @@ export default function ProfilePage() {
                                       </Button>
                                     </Link>
                                   )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : activeTab === "table-bookings" ? (
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Đặt bàn của tôi
+                  </h2>
+                  <p style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Quản lý và theo dõi các đặt bàn nhà hàng của bạn
+                  </p>
+                </div>
+
+                {loadingTableBookings ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin" style={{ color: colors.primary }} />
+                  </div>
+                ) : tableBookings.length === 0 ? (
+                  <div
+                    className="bg-white p-12 text-center"
+                    style={{
+                      borderRadius: borderRadius.card,
+                      boxShadow: shadows.card,
+                    }}
+                  >
+                    <div
+                      className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center"
+                      style={{ backgroundColor: colors.lightBlue }}
+                    >
+                      <Utensils className="w-10 h-10" style={{ color: colors.primary }} />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Chưa có đặt bàn
+                    </h3>
+                    <p className="mb-6" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Hãy đặt bàn nhà hàng đầu tiên của bạn ngay hôm nay
+                    </p>
+                    <Link href="/restaurants">
+                      <Button
+                        className="px-6 py-3 text-white font-semibold rounded-xl hover:opacity-90 transition-all"
+                        style={{
+                          backgroundColor: colors.primary,
+                          borderRadius: borderRadius.button,
+                          fontFamily: 'system-ui, -apple-system, sans-serif',
+                        }}
+                      >
+                        Khám phá nhà hàng
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {tableBookings.map((booking) => {
+                      const bookingDate = new Date(booking.bookingDate)
+                      const formattedDate = bookingDate.toLocaleDateString('vi-VN', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })
+
+                      return (
+                        <div
+                          key={booking.id}
+                          className="bg-white overflow-hidden"
+                          style={{
+                            borderRadius: borderRadius.card,
+                            boxShadow: shadows.card,
+                          }}
+                        >
+                          <div className="p-6">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-start gap-4 flex-1">
+                                <div
+                                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                                  style={{ backgroundColor: colors.lightBlue }}
+                                >
+                                  <Utensils className="w-6 h-6" style={{ color: colors.primary }} />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="font-bold text-lg" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Đặt bàn nhà hàng
+                                    </h3>
+                                    <Badge
+                                      style={{
+                                        backgroundColor: booking.status === 'confirmed' ? '#10b981' : 
+                                                       booking.status === 'pending' ? '#f59e0b' :
+                                                       booking.status === 'cancelled' ? '#ef4444' : '#6b7280',
+                                        color: '#FFFFFF',
+                                      }}
+                                    >
+                                      {booking.status === 'confirmed' ? 'Đã xác nhận' :
+                                       booking.status === 'pending' ? 'Chờ xác nhận' :
+                                       booking.status === 'cancelled' ? 'Đã hủy' :
+                                       booking.status === 'completed' ? 'Hoàn thành' : booking.status}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="space-y-2 text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="w-4 h-4" />
+                                      <span>{formattedDate}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="w-4 h-4" />
+                                      <span>Giờ: {booking.bookingTime}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <UserIcon className="w-4 h-4" />
+                                      <span>{booking.pax || booking.numberOfGuests} khách</span>
+                                    </div>
+                                    {booking.specialRequests && (
+                                      <div className="mt-2 p-2 rounded" style={{ backgroundColor: colors.lightBlue }}>
+                                        <span className="text-xs">Yêu cầu: {booking.specialRequests}</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
