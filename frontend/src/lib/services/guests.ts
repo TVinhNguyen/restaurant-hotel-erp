@@ -33,9 +33,28 @@ class GuestsService {
   async findGuestByEmail(email: string): Promise<Guest | null> {
     try {
       const response = await apiClient.get<{ data: Guest[] }>('/guests', { search: email })
-      const guest = response.data?.find(g => g.email?.toLowerCase() === email.toLowerCase())
+      
+      // Check if response is array directly or nested in data
+      let guests: Guest[] = []
+      if (Array.isArray(response)) {
+        guests = response
+      } else if (response.data && Array.isArray(response.data)) {
+        guests = response.data
+      } else if (typeof response === 'object' && response !== null) {
+        // Handle object with numeric keys (convert to array)
+        const values: unknown[] = Object.values(response)
+        // Filter out non-Guest objects
+        guests = values.filter((item): item is Guest => {
+          if (typeof item !== 'object' || item === null) return false
+          const obj = item as Record<string, unknown>
+          return 'id' in obj && 'name' in obj
+        })
+      }
+      
+      const guest = guests.find(g => g.email?.toLowerCase() === email.toLowerCase())
       return guest || null
-    } catch {
+    } catch (error) {
+      console.error("Error finding guest by email:", error)
       return null
     }
   }

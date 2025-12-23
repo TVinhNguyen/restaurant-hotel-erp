@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, MapPin, Calendar, Users, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, MapPin, Calendar, Users, ChevronLeft, ChevronRight, X, Plus, Minus } from "lucide-react"
 import { colors, shadows, borderRadius } from "@/lib/designTokens"
 import { useRouter } from "next/navigation"
 
@@ -14,10 +14,30 @@ const heroImages = [
   "https://images.pexels.com/photos/261169/pexels-photo-261169.jpeg?auto=compress&cs=tinysrgb&w=1920",
 ]
 
+const popularCities = [
+  "Đà Nẵng",
+  "Hồ Chí Minh",
+  "Hà Nội",
+  "Nha Trang",
+  "Phú Quốc",
+  "Hội An",
+]
+
+export interface SearchParams {
+  location: string
+  checkIn?: string
+  checkOut?: string
+  adults: number
+  children: number
+}
+
 export default function SearchHero() {
   const [destination, setDestination] = useState("")
   const [checkIn, setCheckIn] = useState("")
   const [checkOut, setCheckOut] = useState("")
+  const [guests, setGuests] = useState({ adults: 2, children: 0 })
+  const [showGuestPicker, setShowGuestPicker] = useState(false)
+  const [showCityPicker, setShowCityPicker] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const router = useRouter()
 
@@ -30,8 +50,51 @@ export default function SearchHero() {
     return () => clearInterval(interval)
   }, [])
 
+  // Auto-set checkout date when checkin changes
+  useEffect(() => {
+    if (checkIn && (!checkOut || checkOut <= checkIn)) {
+      const nextDay = new Date(checkIn)
+      nextDay.setDate(nextDay.getDate() + 1)
+      setCheckOut(nextDay.toISOString().split('T')[0])
+    }
+  }, [checkIn])
+
   const handleSearch = () => {
+    // Validation: location and guests are required
+    if (!destination.trim() || (guests.adults + guests.children) === 0) {
+      alert("Vui lòng nhập điểm đến và số khách")
+      return
+    }
+
+    const searchParams: SearchParams = {
+      location: destination.trim(),
+      checkIn: checkIn || undefined,
+      checkOut: checkOut || undefined,
+      adults: guests.adults,
+      children: guests.children,
+    }
+
+    // Save to localStorage for properties page to use
+    localStorage.setItem("search_params", JSON.stringify(searchParams))
     router.push("/properties")
+  }
+
+  const canSearch = destination.trim() !== "" && (guests.adults + guests.children) > 0
+
+  const getNights = () => {
+    if (!checkIn || !checkOut) return 0
+    const start = new Date(checkIn)
+    const end = new Date(checkOut)
+    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+  }
+
+  const getGuestsText = () => {
+    const total = guests.adults + guests.children
+    if (total === 0) return "Chọn số khách"
+    const parts: string[] = []
+    if (guests.adults > 0) parts.push(`${guests.adults} người lớn`)
+    if (guests.children > 0) parts.push(`${guests.children} trẻ em`)
+    return parts.join(", ")
   }
 
   const goToPrevious = () => {
@@ -117,7 +180,7 @@ export default function SearchHero() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="relative">
               <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Điểm đến
+                Điểm đến <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <MapPin
@@ -128,8 +191,9 @@ export default function SearchHero() {
                   type="text"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
-                  placeholder="Phú Quốc, Đà Nẵng..."
-                  className="w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all"
+                  onFocus={() => setShowCityPicker(true)}
+                  placeholder="Thành phố, tên khách sạn..."
+                  className="w-full pl-12 pr-10 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all"
                   style={{
                     borderRadius: borderRadius.input,
                     borderColor: colors.border,
@@ -137,12 +201,49 @@ export default function SearchHero() {
                     fontFamily: 'system-ui, -apple-system, sans-serif',
                   }}
                 />
+                {destination && (
+                  <button
+                    onClick={() => setDestination("")}
+                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                  >
+                    <X className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                  </button>
+                )}
               </div>
+              
+              {/* Quick City Select */}
+              {showCityPicker && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl p-4 z-50" style={{ boxShadow: shadows.cardHover }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>
+                      Điểm đến phổ biến
+                    </p>
+                    <button onClick={() => setShowCityPicker(false)}>
+                      <X className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {popularCities.map((city) => (
+                      <button
+                        key={city}
+                        onClick={() => {
+                          setDestination(city)
+                          setShowCityPicker(false)
+                        }}
+                        className="text-left px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                        style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="relative">
               <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Ngày nhận phòng
+                Nhận phòng <span className="text-xs" style={{ color: colors.textSecondary }}>(Tùy chọn)</span>
               </label>
               <div className="relative">
                 <Calendar
@@ -153,6 +254,7 @@ export default function SearchHero() {
                   type="date"
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
                   className="w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all"
                   style={{
                     borderRadius: borderRadius.input,
@@ -166,7 +268,7 @@ export default function SearchHero() {
 
             <div className="relative">
               <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Ngày trả phòng
+                Trả phòng <span className="text-xs" style={{ color: colors.textSecondary }}>(Tùy chọn)</span>
               </label>
               <div className="relative">
                 <Calendar
@@ -177,6 +279,7 @@ export default function SearchHero() {
                   type="date"
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
+                  min={checkIn || new Date().toISOString().split('T')[0]}
                   className="w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all"
                   style={{
                     borderRadius: borderRadius.input,
@@ -186,45 +289,138 @@ export default function SearchHero() {
                   }}
                 />
               </div>
+              {checkIn && checkOut && getNights() > 0 && (
+                <p className="text-xs mt-1 flex items-center gap-1" style={{ color: colors.primary }}>
+                  {getNights()} đêm
+                </p>
+              )}
             </div>
 
             <div className="relative">
               <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Khách & Phòng
+                Số khách <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.primary }} />
-                <select
-                  className="w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all appearance-none"
+                <button
+                  type="button"
+                  onClick={() => setShowGuestPicker(!showGuestPicker)}
+                  className="w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all text-left"
                   style={{
                     borderRadius: borderRadius.input,
                     borderColor: colors.border,
                     boxShadow: shadows.input,
                     fontFamily: 'system-ui, -apple-system, sans-serif',
+                    color: (guests.adults + guests.children) === 0 ? colors.textSecondary : colors.textPrimary,
                   }}
                 >
-                  <option>2 Khách, 1 Phòng</option>
-                  <option>3 Khách, 1 Phòng</option>
-                  <option>4 Khách, 2 Phòng</option>
-                </select>
+                  {getGuestsText()}
+                </button>
               </div>
+              
+              {/* Guest Picker Modal */}
+              {showGuestPicker && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl p-4 z-50" style={{ boxShadow: shadows.cardHover }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>
+                      Số lượng khách
+                    </p>
+                    <button onClick={() => setShowGuestPicker(false)}>
+                      <X className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                    </button>
+                  </div>
+                  
+                  {/* Adults */}
+                  <div className="flex items-center justify-between mb-4 pb-4 border-b" style={{ borderColor: colors.border }}>
+                    <div>
+                      <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Người lớn
+                      </p>
+                      <p className="text-xs" style={{ color: colors.textSecondary }}>
+                        Từ 13 tuổi trở lên
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setGuests(prev => ({ ...prev, adults: Math.max(0, prev.adults - 1) }))}
+                        disabled={guests.adults === 0}
+                        className="w-8 h-8 rounded-full border flex items-center justify-center disabled:opacity-30"
+                        style={{ borderColor: colors.border, color: colors.primary }}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="w-8 text-center font-medium" style={{ color: colors.textPrimary }}>
+                        {guests.adults}
+                      </span>
+                      <button
+                        onClick={() => setGuests(prev => ({ ...prev, adults: Math.min(10, prev.adults + 1) }))}
+                        disabled={guests.adults === 10}
+                        className="w-8 h-8 rounded-full border flex items-center justify-center disabled:opacity-30"
+                        style={{ borderColor: colors.border, color: colors.primary }}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Children */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Trẻ em
+                      </p>
+                      <p className="text-xs" style={{ color: colors.textSecondary }}>
+                        Từ 0-12 tuổi
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setGuests(prev => ({ ...prev, children: Math.max(0, prev.children - 1) }))}
+                        disabled={guests.children === 0}
+                        className="w-8 h-8 rounded-full border flex items-center justify-center disabled:opacity-30"
+                        style={{ borderColor: colors.border, color: colors.primary }}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="w-8 text-center font-medium" style={{ color: colors.textPrimary }}>
+                        {guests.children}
+                      </span>
+                      <button
+                        onClick={() => setGuests(prev => ({ ...prev, children: Math.min(10, prev.children + 1) }))}
+                        disabled={guests.children === 10}
+                        className="w-8 h-8 rounded-full border flex items-center justify-center disabled:opacity-30"
+                        style={{ borderColor: colors.border, color: colors.primary }}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           <button
             onClick={handleSearch}
-            className="w-full mt-6 py-4 text-white font-semibold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 button-hover relative cursor-pointer"
+            disabled={!canSearch}
+            className="w-full mt-6 py-4 text-white font-semibold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 button-hover relative cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
-              backgroundColor: colors.primary,
+              backgroundColor: canSearch ? colors.primary : colors.textSecondary,
               borderRadius: borderRadius.button,
               fontFamily: 'system-ui, -apple-system, sans-serif',
             }}
           >
             <span className="relative z-10 flex items-center gap-2">
               <Search className="w-5 h-5" />
-              Tìm kiếm
+              {canSearch ? "Tìm kiếm khách sạn" : "Vui lòng nhập điểm đến và số khách"}
             </span>
           </button>
+          
+          {checkIn && checkOut && (
+            <p className="text-xs text-center mt-3" style={{ color: colors.textSecondary }}>
+              💡 Tip: Ngày là tùy chọn. Bạn có thể lọc theo ngày sau khi xem kết quả!
+            </p>
+          )}
         </div>
       </div>
     </div>

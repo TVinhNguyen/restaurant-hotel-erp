@@ -71,6 +71,7 @@ export default function ProfilePage() {
     try {
       // Find guest by user email
       const guest = await guestsService.findGuestByEmail(user.email)
+      
       if (guest) {
         const response = await reservationsService.getReservations({
           guestId: guest.id,
@@ -435,7 +436,7 @@ export default function ProfilePage() {
                                   <p className="text-xs mb-1" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                                     Tổng thanh toán
                                   </p>
-                                  <p className="text-xl font-bold" style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                  <p className="text-xl font-bold mb-2" style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                                     {typeof reservation.totalAmount === "number"
                                       ? reservation.totalAmount.toLocaleString("vi-VN")
                                       : typeof reservation.totalAmount === "string"
@@ -443,11 +444,39 @@ export default function ProfilePage() {
                                       : "0"}
                                     đ
                                   </p>
+                                  {/* Payment Status Badge */}
+                                  {reservation.paymentStatus && (
+                                    <div
+                                      className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium"
+                                      style={{
+                                        backgroundColor: 
+                                          reservation.paymentStatus === 'paid' 
+                                            ? '#10B981' 
+                                            : reservation.paymentStatus === 'unpaid'
+                                            ? '#F59E0B'
+                                            : reservation.paymentStatus === 'partial'
+                                            ? '#3B82F6'
+                                            : '#6B7280',
+                                        color: '#FFFFFF',
+                                      }}
+                                    >
+                                      <CheckCircle className="w-3 h-3" />
+                                      {reservation.paymentStatus === 'paid' 
+                                        ? 'Đã thanh toán' 
+                                        : reservation.paymentStatus === 'unpaid'
+                                        ? 'Chưa thanh toán'
+                                        : reservation.paymentStatus === 'partial'
+                                        ? 'Thanh toán một phần'
+                                        : 'Đã hoàn tiền'}
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div className="flex items-center gap-2">
+                                  {/* Only show cancel button if not cancelled, not checked_out, and not paid */}
                                   {reservation.status !== "cancelled" &&
-                                    reservation.status !== "checked_out" && (
+                                    reservation.status !== "checked_out" &&
+                                    reservation.paymentStatus !== "paid" && (
                                       <Button
                                         variant="destructive"
                                         size="sm"
@@ -470,6 +499,14 @@ export default function ProfilePage() {
                                           </>
                                         )}
                                       </Button>
+                                    )}
+                                  {/* Show message if paid and cannot cancel */}
+                                  {reservation.paymentStatus === "paid" && 
+                                    reservation.status !== "cancelled" &&
+                                    reservation.status !== "checked_out" && (
+                                      <div className="text-xs px-3 py-2 rounded-lg" style={{ backgroundColor: colors.lightBlue, color: colors.textSecondary }}>
+                                        💳 Đã thanh toán - không thể hủy
+                                      </div>
                                     )}
                                   {reservation.propertyId && (
                                     <Link href={`/property/${reservation.propertyId}`}>

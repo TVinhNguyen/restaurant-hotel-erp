@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/ui/back-button"
 import { CheckCircle, Star, MapPin, Mail, Phone, Loader2, Calendar, Users, Bed, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/layout/header"
@@ -33,6 +34,11 @@ export default function BookingConfirmationPage() {
 
         const res = await reservationsService.getReservationById(reservationId)
         setReservation(res)
+
+        // ✅ Clear booking flow data after successful booking
+        localStorage.removeItem("booking_context")
+        localStorage.removeItem("booking_dates")
+        localStorage.removeItem("booking_form_data")
 
         // Fetch property
         if (res.propertyId) {
@@ -142,11 +148,7 @@ export default function BookingConfirmationPage() {
           <p style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }} className="mb-4">
             {error || "Không tìm thấy thông tin đặt phòng"}
           </p>
-          <Link href="/properties">
-            <Button style={{ backgroundColor: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-              Quay lại danh sách
-            </Button>
-          </Link>
+          <BackButton variant="ghost" text="Quay lại danh sách" onClick={() => router.push('/properties')} />
         </div>
         <Footer />
       </div>
