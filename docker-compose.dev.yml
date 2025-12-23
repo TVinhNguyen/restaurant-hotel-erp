@@ -1,8 +1,5 @@
 services:
-  # ============================================
-  # Infrastructure Services (từ infra/compose.yaml)
-  # ============================================
-  
+  # ... (Postgres và Redis giữ nguyên như cũ) ...
   postgres:
     image: postgres:16
     container_name: erp-postgres-dev
@@ -39,17 +36,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # ============================================
-  # Backend Service (từ backend/compose.yaml)
-  # ============================================
-  
+  # --- Backend ---
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
     container_name: erp-backend-dev
-    ports:
-      - "4000:4000"
     networks:
       - devnet
     env_file:
@@ -74,22 +66,18 @@ services:
         condition: service_healthy
     command: npm run start:dev
 
-  # ============================================
-  # Frontend Service
-  # ============================================
-  
+  # --- Frontend ---
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
     container_name: erp-frontend-dev
-    ports:
-      - "3001:3000"
     networks:
       - devnet
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_BASE: http://localhost:4000/api
+      # SỬA LẠI: Phải là https://
+      NEXT_PUBLIC_API_BASE: https://api.thahvinhdevops.online/api
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
@@ -97,28 +85,43 @@ services:
       - backend
     command: npm run dev
 
-  # ============================================
-  # My Hotel Admin Panel
-  # ============================================
-  
+  # --- Admin ---
   my-hotel-admin:
     build:
       context: ./my-hotel-admin
       dockerfile: Dockerfile.dev
     container_name: erp-my-hotel-admin-dev
-    ports:
-      - "3000:3000"
     networks:
       - devnet
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+      # SỬA LẠI: Phải là https://
+      NEXT_PUBLIC_API_URL: https://api.thahvinhdevops.online/api
     volumes:
       - ./my-hotel-admin:/app
       - my_hotel_admin_node_modules:/app/node_modules
     depends_on:
       - backend
-    command: npm run dev
+    command: npm run dev -- --host
+
+  # --- Caddy ---
+  caddy:
+    image: caddy:2-alpine
+    container_name: erp-caddy-dev
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - devnet
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+      - my-hotel-admin
+    restart: unless-stopped
 
 networks:
   devnet:
@@ -126,12 +129,12 @@ networks:
     external: true
 
 volumes:
-  # Sử dụng lại volumes từ infra/compose.yaml
   infra_pg:
     external: true
   infra_redis:
     external: true
-  # Volumes cho node_modules (tránh conflict Windows/Linux)
   backend_node_modules:
   frontend_node_modules:
   my_hotel_admin_node_modules:
+  caddy_data:
+  caddy_config:
