@@ -1,10 +1,8 @@
 FROM node:20
+
 WORKDIR /app
 
-# Copy workspace root
-COPY . .
-
-WORKDIR /app/frontend
+COPY package.json ./
 
 RUN npm install
 
