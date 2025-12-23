@@ -1,0 +1,113 @@
+# Docker Compose mặc định cho Development
+# Chạy: docker-compose up -d
+# Hoặc: docker compose up -d (Docker Compose V2)
+
+services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:16
+    container_name: erp-postgres
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: erp
+    ports:
+      - "5432:5432"
+    volumes:
+      - infra_pg:/var/lib/postgresql/data
+      - ./backend/db:/docker-entrypoint-initdb.d:ro
+    networks:
+      - devnet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: erp-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - infra_redis:/data
+    networks:
+      - devnet
+
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: erp-backend
+    ports:
+      - "4000:4000"
+    networks:
+      - devnet
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: postgres
+      REDIS_HOST: redis
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: erp-frontend
+    ports:
+      - "3001:3000"
+    networks:
+      - devnet
+    environment:
+      NEXT_PUBLIC_API_BASE: http://localhost:4000/api
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
+
+  # My Hotel Admin Panel
+  my-hotel-admin:
+    build:
+      context: ./my-hotel-admin
+      dockerfile: Dockerfile.dev
+    container_name: erp-my-hotel-admin
+    ports:
+      - "3000:3000"
+    networks:
+      - devnet
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+    volumes:
+      - ./my-hotel-admin:/app
+      - my_hotel_admin_node_modules:/app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev
+
+networks:
+  devnet:
+    name: devnet
+    external: true
+
+volumes:
+  # Sử dụng lại volumes từ infra/compose.yaml
+  infra_pg:
+    external: true
+  infra_redis:
+    external: true
+  # Volumes mới cho node_modules
+  backend_node_modules:
+  frontend_node_modules:
+  my_hotel_admin_node_modules:

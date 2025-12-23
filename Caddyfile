@@ -1,0 +1,19 @@
+# 1. Backend API
+api.thahvinhdevops.online {
+    reverse_proxy backend:4000
+}
+
+# 2. Admin Panel
+admin.thahvinhdevops.online {
+    reverse_proxy my-hotel-admin:5173
+}
+
+# 3. Frontend (Domain chính)
+thahvinhdevops.online {
+    reverse_proxy frontend:3000
+}
+
+# 4. Redirect www về non-www
+www.thahvinhdevops.online {
+    redir https://thahvinhdevops.online{uri}
+}

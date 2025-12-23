@@ -1,0 +1,140 @@
+services:
+  # ... (Postgres và Redis giữ nguyên như cũ) ...
+  postgres:
+    image: postgres:16
+    container_name: erp-postgres-dev
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: erp
+    ports:
+      - "5432:5432"
+    volumes:
+      - infra_pg:/var/lib/postgresql/data
+      - ./backend/db:/docker-entrypoint-initdb.d:ro
+    networks:
+      - devnet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: erp-redis-dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - infra_redis:/data
+    networks:
+      - devnet
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Backend ---
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: erp-backend-dev
+    networks:
+      - devnet
+    env_file:
+      - ./backend/.env
+    environment:
+      PORT: 4000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: erp
+      DB_USERNAME: app
+      DB_PASSWORD: app
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      NODE_ENV: development
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm run start:dev
+
+  # --- Frontend ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: erp-frontend-dev
+    networks:
+      - devnet
+    environment:
+      NODE_ENV: development
+      # SỬA LẠI: Phải là https://
+      NEXT_PUBLIC_API_BASE: https://api.thahvinhdevops.online/api
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev
+
+  # --- Admin ---
+  my-hotel-admin:
+    build:
+      context: ./my-hotel-admin
+      dockerfile: Dockerfile.dev
+    container_name: erp-my-hotel-admin-dev
+    networks:
+      - devnet
+    environment:
+      NODE_ENV: development
+      # SỬA LẠI: Phải là https://
+      NEXT_PUBLIC_API_URL: https://api.thahvinhdevops.online/api
+    volumes:
+      - ./my-hotel-admin:/app
+      - my_hotel_admin_node_modules:/app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev -- --host
+
+  # --- Caddy ---
+  caddy:
+    image: caddy:2-alpine
+    container_name: erp-caddy-dev
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - devnet
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+      - my-hotel-admin
+    restart: unless-stopped
+
+networks:
+  devnet:
+    name: devnet
+    external: true
+
+volumes:
+  infra_pg:
+    external: true
+  infra_redis:
+    external: true
+  backend_node_modules:
+  frontend_node_modules:
+  my_hotel_admin_node_modules:
+  caddy_data:
+  caddy_config:
