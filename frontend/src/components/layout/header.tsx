@@ -107,22 +107,22 @@ export function Header() {
               style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               Khách sạn
-              </Link>
+            </Link>
+            <Link
+              href="/restaurants"
+              className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+              style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
+              Nhà hàng
+            </Link>
             <Link
               href="/about"
               className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
               style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               Giới thiệu
-              </Link>
-            <Link
-              href="/contact"
-              className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
-              style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
-            >
-              Liên hệ
-              </Link>
-            </nav>
+            </Link>
+          </nav>
 
           <div className="flex items-center gap-3">
             {isLoading ? (
@@ -192,20 +192,20 @@ export function Header() {
               Khách sạn
             </Link>
             <Link
+              href="/restaurants"
+              className="block w-full text-left px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-100"
+              style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Nhà hàng
+            </Link>
+            <Link
               href="/about"
               className="block w-full text-left px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-100"
               style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
               onClick={() => setMobileMenuOpen(false)}
             >
               Giới thiệu
-            </Link>
-            <Link
-              href="/contact"
-              className="block w-full text-left px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-100"
-              style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Liên hệ
             </Link>
             {user ? (
               <>

@@ -95,15 +95,15 @@ export interface CreateTableBookingRequest {
   restaurantId: string
   bookingDate: string
   bookingTime: string
-  numberOfGuests: number
-  occasion?: string
+  pax: number
+  assignedTableId?: string
+  guestId?: string
+  reservationId?: string
+  durationMinutes?: number
+  status?: 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no_show'
+  contactPhone?: string
+  contactName?: string
   specialRequests?: string
-  guestInfo?: {
-    firstName: string
-    lastName: string
-    email: string
-    phone?: string
-  }
 }
 
 class ReservationsService {

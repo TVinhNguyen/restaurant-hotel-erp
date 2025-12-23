@@ -19,7 +19,47 @@ export default function HomePage() {
     const loadFeatured = async () => {
       try {
         const response = await propertiesService.getProperties({ page: 1, limit: 6 })
-        setFeaturedProperties(response.data || [])
+        const properties = response.data || []
+        
+        // Enrich properties with additional data
+        const enrichedProperties = await Promise.all(
+          properties.map(async (property) => {
+            try {
+              // Get room types to extract the LOWEST base price
+              const roomTypes = await propertiesService.getRoomTypes(property.id)
+              let minPrice = null
+              
+              if (roomTypes.length > 0) {
+                // Find the minimum price from all room types
+                const prices = roomTypes
+                  .map(rt => typeof rt.basePrice === 'string' ? parseFloat(rt.basePrice) : rt.basePrice)
+                  .filter(price => price != null && price > 0)
+                
+                if (prices.length > 0) {
+                  minPrice = Math.min(...prices)
+                }
+              }
+              
+              return {
+                ...property,
+                basePrice: minPrice ?? undefined,
+                description: property.description || `Khám phá ${property.name} - một trong những ${property.propertyType || 'khách sạn'} hàng đầu tại ${property.city || 'Việt Nam'}`,
+                amenities: property.amenities || ['WiFi', 'Parking', 'Minibar'],
+                images: property.images || [],
+              }
+            } catch (err) {
+              // If failed to get room types, return property as is with fallback data
+              return {
+                ...property,
+                description: property.description || `Khám phá ${property.name} - một trong những ${property.propertyType || 'khách sạn'} hàng đầu tại ${property.city || 'Việt Nam'}`,
+                amenities: property.amenities || ['WiFi', 'Parking', 'Minibar'],
+                images: property.images || [],
+              }
+            }
+          })
+        )
+        
+        setFeaturedProperties(enrichedProperties)
       } catch (err) {
         console.error("Failed to load featured properties:", err)
       }
@@ -112,10 +152,10 @@ export default function HomePage() {
                 <Award className="w-10 h-10 transition-all duration-500 group-hover:scale-110" style={{ color: colors.primary }} />
               </div>
               <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-blue-600" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                1,000+ Khách sạn
+                Đặt phòng dễ dàng
               </h3>
               <p className="text-sm leading-relaxed transition-colors duration-300" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Đa dạng lựa chọn từ 3-5 sao
+                Tìm và đặt phòng nhanh chóng
               </p>
             </div>
           </div>
@@ -147,10 +187,10 @@ export default function HomePage() {
                 <Shield className="w-10 h-10 transition-all duration-500 group-hover:scale-110" style={{ color: colors.primary }} />
               </div>
               <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-green-600" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Thanh toán an toàn
+                Nhà hàng cao cấp
               </h3>
               <p className="text-sm leading-relaxed transition-colors duration-300" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Bảo mật thông tin 100%
+                Trải nghiệm ẩm thực đỉnh cao
               </p>
             </div>
         </div>
@@ -182,10 +222,10 @@ export default function HomePage() {
                 <TrendingUp className="w-10 h-10 transition-all duration-500 group-hover:scale-110" style={{ color: colors.primary }} />
               </div>
               <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-orange-600" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Giá tốt nhất
+                Thanh toán an toàn
               </h3>
               <p className="text-sm leading-relaxed transition-colors duration-300" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Cam kết hoàn tiền nếu chênh lệch
+                Thanh toán bằng mã QR nhanh chóng và an toàn
               </p>
             </div>
           </div>
@@ -194,10 +234,10 @@ export default function HomePage() {
         {/* Featured Properties */}
         <div className="mb-12 scroll-reveal opacity-0 translate-y-10">
           <h2 className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary }}>
-            Ưu Đãi Hot
+            Các cơ sở của chúng tôi
           </h2>
           <p className="text-lg" style={{ color: colors.textSecondary }}>
-            Các resort được yêu thích nhất với giá đặc biệt
+            Lướt các dịch vụ bạn yêu thích với mức giá đặc biệt
           </p>
         </div>
 
@@ -206,32 +246,6 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
             {featuredProperties.slice(0, 6).map((property, index) => (
-              <div
-                key={property.id}
-                className="scroll-reveal opacity-0 translate-y-10"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <HotelCard property={property} />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Popular Destinations */}
-        <div className="mb-12 scroll-reveal opacity-0 translate-y-10">
-          <h2 className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary }}>
-            Điểm Đến Phổ Biến
-          </h2>
-          <p className="text-lg" style={{ color: colors.textSecondary }}>
-            Khám phá những resort & khách sạn hàng đầu Việt Nam
-          </p>
-        </div>
-
-        {featuredProperties.length === 0 ? (
-          <PropertiesListSkeleton count={6} />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProperties.map((property, index) => (
               <div
                 key={property.id}
                 className="scroll-reveal opacity-0 translate-y-10"

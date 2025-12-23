@@ -141,21 +141,10 @@ export default function HotelCard({ property }: HotelCardProps) {
               ))}
             </div>
           )}
-          <button className="absolute top-4 left-4 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white hover:scale-110 transition-all duration-300 z-20 shadow-lg cursor-pointer">
-            <Star className="w-4 h-4" style={{ color: colors.textSecondary }} />
-          </button>
           {property.propertyType && (
             <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg z-20">
               <span className="text-xs font-semibold" style={{ color: colors.primary }}>
                 {property.propertyType}
-              </span>
-            </div>
-          )}
-          {property.rating && (
-            <div className="absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full flex items-center gap-1 shadow-lg z-20">
-              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-bold text-sm" style={{ color: colors.textPrimary }}>
-                {property.rating.toFixed(1)}
               </span>
             </div>
           )}
@@ -209,11 +198,8 @@ export default function HotelCard({ property }: HotelCardProps) {
 
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-xs mb-1" style={{ color: colors.textSecondary }}>
-                Từ
-              </p>
               <p className="text-2xl font-bold" style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Liên hệ
+                {property.basePrice ? `Từ ${property.basePrice.toLocaleString('vi-VN')} VNĐ` : 'Liên hệ'}
               </p>
               <p className="text-xs" style={{ color: colors.textSecondary }}>
                 /đêm

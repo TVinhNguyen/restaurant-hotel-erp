@@ -6,13 +6,14 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/ui/back-button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Star, Wifi, Car, AirVent, Bath, CreditCard, MapPin, Bed, Loader2, Users, Waves, Tv, Coffee, ChevronLeft, ChevronRight, Calendar, Check, Phone, Mail, Globe, Clock, Utensils, X, User, CalendarDays, Clock3, MessageSquare, Tag } from "lucide-react"
+import { Star, Wifi, Car, AirVent, Bath, CreditCard, MapPin, Bed, Loader2, Users, Waves, Tv, Coffee, ChevronLeft, ChevronRight, Calendar, Check, Phone, Mail, Globe, Clock, Utensils, X, User, CalendarDays, Clock3, MessageSquare, Tag } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -267,6 +268,27 @@ function RoomImageCarousel({ roomType, roomId }: { roomType?: RoomType; roomId?:
   )
 }
 
+// Helper function to get amenity names from room type
+const getAmenityNames = (roomType: RoomType): string[] => {
+  const amenitiesList = roomType.roomTypeAmenities || roomType.amenities || []
+  const names: string[] = []
+  
+  if (Array.isArray(amenitiesList)) {
+    amenitiesList.forEach((amenity) => {
+      if (typeof amenity === 'object' && amenity !== null && 'amenity' in amenity) {
+        const roomTypeAmenity = amenity as any
+        if (roomTypeAmenity.amenity?.name) {
+          names.push(roomTypeAmenity.amenity.name)
+        }
+      } else if (typeof amenity === 'string') {
+        names.push(amenity)
+      }
+    })
+  }
+  
+  return names
+}
+
 export default function PropertyDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -283,6 +305,10 @@ export default function PropertyDetailPage() {
   const [roomsLimit] = useState(10)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [selectedRoomType, setSelectedRoomType] = useState<RoomType | null>(null)
+  const [selectedRoomTypeForDetails, setSelectedRoomTypeForDetails] = useState<RoomType | null>(null)
+  const [roomTypeDetailRooms, setRoomTypeDetailRooms] = useState<Room[]>([])
+  const [isRoomTypeDetailsOpen, setIsRoomTypeDetailsOpen] = useState(false)
+  const [loadingRoomTypeDetails, setLoadingRoomTypeDetails] = useState(false)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loadingRestaurants, setLoadingRestaurants] = useState(false)
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
@@ -294,6 +320,7 @@ export default function PropertyDetailPage() {
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false)
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [loadingPromotions, setLoadingPromotions] = useState(false)
+  const [activeTab, setActiveTab] = useState<string>("rooms")
   const sectionsRef = useRef<(HTMLDivElement | null)[]>([])
 
   // Table Booking Form
@@ -314,7 +341,7 @@ export default function PropertyDetailPage() {
   useEffect(() => {
     if (propertyId) {
       loadProperty()
-      loadRoomTypes()
+      loadRoomTypes() // Load room types to show grouped by type
       loadPromotions()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -409,12 +436,17 @@ export default function PropertyDetailPage() {
       try {
         const roomTypesData = await propertiesService.getRoomTypes(propertyId)
         setRoomTypes(roomTypesData)
+        
+        // Extract unique amenities from all room types
+        extractAmenitiesFromRoomTypes(roomTypesData)
       } catch {
         // Fallback: try to get from property rooms endpoint
         try {
           const propertyData = await propertiesService.getPropertyRooms(propertyId)
           if (propertyData.roomTypes) {
-            setRoomTypes(Array.isArray(propertyData.roomTypes) ? propertyData.roomTypes : [])
+            const roomTypesArray = Array.isArray(propertyData.roomTypes) ? propertyData.roomTypes : []
+            setRoomTypes(roomTypesArray)
+            extractAmenitiesFromRoomTypes(roomTypesArray)
           }
         } catch (err) {
           console.error("Failed to load room types:", err)
@@ -424,12 +456,42 @@ export default function PropertyDetailPage() {
       console.error("Failed to load room types:", err)
     }
   }
+  
+  const extractAmenitiesFromRoomTypes = (roomTypesData: typeof roomTypes) => {
+    // Collect all unique amenities from room types
+    const amenitiesSet = new Set<string>()
+    
+    roomTypesData.forEach((roomType) => {
+      // Check both amenities and roomTypeAmenities fields
+      const amenitiesList = roomType.roomTypeAmenities || roomType.amenities || []
+      
+      if (Array.isArray(amenitiesList)) {
+        amenitiesList.forEach((amenity) => {
+          // Check if amenity is an object with amenity.name or just a string
+          if (typeof amenity === 'object' && amenity !== null && 'amenity' in amenity) {
+            // It's a RoomTypeAmenity object
+            const roomTypeAmenity = amenity as any
+            if (roomTypeAmenity.amenity?.name) {
+              amenitiesSet.add(roomTypeAmenity.amenity.name)
+            }
+          } else if (typeof amenity === 'string') {
+            amenitiesSet.add(amenity)
+          }
+        })
+      }
+    })
+    
+    // Update property with extracted amenities
+    if (amenitiesSet.size > 0) {
+      setProperty((prev) => prev ? {
+        ...prev,
+        amenities: Array.from(amenitiesSet)
+      } : prev)
+    }
+  }
 
   const handleBookNow = (roomTypeId?: string, roomId?: string) => {
-    if (!authService.isAuthenticated()) {
-      router.push("/login")
-      return
-    }
+    // Allow booking without authentication - users can book as guests
     const bookingContext = {
       propertyId: propertyId,
       roomTypeId: roomTypeId || null,
@@ -561,13 +623,42 @@ export default function PropertyDetailPage() {
   }
 
   const handleTabChange = (value: string) => {
+    setActiveTab(value)
     if (value === "rooms") {
-      // Always reload room types and rooms when tab is clicked
+      // Always reload room types when tab is clicked
       loadRoomTypes()
-      loadRooms(1)
     } else if (value === "restaurants") {
       // Always reload restaurants when tab is clicked
       loadRestaurants()
+    }
+  }
+
+  const handleViewRoomTypeDetails = async (roomType: RoomType) => {
+    setSelectedRoomTypeForDetails(roomType)
+    setIsRoomTypeDetailsOpen(true)
+    
+    try {
+      setLoadingRoomTypeDetails(true)
+      // Load all rooms of this room type
+      const response = await propertiesService.getRooms(propertyId, {
+        limit: 100 // Get all rooms
+      })
+      
+      // Filter rooms by room type ID
+      const filteredRooms = response.data.filter((room: Room) => room.roomTypeId === roomType.id)
+      
+      // Add room type info to each room
+      const roomsWithType = filteredRooms.map((room: Room) => ({
+        ...room,
+        roomType: roomType
+      }))
+      
+      setRoomTypeDetailRooms(roomsWithType)
+    } catch (err) {
+      console.error("Failed to load rooms:", err)
+      setRoomTypeDetailRooms([])
+    } finally {
+      setLoadingRoomTypeDetails(false)
     }
   }
 
@@ -661,19 +752,13 @@ export default function PropertyDetailPage() {
       }
 
       // Create table booking - map to backend format
-      // Backend may accept additional fields, so we use a flexible type
-      const bookingPayload: CreateTableBookingRequest & Record<string, unknown> = {
+      const bookingPayload: CreateTableBookingRequest = {
         restaurantId: selectedRestaurant.id,
         bookingDate: data.bookingDate,
         bookingTime: data.bookingTime,
-        numberOfGuests: data.numberOfGuests,
+        pax: data.numberOfGuests,
         specialRequests: data.specialRequests,
-        guestInfo: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: user?.email || data.email,
-          phone: data.phone,
-        },
+        guestId: guestId,
       }
 
       // Add guestId if we have one
@@ -796,13 +881,8 @@ export default function PropertyDetailPage() {
       <Header />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center space-x-4 mb-6">
-          <Link href="/properties">
-            <Button variant="ghost" size="sm" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Quay lại
-            </Button>
-          </Link>
+        <div className="mb-6">
+          <BackButton variant="ghost" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -946,11 +1026,34 @@ export default function PropertyDetailPage() {
               )}
 
               {/* Contact Information */}
-              {(property.phone || property.email || property.website) && (
+              {(property.address || property.phone || property.email || property.website) && (
                 <div
-                  className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 pb-8 border-b"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b"
                   style={{ borderColor: colors.border }}
                 >
+                  {property.address && (
+                    <div className="flex items-start gap-4 p-4 rounded-xl hover:shadow-md transition-all" style={{ backgroundColor: colors.lightBlue }}>
+                      <div className="p-3 rounded-xl bg-white" style={{ boxShadow: shadows.input }}>
+                        <MapPin className="w-6 h-6" style={{ color: colors.primary }} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium mb-1 uppercase tracking-wide" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          Địa chỉ
+                        </p>
+                        <p
+                          className="font-bold text-base"
+                          style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                        >
+                          {property.address}
+                          {property.city && property.country && (
+                            <span className="block font-normal text-sm mt-1" style={{ color: colors.textSecondary }}>
+                              {property.city}, {property.country}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {property.phone && (
                     <div className="flex items-start gap-4 p-4 rounded-xl hover:shadow-md transition-all" style={{ backgroundColor: colors.lightBlue }}>
                       <div className="p-3 rounded-xl bg-white" style={{ boxShadow: shadows.input }}>
@@ -1158,11 +1261,9 @@ export default function PropertyDetailPage() {
               className="scroll-reveal opacity-0 translate-y-10"
             >
             <Tabs defaultValue="rooms" className="w-full" onValueChange={handleTabChange}>
-              <TabsList className="grid w-full grid-cols-4 mb-8" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: colors.lightBlue }}>
+              <TabsList className="grid w-full grid-cols-2 mb-8" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: colors.lightBlue }}>
                 <TabsTrigger value="rooms" className="font-semibold">Phòng</TabsTrigger>
                 <TabsTrigger value="restaurants" className="font-semibold">Nhà hàng</TabsTrigger>
-                <TabsTrigger value="amenities" className="font-semibold">Tiện nghi</TabsTrigger>
-                <TabsTrigger value="policies" className="font-semibold">Chính sách</TabsTrigger>
               </TabsList>
 
               <TabsContent value="rooms" className="mt-8">
@@ -1199,97 +1300,150 @@ export default function PropertyDetailPage() {
                             <div className="flex gap-6">
                               <RoomImageCarousel roomType={roomType} roomId={room.id} />
                               <div className="flex-1">
-                                <div className="flex justify-between items-start mb-3">
-                                  <div>
-                                    <h4 className="text-xl font-bold mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                      {roomType?.name || `Phòng ${roomNumber}`}
-                                      {roomNumber && (
-                                        <span className="text-sm ml-2" style={{ color: colors.textSecondary }}>
-                                          #{roomNumber}
-                                        </span>
-                                      )}
-                                    </h4>
-                                    {roomType?.description && (
-                                      <p className="text-sm mb-3" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                        {roomType.description}
-                                      </p>
+                                <div className="mb-4">
+                                  <h4 className="text-xl font-bold mb-3" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    {roomType?.name || `Phòng ${roomNumber}`}
+                                    {roomNumber && (
+                                      <span className="text-sm ml-2" style={{ color: colors.textSecondary }}>
+                                        #{roomNumber}
+                                      </span>
                                     )}
-                                  </div>
+                                  </h4>
                                 </div>
 
-                                <div
-                                  className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b"
-                                  style={{ borderColor: colors.border }}
-                                >
-                                  {maxGuests > 0 && (
-                                    <div className="flex items-center gap-3">
-                                      <div className="p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
-                                        <Users className="w-5 h-5" style={{ color: colors.primary }} />
-                                      </div>
-                                      <div>
-                                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                          Sức chứa
-                                        </p>
-                                        <p className="font-semibold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                          {maxGuests} người
-                                        </p>
-                                      </div>
+                                {/* Quick Info - Inline Style */}
+                                <div className="flex flex-wrap gap-3 mb-4 pb-4 border-b" style={{ borderColor: colors.border }}>
+                                  {roomType?.bedType && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: colors.lightBlue }}>
+                                      <Bed className="w-4 h-4" style={{ color: colors.primary }} />
+                                      <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                        {roomType.bedType}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {(roomType?.maxAdults || 0) > 0 && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: colors.lightBlue }}>
+                                      <Users className="w-4 h-4" style={{ color: colors.primary }} />
+                                      <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                        {roomType?.maxAdults || 0} Người lớn
+                                      </span>
+                                    </div>
+                                  )}
+                                  {(roomType?.maxChildren || 0) > 0 && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: colors.lightBlue }}>
+                                      <User className="w-4 h-4" style={{ color: colors.primary }} />
+                                      <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                        {roomType?.maxChildren || 0} Trẻ em
+                                      </span>
                                     </div>
                                   )}
                                   {room.viewType && (
-                                    <div className="flex items-center gap-3">
-                                      <div className="p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
-                                        <Waves className="w-5 h-5" style={{ color: colors.primary }} />
-                                      </div>
-                                      <div>
-                                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                          View
-                                        </p>
-                                        <p className="font-semibold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                          {room.viewType}
-                                        </p>
-                                      </div>
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: colors.lightBlue }}>
+                                      <Waves className="w-4 h-4" style={{ color: colors.primary }} />
+                                      <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                        {room.viewType}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {room.floor && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: colors.lightBlue }}>
+                                      <MapPin className="w-4 h-4" style={{ color: colors.primary }} />
+                                      <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                        Tầng {room.floor}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
 
-                                {roomType?.bedType && (
-                                  <div className="flex items-center gap-2 mb-4">
-                                    <Bed className="w-4 h-4" style={{ color: colors.textSecondary }} />
-                                    <span className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                      {roomType.bedType}
-                                    </span>
+                                {/* Description Section */}
+                                {roomType?.description && (
+                                  <div className="mb-4 pb-4 border-b" style={{ borderColor: colors.border }}>
+                                    <h5 className="text-sm font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Mô tả
+                                    </h5>
+                                    <p className="text-sm leading-relaxed" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      {roomType.description}
+                                    </p>
                                   </div>
                                 )}
 
-                                {roomType?.amenities && roomType.amenities.length > 0 && (
-                                  <div className="flex items-center space-x-2 flex-wrap gap-2 mb-4">
-                                    {roomType.amenities.slice(0, 5).map((amenity, index) => (
-                                      <Badge key={index} variant="outline" className="text-xs">
-                                        {amenity}
-                                      </Badge>
-                                    ))}
-                                    {roomType.amenities.length > 5 && (
-                                      <span className="text-xs" style={{ color: colors.textSecondary }}>
-                                        +{roomType.amenities.length - 5} tiện nghi khác
-                                      </span>
-                                    )}
+                                {/* Hotel Information Section */}
+                                {property && (
+                                  <div className="mb-4 pb-4 border-b" style={{ borderColor: colors.border }}>
+                                    <h5 className="text-sm font-bold mb-3" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Thông tin khách sạn
+                                    </h5>
+                                    <div className="space-y-2.5">
+                                      <div className="flex items-start gap-3">
+                                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: colors.primary }} />
+                                        <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                          {property.name}
+                                        </span>
+                                      </div>
+                                      {property.address && (
+                                        <div className="flex items-start gap-3">
+                                          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: colors.primary }} />
+                                          <span className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                            {property.address}
+                                            {property.city && property.country && `, ${property.city}, ${property.country}`}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {property.phone && (
+                                        <div className="flex items-center gap-3">
+                                          <Phone className="w-4 h-4 flex-shrink-0" style={{ color: colors.primary }} />
+                                          <a href={`tel:${property.phone}`} className="text-sm hover:underline" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                            {property.phone}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {property.email && (
+                                        <div className="flex items-center gap-3">
+                                          <Mail className="w-4 h-4 flex-shrink-0" style={{ color: colors.primary }} />
+                                          <a href={`mailto:${property.email}`} className="text-sm hover:underline break-all" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                            {property.email}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {property.website && (
+                                        <div className="flex items-center gap-3">
+                                          <Globe className="w-4 h-4 flex-shrink-0" style={{ color: colors.primary }} />
+                                          <a href={property.website} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline break-all" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                            {property.website}
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
+
+                                {roomType && (() => {
+                                  const amenityNames = getAmenityNames(roomType)
+                                  return amenityNames.length > 0 && (
+                                    <div className="flex items-center space-x-2 flex-wrap gap-2 mb-4">
+                                      {amenityNames.slice(0, 5).map((name, index) => (
+                                        <Badge key={index} variant="outline" className="text-xs">
+                                          {name}
+                                        </Badge>
+                                      ))}
+                                      {amenityNames.length > 5 && (
+                                        <span className="text-xs" style={{ color: colors.textSecondary }}>
+                                          +{amenityNames.length - 5} tiện nghi khác
+                                        </span>
+                                      )}
+                                    </div>
+                                  )
+                                })()}
 
                                 <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: colors.border }}>
                                   <div>
                                     {roomType?.basePrice && (
-                                      <>
-                                        <p className="text-xs mb-1" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                          Giá/đêm từ
-                                        </p>
-                                        <p className="text-2xl font-bold" style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                          {typeof roomType.basePrice === 'string' 
-                                            ? parseFloat(roomType.basePrice).toLocaleString("vi-VN")
-                                            : roomType.basePrice.toLocaleString("vi-VN")}đ
-                                        </p>
-                                      </>
+                                      <p className="text-2xl font-bold" style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                        {typeof roomType.basePrice === 'string'
+                                          ? parseFloat(roomType.basePrice).toLocaleString("vi-VN")
+                                          : roomType.basePrice.toLocaleString("vi-VN")}đ
+                                        <span className="text-base font-normal" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>/đêm</span>
+                                      </p>
                                     )}
                                   </div>
                                   {roomType && (
@@ -1298,7 +1452,7 @@ export default function PropertyDetailPage() {
                                         setSelectedRoomType(roomType)
                                         handleBookNow(roomType.id)
                                       }}
-                                      className="px-8 py-3 text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
+                                      className="px-8 py-3 text-white font-semibold rounded-xl hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl"
                                       style={{
                                         backgroundColor: colors.primary,
                                         borderRadius: borderRadius.button,
@@ -1413,60 +1567,117 @@ export default function PropertyDetailPage() {
                             <div className="flex gap-6">
                               <RoomImageCarousel roomType={roomType} />
                               <div className="flex-1">
-                                <div className="flex justify-between items-start mb-3">
-                                  <div>
-                                    <h4 className="text-xl font-bold mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                      {roomType.name}
-                                    </h4>
-                                    {roomType.description && (
-                                      <p className="text-sm mb-3" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                        {roomType.description}
-                                      </p>
-                                    )}
-                                  </div>
+                                <div className="mb-4 flex items-center justify-between">
+                                  <h4 className="text-xl font-bold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                    {roomType.name}
+                                  </h4>
+                                  <Badge 
+                                    className="px-3 py-1 text-sm font-medium"
+                                    style={{ 
+                                      backgroundColor: colors.success + '20',
+                                      color: colors.success,
+                                      fontFamily: 'system-ui, -apple-system, sans-serif',
+                                    }}
+                                  >
+                                    5 phòng còn trống
+                                  </Badge>
                                 </div>
 
-                                <div
-                                  className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b"
-                                  style={{ borderColor: colors.border }}
-                                >
-                                  {maxGuests > 0 && (
-                                    <div className="flex items-center gap-3">
-                                      <div className="p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
-                                        <Users className="w-5 h-5" style={{ color: colors.primary }} />
-                                      </div>
-                                      <div>
-                                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                          Sức chứa
-                                        </p>
-                                        <p className="font-semibold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                          {maxGuests} người
-                                        </p>
-                                      </div>
+                                {/* Quick Info - Inline Style */}
+                                <div className="flex flex-wrap gap-3 mb-4 pb-4 border-b" style={{ borderColor: colors.border }}>
+                                  {roomType.bedType && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: colors.lightBlue }}>
+                                      <Bed className="w-4 h-4" style={{ color: colors.primary }} />
+                                      <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                        {roomType.bedType}
+                                      </span>
                                     </div>
                                   )}
-                                  {roomType.bedType && (
-                                    <div className="flex items-center gap-3">
-                                      <div className="p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
-                                        <Bed className="w-5 h-5" style={{ color: colors.primary }} />
-                                      </div>
-                                      <div>
-                                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                          Giường
-                                        </p>
-                                        <p className="font-semibold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                          {roomType.bedType}
-                                        </p>
-                                      </div>
+                                  {(roomType.maxAdults || 0) > 0 && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: colors.lightBlue }}>
+                                      <Users className="w-4 h-4" style={{ color: colors.primary }} />
+                                      <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                        {roomType.maxAdults || 0} Người lớn
+                                      </span>
+                                    </div>
+                                  )}
+                                  {(roomType.maxChildren || 0) > 0 && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: colors.lightBlue }}>
+                                      <User className="w-4 h-4" style={{ color: colors.primary }} />
+                                      <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                        {roomType.maxChildren || 0} Trẻ em
+                                      </span>
                                     </div>
                                   )}
                                 </div>
+
+                                {/* Description Section */}
+                                {roomType.description && (
+                                  <div className="mb-4 pb-4 border-b" style={{ borderColor: colors.border }}>
+                                    <h5 className="text-sm font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Mô tả
+                                    </h5>
+                                    <p className="text-sm leading-relaxed" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      {roomType.description}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Hotel Information Section */}
+                                {property && (
+                                  <div className="mb-4 pb-4 border-b" style={{ borderColor: colors.border }}>
+                                    <h5 className="text-sm font-bold mb-3" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                      Thông tin khách sạn
+                                    </h5>
+                                    <div className="space-y-2.5">
+                                      <div className="flex items-start gap-3">
+                                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: colors.primary }} />
+                                        <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                          {property.name}
+                                        </span>
+                                      </div>
+                                      {property.address && (
+                                        <div className="flex items-start gap-3">
+                                          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: colors.primary }} />
+                                          <span className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                            {property.address}
+                                            {property.city && property.country && `, ${property.city}, ${property.country}`}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {property.phone && (
+                                        <div className="flex items-center gap-3">
+                                          <Phone className="w-4 h-4 flex-shrink-0" style={{ color: colors.primary }} />
+                                          <a href={`tel:${property.phone}`} className="text-sm hover:underline" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                            {property.phone}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {property.email && (
+                                        <div className="flex items-center gap-3">
+                                          <Mail className="w-4 h-4 flex-shrink-0" style={{ color: colors.primary }} />
+                                          <a href={`mailto:${property.email}`} className="text-sm hover:underline break-all" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                            {property.email}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {property.website && (
+                                        <div className="flex items-center gap-3">
+                                          <Globe className="w-4 h-4 flex-shrink-0" style={{ color: colors.primary }} />
+                                          <a href={property.website} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline break-all" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                            {property.website}
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
 
                                 {roomType.amenities && roomType.amenities.length > 0 && (
                                   <div className="flex items-center space-x-2 flex-wrap gap-2 mb-4">
                                     {roomType.amenities.slice(0, 5).map((amenity, index) => (
                                       <Badge key={index} variant="outline" className="text-xs">
-                                        {amenity}
+                                        {typeof amenity === 'string' ? amenity : (amenity as any)?.amenity?.name || (amenity as any)?.name || 'Tiện nghi'}
                                       </Badge>
                                     ))}
                                     {roomType.amenities.length > 5 && (
@@ -1479,29 +1690,42 @@ export default function PropertyDetailPage() {
 
                                 <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: colors.border }}>
                                   <div>
-                                    <p className="text-xs mb-1" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                      Giá/đêm từ
-                                    </p>
                                     <p className="text-2xl font-bold" style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                      {typeof roomType.basePrice === 'string' 
+                                      {typeof roomType.basePrice === 'string'
                                         ? parseFloat(roomType.basePrice).toLocaleString("vi-VN")
                                         : roomType.basePrice.toLocaleString("vi-VN")}đ
+                                      <span className="text-base font-normal" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>/đêm</span>
                                     </p>
                                   </div>
-                                  <Button
-                                    onClick={() => {
-                                      setSelectedRoomType(roomType)
-                                      handleBookNow(roomType.id)
-                                    }}
-                                    className="px-8 py-3 text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
-                                    style={{
-                                      backgroundColor: colors.primary,
-                                      borderRadius: borderRadius.button,
-                                      fontFamily: 'system-ui, -apple-system, sans-serif',
-                                    }}
-                                  >
-                                    Đặt phòng ngay
-                                  </Button>
+                                  <div className="flex gap-3">
+                                    <Button
+                                      onClick={() => handleViewRoomTypeDetails(roomType)}
+                                      variant="outline"
+                                      className="px-6 py-3 font-semibold rounded-xl hover:scale-105 active:scale-95 transition-all duration-300"
+                                      style={{
+                                        borderColor: colors.primary,
+                                        color: colors.primary,
+                                        borderRadius: borderRadius.button,
+                                        fontFamily: 'system-ui, -apple-system, sans-serif',
+                                      }}
+                                    >
+                                      Xem chi tiết
+                                    </Button>
+                                    <Button
+                                      onClick={() => {
+                                        setSelectedRoomType(roomType)
+                                        handleBookNow(roomType.id)
+                                      }}
+                                      className="px-8 py-3 text-white font-semibold rounded-xl hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl"
+                                      style={{
+                                        backgroundColor: colors.primary,
+                                        borderRadius: borderRadius.button,
+                                        fontFamily: 'system-ui, -apple-system, sans-serif',
+                                      }}
+                                    >
+                                      Đặt phòng ngay
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -1529,80 +1753,6 @@ export default function PropertyDetailPage() {
                       >
                         Đặt phòng ngay
                       </Button>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="amenities" className="mt-8">
-                <div
-                  className="bg-white p-8"
-                  style={{
-                    borderRadius: borderRadius.card,
-                    boxShadow: shadows.card,
-                  }}
-                >
-                  <h3 className="text-2xl font-bold mb-6" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    Tiện nghi khách sạn
-                  </h3>
-                  {property.amenities && property.amenities.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {property.amenities.map((amenity, index) => {
-                        const amenityIcons: Record<string, typeof Wifi> = {
-                          'WiFi': Wifi,
-                          'Wifi': Wifi,
-                          'Parking': Car,
-                          'Air Conditioning': AirVent,
-                          'Bathroom': Bath,
-                          'TV': Tv,
-                          'Minibar': Coffee,
-                          'Ocean View': Waves,
-                          'Sea View': Waves,
-                        }
-                        const Icon = amenityIcons[amenity] || Wifi
-                        
-                        return (
-                          <div 
-                            key={index} 
-                            className="flex items-center gap-3 p-4 rounded-xl hover:shadow-md transition-all"
-                            style={{ backgroundColor: colors.lightBlue }}
-                          >
-                            <div className="p-2 rounded-lg bg-white" style={{ boxShadow: shadows.input }}>
-                              <Icon className="w-5 h-5" style={{ color: colors.primary }} />
-                            </div>
-                            <span className="text-sm font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                              {amenity}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <h4 className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Tổng quan
-                        </h4>
-                        <ul className="space-y-1 text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          <li>• WiFi miễn phí</li>
-                          <li>• Bãi đỗ xe miễn phí</li>
-                          <li>• Điều hòa</li>
-                          <li>• Lễ tân 24/7</li>
-                          <li>• Phòng không hút thuốc</li>
-                        </ul>
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Dịch vụ
-                        </h4>
-                        <ul className="space-y-1 text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          <li>• Dịch vụ phòng</li>
-                          <li>• Dịch vụ giặt ủi</li>
-                          <li>• Dịch vụ concierge</li>
-                          <li>• Lưu trữ hành lý</li>
-                          <li>• Bàn tour</li>
-                        </ul>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -1749,73 +1899,20 @@ export default function PropertyDetailPage() {
                   )}
                 </div>
               </TabsContent>
-
-              <TabsContent value="policies" className="mt-8">
-                <div
-                  className="bg-white p-8"
-                  style={{
-                    borderRadius: borderRadius.card,
-                    boxShadow: shadows.card,
-                  }}
-                >
-                  <h3 className="text-2xl font-bold mb-6" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    Chính sách khách sạn
-                  </h3>
-                  <div className="space-y-6">
-                    <div className="flex items-start gap-4 p-4 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
-                      <div className="p-2 rounded-lg bg-white flex-shrink-0" style={{ boxShadow: shadows.input }}>
-                        <Check className="w-6 h-6" style={{ color: colors.success }} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-base mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Check-in: 14:00 | Check-out: 12:00
-                        </p>
-                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Check-in sớm và check-out muộn tùy theo tình trạng phòng
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4 p-4 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
-                      <div className="p-2 rounded-lg bg-white flex-shrink-0" style={{ boxShadow: shadows.input }}>
-                        <Check className="w-6 h-6" style={{ color: colors.success }} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-base mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Hủy miễn phí
-                        </p>
-                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Hủy miễn phí trước 24 giờ nhận phòng
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4 p-4 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
-                      <div className="p-2 rounded-lg bg-white flex-shrink-0" style={{ boxShadow: shadows.input }}>
-                        <Check className="w-6 h-6" style={{ color: colors.success }} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-base mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Trẻ em và giường
-                        </p>
-                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Trẻ em mọi lứa tuổi đều được chào đón. Giường phụ có sẵn theo yêu cầu.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
             </Tabs>
             </div>
           </div>
 
-          {/* Booking Sidebar */}
+          {/* Dynamic Booking Sidebar */}
           <div
             ref={(el) => {
               sectionsRef.current[2] = el
             }}
             className="scroll-reveal opacity-0 translate-y-10"
           >
-            {selectedRoomType ? (
+            {activeTab === "rooms" ? (
+              // Room Booking Sidebar
+              selectedRoomType ? (
               <div
                 className="bg-white p-6 sticky top-24"
                 style={{
@@ -1869,7 +1966,7 @@ export default function PropertyDetailPage() {
 
                 <Button
                   onClick={() => handleBookNow(selectedRoomType.id)}
-                  className="w-full py-4 text-white font-semibold rounded-xl hover:opacity-90 transition-all mb-3 shadow-lg hover:shadow-xl"
+                    className="w-full py-4 text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
                   style={{
                     backgroundColor: colors.primary,
                     borderRadius: borderRadius.button,
@@ -1878,11 +1975,6 @@ export default function PropertyDetailPage() {
                 >
                   Đặt phòng ngay
                 </Button>
-
-                <p className="text-xs text-center flex items-center justify-center gap-1" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                  <CreditCard className="w-3 h-3" />
-                  Bạn sẽ chưa bị tính phí
-                </p>
               </div>
             ) : (
               <div
@@ -1904,9 +1996,54 @@ export default function PropertyDetailPage() {
                   </p>
                 </div>
 
+                  {/* Property Info */}
+                  <div className="mb-6 space-y-3">
+                    {property?.rating && (
+                      <div className="flex items-center gap-2 p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
+                        <Star className="w-4 h-4" style={{ color: '#FFD700' }} />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            Đánh giá
+                          </p>
+                          <p className="text-sm font-bold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            {property.rating.toFixed(1)}/5.0
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {roomTypes.length > 0 && (
+                      <div className="flex items-center gap-2 p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
+                        <Bed className="w-4 h-4" style={{ color: colors.primary }} />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            Loại phòng
+                          </p>
+                          <p className="text-sm font-bold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            {roomTypes.length} loại phòng
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {property?.address && (
+                      <div className="flex items-start gap-2 p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
+                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: colors.primary }} />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium mb-1" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            Vị trí
+                          </p>
+                          <p className="text-xs leading-relaxed" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            {property.city && property.country ? `${property.city}, ${property.country}` : property.address}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                 <Button
                   onClick={() => handleBookNow()}
-                  className="w-full py-4 text-white font-semibold rounded-xl hover:opacity-90 transition-all mb-3 shadow-lg hover:shadow-xl"
+                    className="w-full py-4 text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
                   style={{
                     backgroundColor: colors.primary,
                     borderRadius: borderRadius.button,
@@ -1915,26 +2052,240 @@ export default function PropertyDetailPage() {
                 >
                   Đặt phòng ngay
                 </Button>
+                </div>
+              )
+            ) : (
+              // Restaurant Booking Sidebar
+              restaurants.length > 0 ? (
+                <div
+                  className="bg-white p-6 sticky top-24"
+                  style={{
+                    borderRadius: borderRadius.card,
+                    boxShadow: shadows.cardHover,
+                  }}
+                >
+                  <div className="mb-6 pb-6 border-b" style={{ borderColor: colors.border }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Utensils className="w-5 h-5" style={{ color: colors.primary }} />
+                      <p className="text-sm font-semibold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Đặt bàn nhà hàng
+                      </p>
+                    </div>
+                    <p className="text-xs mb-4" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Trải nghiệm ẩm thực đẳng cấp tại {property?.name}
+                    </p>
+                    
+                    {/* Restaurant Count */}
+                    <div className="flex items-center gap-2 p-3 rounded-xl" style={{ backgroundColor: colors.lightBlue }}>
+                      <Utensils className="w-4 h-4" style={{ color: colors.primary }} />
+                      <div className="flex-1">
+                        <p className="text-xs font-medium" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          Số lượng nhà hàng
+                        </p>
+                        <p className="text-sm font-bold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          {restaurants.length} nhà hàng
+                        </p>
+                  </div>
+                  </div>
+                  </div>
 
-                <div className="space-y-2 text-xs" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                  <div className="flex items-center gap-2">
-                    <Check className="w-3 h-3" style={{ color: colors.success }} />
-                    <span>Hủy miễn phí trước 24h</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="w-3 h-3" style={{ color: colors.success }} />
-                    <span>Thanh toán an toàn</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="w-3 h-3" style={{ color: colors.success }} />
-                    <span>Xác nhận tức thì</span>
+                  {restaurants.map((restaurant) => (
+                    <div key={restaurant.id} className="mb-4 p-4 rounded-xl hover:shadow-md transition-all" style={{ backgroundColor: colors.lightBlue }}>
+                      <h4 className="font-semibold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        {restaurant.name}
+                      </h4>
+                      {restaurant.cuisineType && (
+                        <p className="text-xs mb-3" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          {restaurant.cuisineType}
+                        </p>
+                      )}
+                      <Link href={`/restaurant/booking?id=${restaurant.id}`}>
+                        <Button
+                          className="w-full py-2 text-white font-semibold rounded-lg hover:opacity-90 transition-all"
+                          style={{
+                            backgroundColor: colors.primary,
+                            borderRadius: borderRadius.button,
+                            fontFamily: 'system-ui, -apple-system, sans-serif',
+                          }}
+                        >
+                          Đặt bàn ngay
+                        </Button>
+                      </Link>
+                </div>
+                  ))}
+              </div>
+              ) : (
+                <div
+                  className="bg-white p-6 sticky top-24"
+                  style={{
+                    borderRadius: borderRadius.card,
+                    boxShadow: shadows.cardHover,
+                  }}
+                >
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Utensils className="w-5 h-5" style={{ color: colors.primary }} />
+                      <p className="text-sm font-semibold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Đặt bàn nhà hàng
+                      </p>
+                    </div>
+                    <p className="text-xs" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Chưa có nhà hàng nào
+                    </p>
                   </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         </div>
       </div>
+
+      {/* Room Type Details Modal */}
+      <Dialog open={isRoomTypeDetailsOpen} onOpenChange={setIsRoomTypeDetailsOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          {selectedRoomTypeForDetails && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold flex items-center justify-between" style={{ color: colors.textPrimary }}>
+                  <span>{selectedRoomTypeForDetails.name} - Chi tiết các phòng</span>
+                  <Badge 
+                    className="px-3 py-1 text-sm font-medium"
+                    style={{ 
+                      backgroundColor: colors.success + '20',
+                      color: colors.success,
+                    }}
+                  >
+                    {roomTypeDetailRooms.length} phòng
+                  </Badge>
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="mt-6">
+                {loadingRoomTypeDetails ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto" style={{ color: colors.primary }} />
+                    <p className="mt-4" style={{ color: colors.textSecondary }}>Đang tải danh sách phòng...</p>
+                  </div>
+                ) : roomTypeDetailRooms.length > 0 ? (
+                  <div className="space-y-4">
+                    {roomTypeDetailRooms.map((room) => (
+                      <div
+                        key={room.id}
+                        className="border rounded-lg p-5 hover:shadow-md transition-all"
+                        style={{ borderColor: colors.border }}
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h5 className="text-lg font-bold mb-1" style={{ color: colors.textPrimary }}>
+                              Phòng #{room.number || room.roomNumber}
+                            </h5>
+                            <div className="flex items-center gap-4 text-sm" style={{ color: colors.textSecondary }}>
+                              {room.floor && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-4 h-4" />
+                                  Tầng {room.floor}
+                                </span>
+                              )}
+                              {room.viewType && (
+                                <span className="flex items-center gap-1">
+                                  <Waves className="w-4 h-4" />
+                                  {room.viewType}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <Badge 
+                            variant={room.operationalStatus === 'available' ? 'default' : 'secondary'}
+                            className="px-3 py-1"
+                            style={{ 
+                              backgroundColor: room.operationalStatus === 'available' ? colors.success + '20' : colors.textSecondary + '20',
+                              color: room.operationalStatus === 'available' ? colors.success : colors.textSecondary,
+                            }}
+                          >
+                            {room.operationalStatus === 'available' ? 'Còn trống' : 'Đã đặt'}
+                          </Badge>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                          {selectedRoomTypeForDetails.bedType && (
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: colors.lightBlue }}>
+                              <Bed className="w-4 h-4 flex-shrink-0" style={{ color: colors.primary }} />
+                              <span className="text-sm" style={{ color: colors.textPrimary }}>
+                                {selectedRoomTypeForDetails.bedType}
+                              </span>
+                            </div>
+                          )}
+                          {(selectedRoomTypeForDetails.maxAdults || 0) > 0 && (
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: colors.lightBlue }}>
+                              <Users className="w-4 h-4 flex-shrink-0" style={{ color: colors.primary }} />
+                              <span className="text-sm" style={{ color: colors.textPrimary }}>
+                                {selectedRoomTypeForDetails.maxAdults} người lớn
+                              </span>
+                            </div>
+                          )}
+                          {(selectedRoomTypeForDetails.maxChildren || 0) > 0 && (
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: colors.lightBlue }}>
+                              <User className="w-4 h-4 flex-shrink-0" style={{ color: colors.primary }} />
+                              <span className="text-sm" style={{ color: colors.textPrimary }}>
+                                {selectedRoomTypeForDetails.maxChildren} trẻ em
+                              </span>
+                            </div>
+                          )}
+                          {room.floor && (
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: colors.lightBlue }}>
+                              <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: colors.primary }} />
+                              <span className="text-sm" style={{ color: colors.textPrimary }}>
+                                Tầng {room.floor}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {(() => {
+                          const amenityNames = getAmenityNames(selectedRoomTypeForDetails)
+                          return amenityNames.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-sm font-semibold mb-2" style={{ color: colors.textPrimary }}>Tiện nghi:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {amenityNames.map((name, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })()}
+
+                        {room.operationalStatus === 'available' && (
+                          <Button
+                            onClick={() => {
+                              setSelectedRoomType(selectedRoomTypeForDetails)
+                              setIsRoomTypeDetailsOpen(false)
+                              handleBookNow(selectedRoomTypeForDetails.id)
+                            }}
+                            className="w-full py-2 text-white font-semibold rounded-lg hover:opacity-90 transition-all"
+                            style={{
+                              backgroundColor: colors.primary,
+                              fontFamily: 'system-ui, -apple-system, sans-serif',
+                            }}
+                          >
+                            Đặt phòng này
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p style={{ color: colors.textSecondary }}>Không có phòng nào thuộc loại này</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Restaurant Details Modal */}
       <Dialog open={isRestaurantModalOpen} onOpenChange={setIsRestaurantModalOpen}>

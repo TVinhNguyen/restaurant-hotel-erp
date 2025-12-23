@@ -1,123 +1,472 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Star, Clock, Users, Calendar, Utensils } from "lucide-react"
+import { CheckCircle, Star, Clock, Users, Calendar, Utensils, Loader2, MapPin, Phone, Mail, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
+import { restaurantsService, type Restaurant } from "@/lib/services/restaurants"
+import { reservationsService } from "@/lib/services/reservations"
+import { colors, shadows, borderRadius } from "@/lib/designTokens"
+
+interface BookingData {
+  date: string
+  time: string
+  guests: number
+  tableId: string
+  tableNumber?: string
+  tableCapacity?: number
+  occasion?: string
+  specialRequests?: string
+  restaurantId: string
+  restaurantName: string
+}
 
 export default function RestaurantConfirmationPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const restaurantId = searchParams.get('id')
+  
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
+  const [bookingData, setBookingData] = useState<BookingData | null>(null)
+  const [bookingId, setBookingId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true)
+        
+        // Get booking data from localStorage
+        const storedBooking = localStorage.getItem("restaurant_booking")
+        if (!storedBooking) {
+          setError("Không tìm thấy thông tin đặt bàn")
+          setIsLoading(false)
+          return
+        }
+
+        const booking: BookingData = JSON.parse(storedBooking)
+        setBookingData(booking)
+
+        // Fetch restaurant details
+        if (restaurantId || booking.restaurantId) {
+          const restaurantData = await restaurantsService.getRestaurantById(
+            restaurantId || booking.restaurantId
+          )
+          setRestaurant(restaurantData)
+
+          // Create the actual booking via API
+          try {
+            // Combine occasion and special requests into specialRequests field
+            const specialRequestsArray: string[] = []
+            if (booking.occasion) {
+              specialRequestsArray.push(`Dịp: ${booking.occasion}`)
+            }
+            if (booking.specialRequests) {
+              specialRequestsArray.push(booking.specialRequests)
+            }
+
+            const bookingPayload = {
+              restaurantId: booking.restaurantId,
+              bookingDate: booking.date,
+              bookingTime: booking.time,
+              pax: booking.guests,
+              assignedTableId: booking.tableId,
+              specialRequests: specialRequestsArray.length > 0 ? specialRequestsArray.join(' | ') : undefined,
+            }
+            
+            console.log('=== Creating restaurant booking ===')
+            console.log('Payload:', JSON.stringify(bookingPayload, null, 2))
+            
+            const createdBooking = await reservationsService.createTableBooking(bookingPayload)
+            
+            console.log('Booking created successfully:', createdBooking)
+            setBookingId(createdBooking.id)
+
+            // ✅ Clear localStorage after successful booking
+            localStorage.removeItem("restaurant_booking")
+            localStorage.removeItem("restaurant_booking_form")
+          } catch (apiError: any) {
+            console.error("Failed to create booking:", apiError)
+            console.error("Error details:", {
+              message: apiError?.message,
+              stack: apiError?.stack,
+              response: apiError?.response,
+            })
+            // Don't set error here, still show confirmation page with data
+          }
+        }
+      } catch (err) {
+        console.error("Error loading data:", err)
+        setError("Không thể tải thông tin đặt bàn")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadData()
+  }, [restaurantId])
+
+  const getImageUrl = (images?: string[]) => {
+    if (images && images.length > 0) {
+      return images[0]
+    }
+    return "/modern-hotel-room-with-city-view-london.jpg"
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('vi-VN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
+        <Header />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin" style={{ color: colors.primary }} />
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (error || !bookingData || !restaurant) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
+        <Header />
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-2xl mx-auto text-center">
+            <p className="text-lg mb-4" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              {error || "Không tìm thấy thông tin đặt bàn"}
+            </p>
+            <Link href="/restaurants">
+              <Button style={{ backgroundColor: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Xem danh sách nhà hàng
+              </Button>
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
       <Header />
 
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
+          {/* Success Message */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-accent/10 rounded-full mb-4">
-              <CheckCircle className="w-12 h-12 text-accent" />
+            <div 
+              className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+              style={{ backgroundColor: `${colors.primary}20` }}
+            >
+              <CheckCircle className="w-12 h-12" style={{ color: colors.primary }} />
             </div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Table reservation confirmed!</h2>
-            <p className="text-muted-foreground">Your table is reserved at Norrebro Restaurant</p>
+            <h2 
+              className="text-3xl font-bold mb-2" 
+              style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
+              Đặt bàn thành công!
+            </h2>
+            <p style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              Bàn của bạn đã được đặt tại {restaurant.name}
+            </p>
+            {bookingId && (
+              <p className="mt-2 text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Mã đặt bàn: <span className="font-mono font-semibold" style={{ color: colors.primary }}>{bookingId}</span>
+              </p>
+            )}
           </div>
 
-          <Card className="mb-8">
-            <CardContent className="p-8">
+          {/* Main Card */}
+          <Card 
+            className="mb-8 bg-white" 
+            style={{ 
+              borderRadius: borderRadius.card, 
+              boxShadow: shadows.card,
+              border: `1px solid ${colors.border}` 
+            }}
+          >
+            <CardContent className="p-8 bg-white">
               <div className="space-y-6">
+                {/* Restaurant Image */}
                 <div className="relative">
                   <img
-                    src="/modern-hotel-room-with-city-view-london.jpg"
-                    alt="Norrebro Restaurant"
-                    className="w-full h-48 object-cover rounded-lg"
+                    src={getImageUrl(restaurant.images)}
+                    alt={restaurant.name}
+                    className="w-full h-48 object-cover"
+                    style={{ borderRadius: borderRadius.image }}
                   />
                 </div>
 
+                {/* Restaurant Info */}
                 <div>
-                  <h3 className="text-2xl font-bold text-foreground mb-2">Norrebro Restaurant</h3>
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="flex text-yellow-400">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-current" />
-                      ))}
+                  <h3 
+                    className="text-2xl font-bold mb-2" 
+                    style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    {restaurant.name}
+                  </h3>
+                  {restaurant.rating && (
+                    <div className="flex items-center space-x-2 mb-4">
+                      <div className="flex" style={{ color: '#FFD700' }}>
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="h-4 w-4 fill-current" />
+                        ))}
+                      </div>
+                      <Badge style={{ backgroundColor: colors.primary, color: '#FFFFFF' }}>
+                        {restaurant.rating.toFixed(1)}
+                      </Badge>
+                      {restaurant.description && (
+                        <span className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          {restaurant.description}
+                        </span>
+                      )}
                     </div>
-                    <Badge className="bg-accent text-accent-foreground">4.8</Badge>
-                    <span className="text-sm text-muted-foreground">Fine dining experience</span>
-                  </div>
+                  )}
                 </div>
 
-                <div className="bg-muted/30 rounded-lg p-4">
-                  <h4 className="font-semibold text-foreground mb-3">Your reservation details</h4>
+                {/* Reservation Details */}
+                <div 
+                  className="rounded-lg p-6"
+                  style={{ backgroundColor: colors.lightBlue }}
+                >
+                  <h4 
+                    className="font-semibold mb-4" 
+                    style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    Thông tin đặt bàn
+                  </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-3">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex items-start space-x-3">
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: '#FFFFFF' }}
+                      >
+                        <Calendar className="h-5 w-5" style={{ color: colors.primary }} />
+                      </div>
                       <div>
-                        <p className="font-medium text-foreground">Date</p>
-                        <p className="text-sm text-muted-foreground">Friday, 09 December 2022</p>
+                        <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          Ngày
+                        </p>
+                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          {formatDate(bookingData.date)}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
+
+                    <div className="flex items-start space-x-3">
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: '#FFFFFF' }}
+                      >
+                        <Clock className="h-5 w-5" style={{ color: colors.primary }} />
+                      </div>
                       <div>
-                        <p className="font-medium text-foreground">Time</p>
-                        <p className="text-sm text-muted-foreground">7:30 PM</p>
+                        <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          Giờ
+                        </p>
+                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          {bookingData.time}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <Users className="h-4 w-4 text-muted-foreground" />
+
+                    <div className="flex items-start space-x-3">
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: '#FFFFFF' }}
+                      >
+                        <Users className="h-5 w-5" style={{ color: colors.primary }} />
+                      </div>
                       <div>
-                        <p className="font-medium text-foreground">Guests</p>
-                        <p className="text-sm text-muted-foreground">4 people</p>
+                        <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          Số khách
+                        </p>
+                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          {bookingData.guests} người
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <Utensils className="h-4 w-4 text-muted-foreground" />
+
+                    <div className="flex items-start space-x-3">
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: '#FFFFFF' }}
+                      >
+                        <Utensils className="h-5 w-5" style={{ color: colors.primary }} />
+                      </div>
                       <div>
-                        <p className="font-medium text-foreground">Table</p>
-                        <p className="text-sm text-muted-foreground">Table #12</p>
+                        <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          Bàn
+                        </p>
+                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          Bàn {bookingData.tableNumber || '#' + bookingData.tableId?.slice(-4)}
+                          {bookingData.tableCapacity && ` (${bookingData.tableCapacity} chỗ)`}
+                        </p>
                       </div>
                     </div>
                   </div>
+
+                  {/* Occasion */}
+                  {bookingData.occasion && (
+                    <div className="mt-4 pt-4 border-t" style={{ borderColor: colors.border }}>
+                      <p className="text-sm font-medium mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Dịp đặc biệt:
+                      </p>
+                      <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        {bookingData.occasion}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Special Requests */}
+                  {bookingData.specialRequests && (
+                    <div className="mt-4 pt-4 border-t" style={{ borderColor: colors.border }}>
+                      <p className="text-sm font-medium mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Yêu cầu đặc biệt:
+                      </p>
+                      <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        {bookingData.specialRequests}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <p className="font-medium text-foreground">Restaurant address</p>
-                    <p className="text-sm text-muted-foreground">Nørrebrogade 9, 1078 Copenhagen, Denmark</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Contact</p>
-                    <p className="text-sm text-primary">restaurant@norrebro.dk</p>
-                    <p className="text-sm text-muted-foreground">+45 000 000 001</p>
-                  </div>
-                </div>
+                {/* Contact Info */}
+                {restaurant.property && (
+                  <div className="space-y-3">
+                    {(restaurant.location || restaurant.property.address) && (
+                      <div className="flex items-start space-x-3">
+                        <MapPin className="h-5 w-5 flex-shrink-0" style={{ color: colors.primary }} />
+                        <div>
+                          <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            Địa chỉ
+                          </p>
+                          <div className="text-sm space-y-1" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            {restaurant.location && <p>{restaurant.location}</p>}
+                            {restaurant.property.address && <p>{restaurant.property.address}</p>}
+                            {(restaurant.property.city || restaurant.property.country) && (
+                              <p>{[restaurant.property.city, restaurant.property.country].filter(Boolean).join(', ')}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                <div className="bg-accent/10 rounded-lg p-4">
-                  <h4 className="font-medium text-foreground mb-2">Important reminders</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Please arrive on time for your reservation</li>
-                    <li>• Smart casual dress code applies</li>
-                    <li>• Free cancellation up to 2 hours before</li>
-                    <li>• Special dietary requirements can be accommodated</li>
+                    {restaurant.property.phone && (
+                      <div className="flex items-start space-x-3">
+                        <Phone className="h-5 w-5 flex-shrink-0" style={{ color: colors.primary }} />
+                        <div>
+                          <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            Liên hệ
+                          </p>
+                          <a 
+                            href={`tel:${restaurant.property.phone}`}
+                            className="text-sm hover:underline"
+                            style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                          >
+                            {restaurant.property.phone}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {restaurant.property.email && (
+                      <div className="flex items-start space-x-3">
+                        <Mail className="h-5 w-5 flex-shrink-0" style={{ color: colors.primary }} />
+                        <div>
+                          <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            Email
+                          </p>
+                          <a 
+                            href={`mailto:${restaurant.property.email}`}
+                            className="text-sm hover:underline break-all"
+                            style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                          >
+                            {restaurant.property.email}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Important Reminders */}
+                <div 
+                  className="rounded-lg p-4"
+                  style={{ backgroundColor: `${colors.primary}10` }}
+                >
+                  <h4 
+                    className="font-medium mb-2" 
+                    style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    Lưu ý quan trọng
+                  </h4>
+                  <ul className="text-sm space-y-1" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    <li>• Vui lòng đến đúng giờ để tránh mất chỗ</li>
+                    {restaurant.openingHours && (
+                      <li>• Giờ mở cửa: {restaurant.openingHours}</li>
+                    )}
+                    <li>• Có thể hủy miễn phí trước 2 giờ</li>
+                    <li>• Nhà hàng có thể đáp ứng các yêu cầu ăn uống đặc biệt</li>
                   </ul>
                 </div>
 
+                {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <Button className="flex-1" size="lg">
-                    Contact restaurant
-                  </Button>
-                  <Button variant="outline" className="flex-1 bg-transparent" size="lg">
-                    Modify reservation
-                  </Button>
+                  <Link href={`/restaurant/${restaurant.id}`} className="flex-1">
+                    <Button 
+                      className="w-full" 
+                      size="lg"
+                      style={{ 
+                        backgroundColor: colors.primary,
+                        borderRadius: borderRadius.button,
+                        fontFamily: 'system-ui, -apple-system, sans-serif' 
+                      }}
+                    >
+                      Xem chi tiết nhà hàng
+                    </Button>
+                  </Link>
+                  <Link href="/restaurants" className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      size="lg"
+                      style={{ 
+                        borderRadius: borderRadius.button,
+                        fontFamily: 'system-ui, -apple-system, sans-serif' 
+                      }}
+                    >
+                      Xem nhà hàng khác
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <div className="text-center text-sm text-muted-foreground">
-            <p>A confirmation email has been sent to your email address.</p>
+          {/* Footer Text */}
+          <div className="text-center text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <p>Email xác nhận đã được gửi đến địa chỉ email của bạn.</p>
             <p className="mt-2">
-              Need help? Contact our{" "}
-              <a href="#" className="text-primary hover:underline">
-                restaurant support
+              Cần trợ giúp? Liên hệ{" "}
+              <a href="#" className="hover:underline" style={{ color: colors.primary }}>
+                hỗ trợ nhà hàng
               </a>
             </p>
           </div>
@@ -128,6 +477,7 @@ export default function RestaurantConfirmationPage() {
     </div>
   )
 }
+
 
 
 

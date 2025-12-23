@@ -6,8 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/ui/back-button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { ArrowLeft, Star, Clock, Ban, Loader2, User, Mail, Phone, FileText, ArrowRight, Calendar, Users, Bed, Tag, X } from "lucide-react"
+import { Star, Clock, Ban, Loader2, User, Mail, Phone, FileText, ArrowRight, Calendar, Users, Bed, Tag, X } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -202,6 +203,23 @@ export default function BookingPage() {
           }
         }
 
+        // ✅ Load saved form data if user is coming back
+        const savedFormStr = localStorage.getItem("booking_form_data")
+        if (savedFormStr) {
+          try {
+            const savedForm = JSON.parse(savedFormStr)
+            form.reset({
+              firstName: savedForm.firstName || form.getValues("firstName"),
+              lastName: savedForm.lastName || form.getValues("lastName"),
+              email: savedForm.email || form.getValues("email"),
+              phone: savedForm.phone || form.getValues("phone"),
+              guestNotes: savedForm.guestNotes || form.getValues("guestNotes"),
+            })
+          } catch (err) {
+            console.error("Failed to load saved form data:", err)
+          }
+        }
+
         // Mark as checked only after all data is loaded
         setHasCheckedStorage(true)
       } catch (err) {
@@ -215,6 +233,16 @@ export default function BookingPage() {
 
     loadBookingData()
   }, [router, form])
+
+  // ✅ Auto-save form data when user types
+  useEffect(() => {
+    const subscription = form.watch((formData) => {
+      if (hasCheckedStorage && formData) {
+        localStorage.setItem("booking_form_data", JSON.stringify(formData))
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [form, hasCheckedStorage])
 
   const handleApplyPromotion = async () => {
     if (!promotionCode.trim() || !bookingContext || !roomType) {
@@ -455,11 +483,7 @@ export default function BookingPage() {
             <p style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }} className="mb-4">
               Thiếu thông tin đặt phòng
             </p>
-            <Link href="/properties">
-              <Button style={{ backgroundColor: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Quay lại danh sách
-              </Button>
-            </Link>
+            <BackButton variant="ghost" text="Quay lại danh sách" onClick={() => router.push('/properties')} />
           </div>
           <Footer />
         </div>
@@ -489,15 +513,8 @@ export default function BookingPage() {
       <Header />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center space-x-4 mb-6">
-          {bookingContext && (
-            <Link href={`/property/${bookingContext.propertyId}`}>
-              <Button variant="ghost" size="sm" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Quay lại
-              </Button>
-            </Link>
-          )}
+        <div className="mb-6">
+          <BackButton variant="ghost" />
         </div>
 
         <h2 className="text-3xl font-bold mb-8" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -517,242 +534,210 @@ export default function BookingPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Booking Form */}
-          <div className="lg:col-span-2 space-y-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Personal Data */}
-                <div
-                  className="bg-white p-6"
-                  style={{
-                    borderRadius: borderRadius.card,
-                    boxShadow: shadows.card,
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 rounded-lg" style={{ backgroundColor: colors.lightBlue }}>
-                      <User className="w-5 h-5" style={{ color: colors.primary }} />
-                    </div>
-                    <h2 className="text-xl font-bold" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                      Thông tin khách hàng
-                    </h2>
-                  </div>
+        {/* Centered Payment Summary - No Customer Form */}
+        <div className="max-w-2xl mx-auto">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Hidden form fields - still needed for validation but not displayed */}
+              <div className="hidden">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => <input {...field} />}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => <input {...field} />}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => <input {...field} />}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => <input {...field} />}
+                />
+                <FormField
+                  control={form.control}
+                  name="guestNotes"
+                  render={({ field }) => <input {...field} />}
+                />
+              </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                            Họ
-                          </FormLabel>
-                          <FormControl>
-                            <input
-                              type="text"
-                              placeholder="Nguyễn"
-                              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all"
-                              style={{
-                                borderRadius: borderRadius.input,
-                                borderColor: colors.border,
-                                boxShadow: shadows.input,
-                                fontFamily: 'system-ui, -apple-system, sans-serif',
-                              }}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                            Tên
-                          </FormLabel>
-                          <FormControl>
-                            <input
-                              type="text"
-                              placeholder="Văn A"
-                              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all"
-                              style={{
-                                borderRadius: borderRadius.input,
-                                borderColor: colors.border,
-                                boxShadow: shadows.input,
-                                fontFamily: 'system-ui, -apple-system, sans-serif',
-                              }}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+              {/* Customer form removed - only show payment summary matching mobile UI */}
+              
+              {/* Booking Summary - Now main content */}
+              <div
+                className="bg-white p-6"
+                style={{
+                  borderRadius: borderRadius.card,
+                  boxShadow: shadows.cardHover,
+                }}
+              >
+                <div className="space-y-6">
+                  {/* Property Image */}
+                  <div className="relative">
+                    <img
+                      src={getImageUrl(property.images)}
+                      alt={property.name}
+                      className="w-full h-48 object-cover"
+                      style={{ borderRadius: borderRadius.image }}
                     />
                   </div>
 
-                  <div className="mt-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                            Email
-                          </FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.primary }} />
-                              <input
-                                type="email"
-                                placeholder="email@example.com"
-                                className="w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all"
-                                style={{
-                                  borderRadius: borderRadius.input,
-                                  borderColor: colors.border,
-                                  boxShadow: shadows.input,
-                                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                                }}
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                            Số điện thoại
-                          </FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.primary }} />
-                              <input
-                                type="tel"
-                                placeholder="+84 123 456 789"
-                                className="w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all"
-                                style={{
-                                  borderRadius: borderRadius.input,
-                                  borderColor: colors.border,
-                                  boxShadow: shadows.input,
-                                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                                }}
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                    <FormField
-                      control={form.control}
-                      name="guestNotes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                            Yêu cầu đặc biệt (tùy chọn)
-                          </FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <FileText className="absolute left-4 top-4 w-5 h-5" style={{ color: colors.primary }} />
-                              <textarea
-                                placeholder="Bất kỳ yêu cầu đặc biệt nào..."
-                                className="w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all min-h-[100px]"
-                                style={{
-                                  borderRadius: borderRadius.input,
-                                  borderColor: colors.border,
-                                  boxShadow: shadows.input,
-                                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                                }}
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {/* House Rules */}
-                <div
-                  className="bg-white p-6"
-                  style={{
-                    borderRadius: borderRadius.card,
-                    boxShadow: shadows.card,
-                  }}
-                >
-                  <h3 className="text-lg font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    Quy định khách sạn
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg" style={{ backgroundColor: colors.lightBlue }}>
-                        <Clock className="h-5 w-5" style={{ color: colors.primary }} />
+                  {/* Property Info */}
+                  <div>
+                    <h3 className="text-lg font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      {property.name}
+                    </h3>
+                    <p className="text-sm mb-3" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      {getLocationText()}
+                    </p>
+                    {property.rating && (
+                      <div className="flex items-center gap-1 px-3 py-1 rounded-lg w-fit" style={{ backgroundColor: colors.lightBlue }}>
+                        <span className="text-sm" style={{ color: colors.textPrimary }}>
+                          {property.rating.toLocaleString('vi-VN')} đ/đêm
+                        </span>
                       </div>
-                      <div>
-                        <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Giờ nhận phòng
-                        </p>
-                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Từ 15:00
-                        </p>
+                    )}
+                  </div>
+
+                  {/* Booking Details */}
+                  <div className="border-t pt-6" style={{ borderColor: colors.border }}>
+                    <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      {roomType.name}
+                    </h4>
+                    <div className="space-y-3 text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>Nhận phòng: {new Date(bookingDates.checkin).toLocaleDateString('vi-VN')}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg" style={{ backgroundColor: colors.lightBlue }}>
-                        <Clock className="h-5 w-5" style={{ color: colors.primary }} />
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>Trả phòng: {new Date(bookingDates.checkout).toLocaleDateString('vi-VN')}</span>
                       </div>
-                      <div>
-                        <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Giờ trả phòng
-                        </p>
-                        <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                          Trước 11:00
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        <span>{bookingDates.guests || 1} khách</span>
+                      </div>
+                      {bookingDates.rooms && (
+                        <div className="flex items-center gap-2">
+                          <Bed className="w-4 h-4" />
+                          <span>{bookingDates.rooms} phòng</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <span>{nights} đêm</span>
                       </div>
                     </div>
                   </div>
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex items-center space-x-2">
-                      <Ban className="h-5 w-5" style={{ color: "#DC2626" }} />
-                      <span className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                        Không cho phép thú cưng
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Ban className="h-5 w-5" style={{ color: "#DC2626" }} />
-                      <span className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                        Không hút thuốc
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Ban className="h-5 w-5" style={{ color: "#DC2626" }} />
-                      <span className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                        Không tiệc tùng
-                      </span>
+
+                  {/* Promotion Code */}
+                  <div className="border-t pt-6" style={{ borderColor: colors.border }}>
+                    <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Mã khuyến mãi
+                    </h4>
+                    {appliedPromotion ? (
+                      <div className="p-3 rounded-xl mb-3" style={{ backgroundColor: colors.lightBlue }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Tag className="w-4 h-4" style={{ color: colors.primary }} />
+                            <span className="font-semibold" style={{ color: colors.textPrimary }}>
+                              {appliedPromotion.code}
+                            </span>
+                          </div>
+                          <button
+                            onClick={handleRemovePromotion}
+                            className="p-1 rounded hover:bg-white/50 transition-colors"
+                          >
+                            <X className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                          </button>
+                        </div>
+                        <p className="text-xs" style={{ color: colors.textSecondary }}>
+                          Giảm {appliedPromotion.discountPercent}% - {appliedPromotion.discountAmount.toLocaleString('vi-VN')} đ
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Chọn mã khuyến mãi"
+                          value={promotionCode}
+                          onChange={(e) => setPromotionCode(e.target.value.toUpperCase())}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              handleApplyPromotion()
+                            }
+                          }}
+                          className="flex-1 px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 transition-all"
+                          style={{
+                            borderRadius: borderRadius.input,
+                            borderColor: colors.border,
+                            boxShadow: shadows.input,
+                            fontFamily: 'system-ui, -apple-system, sans-serif',
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleApplyPromotion}
+                          disabled={isValidatingPromotion || !promotionCode.trim()}
+                          className="px-4"
+                          style={{
+                            backgroundColor: colors.primary,
+                            borderRadius: borderRadius.button,
+                          }}
+                        >
+                          {isValidatingPromotion ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            "Áp dụng"
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Price Details */}
+                  <div className="border-t pt-6" style={{ borderColor: colors.border }}>
+                    <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Chi tiết giá
+                    </h4>
+                    <div className="space-y-2 text-sm" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      <div className="flex justify-between" style={{ color: colors.textSecondary }}>
+                        <span>{basePrice.toLocaleString('vi-VN')} đ × {nights} Đêm</span>
+                        <span>{subtotal.toLocaleString('vi-VN')} đ</span>
+                      </div>
+                      {discountAmount > 0 && (
+                        <div className="flex justify-between" style={{ color: colors.success }}>
+                          <span>Giảm giá</span>
+                          <span>-{discountAmount.toLocaleString('vi-VN')} đ</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between" style={{ color: colors.textSecondary }}>
+                        <span>Thuế (10%)</span>
+                        <span>{taxAmount.toLocaleString('vi-VN')} đ</span>
+                      </div>
+                      <div className="flex justify-between" style={{ color: colors.textSecondary }}>
+                        <span>Phí dịch vụ (5%)</span>
+                        <span>{serviceAmount.toLocaleString('vi-VN')} đ</span>
+                      </div>
+                      <div className="border-t pt-2 mt-2" style={{ borderColor: colors.border }}>
+                        <div className="flex justify-between font-bold text-lg" style={{ color: colors.textPrimary }}>
+                          <span>Tổng tiền (VND)</span>
+                          <span style={{ color: colors.primary }}>{totalPrice.toLocaleString('vi-VN')} đ</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <Button
+              {/* Submit Button */}
+              <Button
                   type="submit"
                   className="w-full py-4 text-white font-semibold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2"
                   style={{
@@ -768,188 +753,12 @@ export default function BookingPage() {
                       Đang xử lý...
                     </>
                   ) : (
-                    <>
-                      Chuyển đến trang thanh toán
-                      <ArrowRight className="w-5 h-5" />
-                    </>
+                    "Xác nhận đặt phòng"
                   )}
                 </Button>
               </form>
             </Form>
           </div>
-
-          {/* Booking Summary */}
-          <div className="lg:col-span-1">
-            <div
-              className="bg-white p-6 sticky top-24"
-              style={{
-                borderRadius: borderRadius.card,
-                boxShadow: shadows.cardHover,
-              }}
-            >
-              <div className="space-y-6">
-                {/* Property Image */}
-                <div className="relative">
-                  <img
-                    src={getImageUrl(property.images)}
-                    alt={property.name}
-                    className="w-full h-48 object-cover"
-                    style={{ borderRadius: borderRadius.image }}
-                  />
-                </div>
-
-                {/* Property Info */}
-                <div>
-                  <h3 className="text-lg font-bold mb-2" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    {property.name}
-                  </h3>
-                  <p className="text-sm mb-3" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    {getLocationText()}
-                  </p>
-                  {property.rating && (
-                    <div className="flex items-center gap-1 px-3 py-1 rounded-lg w-fit" style={{ backgroundColor: colors.lightBlue }}>
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-bold" style={{ color: colors.textPrimary }}>
-                        {property.rating.toFixed(1)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="border-t pt-6" style={{ borderColor: colors.border }}>
-                  <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    {roomType.name}
-                  </h4>
-                  <div className="space-y-3 text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>Nhận phòng: {new Date(bookingDates.checkin).toLocaleDateString('vi-VN')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>Trả phòng: {new Date(bookingDates.checkout).toLocaleDateString('vi-VN')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      <span>{bookingDates.guests || 2} khách</span>
-                    </div>
-                    {bookingDates.rooms && (
-                      <div className="flex items-center gap-2">
-                        <Bed className="w-4 h-4" />
-                        <span>{bookingDates.rooms} phòng</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <span>{nights} đêm</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Promotion Code */}
-                <div className="border-t pt-6" style={{ borderColor: colors.border }}>
-                  <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    Mã khuyến mãi
-                  </h4>
-                  {appliedPromotion ? (
-                    <div className="p-3 rounded-xl mb-3" style={{ backgroundColor: colors.lightBlue }}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Tag className="w-4 h-4" style={{ color: colors.primary }} />
-                          <span className="font-semibold" style={{ color: colors.textPrimary }}>
-                            {appliedPromotion.code}
-                          </span>
-                        </div>
-                        <button
-                          onClick={handleRemovePromotion}
-                          className="p-1 rounded hover:bg-white/50 transition-colors"
-                        >
-                          <X className="w-4 h-4" style={{ color: colors.textSecondary }} />
-                        </button>
-                      </div>
-                      <p className="text-xs" style={{ color: colors.textSecondary }}>
-                        Giảm {appliedPromotion.discountPercent}% - {appliedPromotion.discountAmount.toFixed(2)} USD
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Nhập mã khuyến mãi"
-                        value={promotionCode}
-                        onChange={(e) => setPromotionCode(e.target.value.toUpperCase())}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            handleApplyPromotion()
-                          }
-                        }}
-                        className="flex-1 px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 transition-all"
-                        style={{
-                          borderRadius: borderRadius.input,
-                          borderColor: colors.border,
-                          boxShadow: shadows.input,
-                          fontFamily: 'system-ui, -apple-system, sans-serif',
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        onClick={handleApplyPromotion}
-                        disabled={isValidatingPromotion || !promotionCode.trim()}
-                        className="px-4"
-                        style={{
-                          backgroundColor: colors.primary,
-                          borderRadius: borderRadius.button,
-                        }}
-                      >
-                        {isValidatingPromotion ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          "Áp dụng"
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="border-t pt-6" style={{ borderColor: colors.border }}>
-                  <h4 className="font-bold mb-4" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    Chi tiết giá
-                  </h4>
-                  <div className="space-y-2 text-sm" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    <div className="flex justify-between" style={{ color: colors.textSecondary }}>
-                      <span>Giá mỗi đêm</span>
-                      <span>${basePrice.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between" style={{ color: colors.textSecondary }}>
-                      <span>{nights} đêm</span>
-                      <span>${subtotal.toFixed(2)}</span>
-                    </div>
-                    {discountAmount > 0 && (
-                      <div className="flex justify-between" style={{ color: colors.success }}>
-                        <span>Giảm giá</span>
-                        <span>-${discountAmount.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between" style={{ color: colors.textSecondary }}>
-                      <span>Thuế (10%)</span>
-                      <span>${taxAmount.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between" style={{ color: colors.textSecondary }}>
-                      <span>Phí dịch vụ (5%)</span>
-                      <span>${serviceAmount.toFixed(2)}</span>
-                    </div>
-                    <div className="border-t pt-2 mt-2" style={{ borderColor: colors.border }}>
-                      <div className="flex justify-between font-bold text-lg" style={{ color: colors.textPrimary }}>
-                        <span>TỔNG CỘNG</span>
-                        <span>${totalPrice.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <Footer />
