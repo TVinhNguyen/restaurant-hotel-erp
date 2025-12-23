@@ -80,11 +80,15 @@ export interface TableBooking {
   id: string
   restaurantId: string
   tableId?: string
+  assignedTableId?: string
   guestId?: string
+  reservationId?: string
   bookingDate: string
   bookingTime: string
-  numberOfGuests: number
+  pax?: number
+  numberOfGuests?: number
   status: string
+  durationMinutes?: number
   occasion?: string
   specialRequests?: string
   createdAt?: string
@@ -147,8 +151,9 @@ class ReservationsService {
     restaurantId?: string
     bookingDate?: string
     status?: string
-  }): Promise<{ data: TableBooking[] }> {
-    return apiClient.get<{ data: TableBooking[] }>('/restaurants/bookings', params)
+    guestId?: string
+  }): Promise<{ data?: TableBooking[], bookings?: TableBooking[] }> {
+    return apiClient.get<{ data?: TableBooking[], bookings?: TableBooking[] }>('/restaurants/bookings', params)
   }
 }
 

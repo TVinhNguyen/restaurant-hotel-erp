@@ -1,16 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Star, Clock, Users, Calendar, Utensils, Loader2, MapPin, Phone, Mail, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { CheckCircle, Star, Clock, Users, Calendar, Utensils, Loader2 } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { restaurantsService, type Restaurant } from "@/lib/services/restaurants"
 import { reservationsService } from "@/lib/services/reservations"
+import { guestsService } from "@/lib/services/guests"
+import { authService } from "@/lib/auth"
 import { colors, shadows, borderRadius } from "@/lib/designTokens"
 
 interface BookingData {
@@ -20,8 +22,6 @@ interface BookingData {
   tableId: string
   tableNumber?: string
   tableCapacity?: number
-  occasion?: string
-  specialRequests?: string
   restaurantId: string
   restaurantName: string
 }
@@ -36,6 +36,9 @@ export default function RestaurantConfirmationPage() {
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  
+  // ✅ Prevent duplicate API calls in React Strict Mode (development)
+  const hasCreatedBooking = useRef(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -60,45 +63,66 @@ export default function RestaurantConfirmationPage() {
           )
           setRestaurant(restaurantData)
 
-          // Create the actual booking via API
-          try {
-            // Combine occasion and special requests into specialRequests field
-            const specialRequestsArray: string[] = []
-            if (booking.occasion) {
-              specialRequestsArray.push(`Dịp: ${booking.occasion}`)
-            }
-            if (booking.specialRequests) {
-              specialRequestsArray.push(booking.specialRequests)
-            }
+          // Create the actual booking via API (only once, prevent duplicate in React Strict Mode)
+          if (!hasCreatedBooking.current) {
+            hasCreatedBooking.current = true
+            
+            try {
+              // ✅ Get current user and find/create guest
+              let guestId: string | undefined
+              
+              if (authService.isAuthenticated()) {
+                try {
+                  const user = await authService.getCurrentUser()
+                  
+                  // Find existing guest by email
+                  const existingGuest = await guestsService.findGuestByEmail(user.email)
+                  
+                  if (existingGuest) {
+                    guestId = existingGuest.id
+                  } else {
+                    // Create new guest from user info
+                    const newGuest = await guestsService.createGuest({
+                      name: user.name || user.email.split('@')[0],
+                      email: user.email,
+                      phone: user.phone,
+                    })
+                    guestId = newGuest.id
+                  }
+                } catch (userError) {
+                  console.error("Failed to get/create guest:", userError)
+                  // Continue without guestId if user is not logged in
+                }
+              }
 
-            const bookingPayload = {
-              restaurantId: booking.restaurantId,
-              bookingDate: booking.date,
-              bookingTime: booking.time,
-              pax: booking.guests,
-              assignedTableId: booking.tableId,
-              specialRequests: specialRequestsArray.length > 0 ? specialRequestsArray.join(' | ') : undefined,
-            }
-            
-            console.log('=== Creating restaurant booking ===')
-            console.log('Payload:', JSON.stringify(bookingPayload, null, 2))
-            
-            const createdBooking = await reservationsService.createTableBooking(bookingPayload)
-            
-            console.log('Booking created successfully:', createdBooking)
-            setBookingId(createdBooking.id)
+              const bookingPayload = {
+                restaurantId: booking.restaurantId,
+                bookingDate: booking.date,
+                bookingTime: booking.time,
+                pax: booking.guests,
+                assignedTableId: booking.tableId,
+                guestId, // ✅ Add guestId to payload
+              }
+              
+              const createdBooking = await reservationsService.createTableBooking(bookingPayload)
+              setBookingId(createdBooking.id)
 
-            // ✅ Clear localStorage after successful booking
-            localStorage.removeItem("restaurant_booking")
-            localStorage.removeItem("restaurant_booking_form")
-          } catch (apiError: any) {
-            console.error("Failed to create booking:", apiError)
-            console.error("Error details:", {
-              message: apiError?.message,
-              stack: apiError?.stack,
-              response: apiError?.response,
-            })
-            // Don't set error here, still show confirmation page with data
+              // ✅ Clear localStorage after successful booking
+              localStorage.removeItem("restaurant_booking")
+              localStorage.removeItem("restaurant_booking_form")
+            } catch (apiError: any) {
+              console.error("Failed to create booking:", apiError)
+              console.error("Error details:", {
+                message: apiError?.message,
+                stack: apiError?.stack,
+                response: apiError?.response,
+              })
+              // Reset flag on error so user can retry
+              hasCreatedBooking.current = false
+              
+              // Show error to user
+              setError("Không thể tạo đặt bàn. Vui lòng thử lại hoặc liên hệ hỗ trợ.")
+            }
           }
         }
       } catch (err) {
@@ -321,90 +345,19 @@ export default function RestaurantConfirmationPage() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Occasion */}
-                  {bookingData.occasion && (
-                    <div className="mt-4 pt-4 border-t" style={{ borderColor: colors.border }}>
-                      <p className="text-sm font-medium mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                        Dịp đặc biệt:
-                      </p>
-                      <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                        {bookingData.occasion}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Special Requests */}
-                  {bookingData.specialRequests && (
-                    <div className="mt-4 pt-4 border-t" style={{ borderColor: colors.border }}>
-                      <p className="text-sm font-medium mb-1" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                        Yêu cầu đặc biệt:
-                      </p>
-                      <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                        {bookingData.specialRequests}
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 {/* Contact Info */}
-                {restaurant.property && (
-                  <div className="space-y-3">
-                    {(restaurant.location || restaurant.property.address) && (
-                      <div className="flex items-start space-x-3">
-                        <MapPin className="h-5 w-5 flex-shrink-0" style={{ color: colors.primary }} />
-                        <div>
-                          <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                            Địa chỉ
-                          </p>
-                          <div className="text-sm space-y-1" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                            {restaurant.location && <p>{restaurant.location}</p>}
-                            {restaurant.property.address && <p>{restaurant.property.address}</p>}
-                            {(restaurant.property.city || restaurant.property.country) && (
-                              <p>{[restaurant.property.city, restaurant.property.country].filter(Boolean).join(', ')}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {restaurant.property.phone && (
-                      <div className="flex items-start space-x-3">
-                        <Phone className="h-5 w-5 flex-shrink-0" style={{ color: colors.primary }} />
-                        <div>
-                          <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                            Liên hệ
-                          </p>
-                          <a 
-                            href={`tel:${restaurant.property.phone}`}
-                            className="text-sm hover:underline"
-                            style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
-                          >
-                            {restaurant.property.phone}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-
-                    {restaurant.property.email && (
-                      <div className="flex items-start space-x-3">
-                        <Mail className="h-5 w-5 flex-shrink-0" style={{ color: colors.primary }} />
-                        <div>
-                          <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                            Email
-                          </p>
-                          <a 
-                            href={`mailto:${restaurant.property.email}`}
-                            className="text-sm hover:underline break-all"
-                            style={{ color: colors.primary, fontFamily: 'system-ui, -apple-system, sans-serif' }}
-                          >
-                            {restaurant.property.email}
-                          </a>
-                        </div>
-                      </div>
-                    )}
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-medium" style={{ color: colors.textPrimary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      Địa chỉ nhà hàng
+                    </p>
+                    <p className="text-sm" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      {restaurant.location || 'Đang cập nhật'}
+                    </p>
                   </div>
-                )}
+                </div>
 
                 {/* Important Reminders */}
                 <div 
@@ -424,6 +377,7 @@ export default function RestaurantConfirmationPage() {
                     )}
                     <li>• Có thể hủy miễn phí trước 2 giờ</li>
                     <li>• Nhà hàng có thể đáp ứng các yêu cầu ăn uống đặc biệt</li>
+                    {bookingId && <li>• Mã đặt bàn: {bookingId}</li>}
                   </ul>
                 </div>
 
@@ -477,6 +431,9 @@ export default function RestaurantConfirmationPage() {
     </div>
   )
 }
+
+
+
 
 
 

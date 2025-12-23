@@ -43,8 +43,16 @@ export default function LoginPage() {
     try {
       await authService.login(data)
       window.dispatchEvent(new Event('user-login'))
-      router.push("/")
-      router.refresh()
+      
+      // ✅ Check if there's a redirect URL saved
+      const redirectUrl = localStorage.getItem('redirectAfterLogin')
+      if (redirectUrl) {
+        localStorage.removeItem('redirectAfterLogin')
+        window.location.href = redirectUrl // Use window.location to ensure full page reload
+      } else {
+        router.push("/")
+        router.refresh()
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : "Đăng nhập thất bại")
     } finally {

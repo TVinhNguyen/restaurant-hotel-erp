@@ -70,6 +70,15 @@ export default function BookingPage() {
         setIsLoading(true)
         setHasCheckedStorage(false)
         
+        // ✅ Check if user is logged in
+        if (!authService.isAuthenticated()) {
+          // Save current URL to return after login
+          const currentUrl = window.location.href
+          localStorage.setItem('redirectAfterLogin', currentUrl)
+          router.push('/login')
+          return
+        }
+        
         // Get booking context and dates from localStorage
         const contextStr = localStorage.getItem("booking_context")
         const datesStr = localStorage.getItem("booking_dates")

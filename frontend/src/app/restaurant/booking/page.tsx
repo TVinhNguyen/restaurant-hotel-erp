@@ -17,42 +17,30 @@ import { Calendar, Users, Clock, Utensils, Star, Loader2, MapPin } from "lucide-
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { restaurantsService, type Restaurant } from "@/lib/services/restaurants"
+import { authService } from "@/lib/auth"
 import { colors, shadows, borderRadius } from "@/lib/designTokens"
 
 const restaurantBookingSchema = z.object({
   date: z.string().min(1, "Vui lòng chọn ngày đặt bàn"),
   time: z.string().min(1, "Vui lòng chọn thời gian"),
   guests: z.number().min(1, "Cần ít nhất 1 khách").max(12, "Tối đa 12 khách mỗi bàn"),
-  tableId: z.string().min(1, "Vui lòng chọn bàn"),
-  occasion: z.string().optional(),
-  specialRequests: z.string().optional(),
 })
 
 type RestaurantBookingFormValues = z.infer<typeof restaurantBookingSchema>
 
 export default function RestaurantBookingPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingRestaurant, setIsLoadingRestaurant] = useState(true)
   const [error, setError] = useState("")
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
-  const [isLoadingRestaurant, setIsLoadingRestaurant] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const restaurantId = searchParams.get('id')
+  const restaurantId = searchParams.get('id') || ''
 
-  // ✅ Load saved form data for default values
-  const getSavedFormData = () => {
-    try {
-      const savedFormStr = localStorage.getItem("restaurant_booking_form")
-      if (savedFormStr) {
-        return JSON.parse(savedFormStr)
-      }
-    } catch (err) {
-      console.error("Failed to load saved form:", err)
-    }
-    return null
-  }
-
-  const savedForm = getSavedFormData()
+  // Get saved form data
+  const savedForm = typeof window !== 'undefined' 
+    ? JSON.parse(localStorage.getItem("restaurant_booking_form") || "null")
+    : null
 
   const form = useForm<RestaurantBookingFormValues>({
     resolver: zodResolver(restaurantBookingSchema),
@@ -60,15 +48,21 @@ export default function RestaurantBookingPage() {
       date: savedForm?.date || "",
       time: savedForm?.time || "",
       guests: savedForm?.guests || 2,
-      tableId: savedForm?.tableId || "",
-      occasion: savedForm?.occasion || "",
-      specialRequests: savedForm?.specialRequests || "",
     },
   })
 
-  // Fetch restaurant data
+  // Check authentication and fetch restaurant data
   useEffect(() => {
     const loadRestaurant = async () => {
+      // ✅ Check if user is logged in
+      if (!authService.isAuthenticated()) {
+        // Save current URL to return after login
+        const currentUrl = window.location.href
+        localStorage.setItem('redirectAfterLogin', currentUrl)
+        router.push('/login')
+        return
+      }
+
       if (!restaurantId) {
         setError("Restaurant ID is required")
         setIsLoadingRestaurant(false)
@@ -88,7 +82,7 @@ export default function RestaurantBookingPage() {
     }
 
     loadRestaurant()
-  }, [restaurantId])
+  }, [restaurantId, router])
 
   // ✅ Auto-save form data when user types
   useEffect(() => {
@@ -143,16 +137,6 @@ export default function RestaurantBookingPage() {
 
   const timeSlots = generateTimeSlots(restaurant?.openingHours)
 
-  const occasions = [
-    "Sinh nhật",
-    "Kỷ niệm",
-    "Bữa tối công việc", 
-    "Bữa tối lãng mạn",
-    "Họp mặt gia đình",
-    "Dịp đặc biệt",
-    "Bữa ăn thường"
-  ]
-
   const onSubmit = async (data: RestaurantBookingFormValues) => {
     if (!restaurantId || !restaurant) {
       setError("Restaurant information is missing")
@@ -163,15 +147,27 @@ export default function RestaurantBookingPage() {
     setError("")
     
     try {
-      // Find selected table
-      const selectedTable = restaurant.tables?.find(t => t.id === data.tableId)
+      // Auto-select suitable table based on guest count
+      const availableTables = restaurant?.tables?.filter(
+        table => table.status === 'available' && table.capacity >= data.guests
+      ) || []
+
+      if (availableTables.length === 0) {
+        setError("Không có bàn phù hợp. Vui lòng chọn số khách khác hoặc thời gian khác.")
+        setIsLoading(false)
+        return
+      }
+
+      // Select the table with smallest capacity that fits (optimal selection)
+      const selectedTable = availableTables.sort((a, b) => a.capacity - b.capacity)[0]
       
       const bookingData = {
         ...data,
+        tableId: selectedTable.id,
         restaurantId,
-        restaurantName: restaurant.name,
-        tableNumber: selectedTable?.tableNumber,
-        tableCapacity: selectedTable?.capacity,
+        restaurantName: restaurant?.name || '',
+        tableNumber: selectedTable.tableNumber,
+        tableCapacity: selectedTable.capacity,
       }
       localStorage.setItem("restaurant_booking", JSON.stringify(bookingData))
       router.push(`/restaurant/confirmation?id=${restaurantId}`)
@@ -256,7 +252,7 @@ export default function RestaurantBookingPage() {
                           <FormItem>
                             <FormLabel style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>Số khách</FormLabel>
                             <FormControl>
-                              <div className="relative">
+                                  <div className="relative">
                                 <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                 <Input
                                   type="number"
@@ -264,19 +260,7 @@ export default function RestaurantBookingPage() {
                                   min="1"
                                   max="12"
                                   {...field}
-                                  onChange={(e) => {
-                                    const newGuestCount = parseInt(e.target.value)
-                                    field.onChange(newGuestCount)
-                                    
-                                    // Reset table selection if current table can't accommodate new guest count
-                                    const currentTableId = form.getValues("tableId")
-                                    if (currentTableId && restaurant?.tables) {
-                                      const currentTable = restaurant.tables.find(t => t.id === currentTableId)
-                                      if (currentTable && currentTable.capacity < newGuestCount) {
-                                        form.setValue("tableId", "")
-                                      }
-                                    }
-                                  }}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value))}
                                 />
                               </div>
                             </FormControl>
@@ -285,73 +269,6 @@ export default function RestaurantBookingPage() {
                         )}
                       />
                     </div>
-
-                    {/* Table Selection */}
-                    <FormField
-                      control={form.control}
-                      name="tableId"
-                      render={({ field }) => {
-                        const guestCount = form.watch("guests") || 2
-                        const availableTables = restaurant?.tables?.filter(
-                          table => table.status === 'available' && table.capacity >= guestCount
-                        ) || []
-
-                        return (
-                          <FormItem>
-                            <FormLabel style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                              Chọn bàn ({availableTables.length} bàn phù hợp)
-                            </FormLabel>
-                            <FormControl>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                {availableTables.length === 0 ? (
-                                  <p className="col-span-full text-sm text-center py-4" style={{ color: colors.textSecondary, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                    Không có bàn phù hợp với số lượng khách
-                                  </p>
-                                ) : (
-                                  availableTables.map((table) => (
-                                    <Button
-                                      key={table.id}
-                                      type="button"
-                                      onClick={() => field.onChange(table.id)}
-                                      className="h-auto py-4 flex flex-col items-center space-y-2 transition-all"
-                                      style={{
-                                        backgroundColor: field.value === table.id ? colors.primary : '#FFFFFF',
-                                        color: field.value === table.id ? '#FFFFFF' : colors.textPrimary,
-                                        border: `2px solid ${field.value === table.id ? colors.primary : colors.border}`,
-                                        borderRadius: borderRadius.card,
-                                        fontFamily: 'system-ui, -apple-system, sans-serif'
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        if (field.value !== table.id) {
-                                          e.currentTarget.style.backgroundColor = colors.lightBlue
-                                          e.currentTarget.style.borderColor = colors.primary
-                                        }
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        if (field.value !== table.id) {
-                                          e.currentTarget.style.backgroundColor = '#FFFFFF'
-                                          e.currentTarget.style.borderColor = colors.border
-                                        }
-                                      }}
-                                    >
-                                      <Utensils className="h-5 w-5" />
-                                      <div className="text-center">
-                                        <p className="font-bold text-base">Bàn {table.tableNumber}</p>
-                                        <p className="text-xs opacity-80">
-                                          <Users className="h-3 w-3 inline mr-1" />
-                                          {table.capacity} khách
-                                        </p>
-                                      </div>
-                                    </Button>
-                                  ))
-                                )}
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )
-                      }}
-                    />
 
                     <FormField
                       control={form.control}
@@ -392,69 +309,6 @@ export default function RestaurantBookingPage() {
                                 </Button>
                               ))}
                             </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="occasion"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>Dịp đặc biệt (tùy chọn)</FormLabel>
-                          <FormControl>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                              {occasions.map((occasion) => (
-                                <Button
-                                  key={occasion}
-                                  type="button"
-                                  size="sm"
-                                  onClick={() => field.onChange(field.value === occasion ? "" : occasion)}
-                                  className="text-xs transition-all"
-                                  style={{
-                                    backgroundColor: field.value === occasion ? colors.primary : '#FFFFFF',
-                                    color: field.value === occasion ? '#FFFFFF' : colors.textPrimary,
-                                    border: `1px solid ${field.value === occasion ? colors.primary : colors.border}`,
-                                    borderRadius: borderRadius.button,
-                                    fontFamily: 'system-ui, -apple-system, sans-serif'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    if (field.value !== occasion) {
-                                      e.currentTarget.style.backgroundColor = colors.lightBlue
-                                      e.currentTarget.style.borderColor = colors.primary
-                                    }
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    if (field.value !== occasion) {
-                                      e.currentTarget.style.backgroundColor = '#FFFFFF'
-                                      e.currentTarget.style.borderColor = colors.border
-                                    }
-                                  }}
-                                >
-                                  {occasion}
-                                </Button>
-                              ))}
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="specialRequests"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>Yêu cầu đặc biệt (tùy chọn)</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Hạn chế về chế độ ăn, vị trí ngồi, v.v."
-                              {...field}
-                              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
