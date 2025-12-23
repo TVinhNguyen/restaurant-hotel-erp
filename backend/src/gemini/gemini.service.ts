@@ -10,6 +10,7 @@ import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { RoomType } from '../entities/inventory/room-type.entity';
 import { Promotion } from '../entities/reservation/promotion.entity';
 import { Restaurant } from '../entities/restaurant/restaurant.entity';
+import { Property } from '../entities/core/property.entity';
 
 @Injectable()
 export class GeminiService {
@@ -24,6 +25,8 @@ export class GeminiService {
     private readonly promotionRepository: Repository<Promotion>,
     @InjectRepository(Restaurant)
     private readonly restaurantRepository: Repository<Restaurant>,
+    @InjectRepository(Property)
+    private readonly propertyRepository: Repository<Property>,
     private readonly configService: ConfigService,
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
@@ -42,6 +45,40 @@ export class GeminiService {
     try {
       const contextParts: string[] = [];
 
+      // Fetch Properties
+      const properties = await this.propertyRepository.find({
+        select: [
+          'id',
+          'name',
+          'address',
+          'city',
+          'country',
+          'phone',
+          'email',
+          'website',
+          'propertyType',
+        ],
+      });
+
+      if (properties.length > 0) {
+        contextParts.push('=== PROPERTIES ===');
+        properties.forEach((prop) => {
+          const address = prop.address ? `${prop.address}, ${prop.city}, ${prop.country}` : 'Address not provided';
+          const contactInfo = [];
+          if (prop.phone) contactInfo.push(`Phone: ${prop.phone}`);
+          if (prop.email) contactInfo.push(`Email: ${prop.email}`);
+          if (prop.website) contactInfo.push(`Website: ${prop.website}`);
+          
+          contextParts.push(
+            `- Property: ${prop.name} (${prop.propertyType || 'Hotel'})`,
+          );
+          contextParts.push(`  Address: ${address}`);
+          if (contactInfo.length > 0) {
+            contextParts.push(`  Contact: ${contactInfo.join(' | ')}`);
+          }
+        });
+      }
+
       // Fetch Room Types
       const roomTypes = await this.roomTypeRepository.find({
         select: [
@@ -56,7 +93,7 @@ export class GeminiService {
       });
 
       if (roomTypes.length > 0) {
-        contextParts.push('=== AVAILABLE ROOM TYPES ===');
+        contextParts.push('\n=== AVAILABLE ROOM TYPES ===');
         roomTypes.forEach((room) => {
           contextParts.push(
             `- ${room.name}: ${room.description || 'No description'} | Price: $${room.basePrice || 'N/A'}/night | Max Adults: ${room.maxAdults || 'N/A'} | Max Children: ${room.maxChildren || 'N/A'} | Bed: ${room.bedType || 'N/A'}`,
