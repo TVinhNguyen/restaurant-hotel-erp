@@ -145,67 +145,6 @@ export const getResourcesByPermissions = (permissions: string[]): ResourceProps[
         });
     }
 
-    // Housekeeping
-    if (accessibleResources.has("phong-buong")) {
-        resources.push({
-            name: "phong-buong",
-            list: "/phong-buong",
-            edit: permissions.includes("housekeeping.update") ? "/phong-buong/cap-nhat/:id" : undefined,
-            show: "/phong-buong/chi-tiet/:id",
-            meta: {
-                label: "Phòng buồng",
-                icon: <CheckSquareOutlined />,
-                canDelete: false,
-            },
-        });
-    }
-
-    // HR - Nhân viên
-    if (accessibleResources.has("nhan-vien")) {
-        resources.push({
-            name: "nhan-vien",
-            list: "/nhan-vien",
-            create: permissions.includes("employee.manage") ? "/nhan-vien/tao-moi" : undefined,
-            edit: permissions.includes("employee.manage") ? "/nhan-vien/chinh-sua/:id" : undefined,
-            show: "/nhan-vien/chi-tiet/:id",
-            meta: {
-                label: "Nhân viên",
-                icon: <TeamOutlined />,
-                canDelete: permissions.includes("employee.manage"),
-            },
-        });
-    }
-
-    // HR - Điểm danh
-    if (accessibleResources.has("diem-danh")) {
-        resources.push({
-            name: "diem-danh",
-            list: "/diem-danh",
-            create: permissions.includes("attendance.manage") ? "/diem-danh/tao-moi" : undefined,
-            show: "/diem-danh/chi-tiet/:id",
-            meta: {
-                label: "Điểm danh",
-                icon: <CheckSquareOutlined />,
-                canDelete: false,
-            },
-        });
-    }
-
-    // HR - Lương
-    if (accessibleResources.has("luong")) {
-        resources.push({
-            name: "luong",
-            list: "/luong",
-            create: permissions.includes("payroll.process") ? "/luong/xu-ly" : undefined,
-            show: "/luong/chi-tiet/:id",
-            meta: {
-                label: "Lương",
-                icon: <DollarOutlined />,
-                canDelete: false,
-            },
-        });
-    }
-
     // Reports - Báo cáo
     if (hasModuleAccess("report")) {
         resources.push({

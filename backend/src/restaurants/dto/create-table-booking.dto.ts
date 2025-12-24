@@ -66,6 +66,10 @@ export class CreateTableBookingDto {
 export class UpdateTableBookingDto {
   @IsOptional()
   @IsUUID()
+  restaurantId?: string;
+
+  @IsOptional()
+  @IsUUID()
   guestId?: string;
 
   @IsOptional()
