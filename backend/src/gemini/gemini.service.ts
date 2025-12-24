@@ -62,7 +62,7 @@ export class GeminiService {
       bookedRooms: number;
       availableCount: number;
       basePrice: number;
-      rooms: Array<{ id: string; number: string; floor: number }>;
+      rooms: Array<{ id: string; number: string; floor: string | number }>;
     }>;
     summary: string;
   }> {
@@ -87,7 +87,7 @@ export class GeminiService {
         bookedRooms: number;
         availableCount: number;
         basePrice: number;
-        rooms: Array<{ id: string; number: string; floor: number }>;
+        rooms: Array<{ id: string; number: string; floor: string | number }>;
       }> = [];
 
       for (const roomType of roomTypes) {
