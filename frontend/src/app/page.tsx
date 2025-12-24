@@ -40,12 +40,30 @@ export default function HomePage() {
                 }
               }
               
+              const allImages: string[] = []
+              
+              if (property.images && property.images.length > 0) {
+                allImages.push(...property.images)
+              }
+              
+              if (roomTypes && roomTypes.length > 0) {
+                roomTypes.forEach(roomType => {
+                  if (roomType.photos && roomType.photos.length > 0) {
+                    const roomPhotos = roomType.photos.map((photo: { url: string }) => photo.url)
+                    allImages.push(...roomPhotos)
+                  } 
+                  else if (roomType.images && roomType.images.length > 0) {
+                    allImages.push(...roomType.images)
+                  }
+                })
+              }
+              
               return {
                 ...property,
                 basePrice: minPrice ?? undefined,
                 description: property.description || `Khám phá ${property.name} - một trong những ${property.propertyType || 'khách sạn'} hàng đầu tại ${property.city || 'Việt Nam'}`,
                 amenities: property.amenities || ['WiFi', 'Parking', 'Minibar'],
-                images: property.images || [],
+                images: allImages.length > 0 ? allImages : property.images,
               }
             } catch (err) {
               // If failed to get room types, return property as is with fallback data

@@ -18,10 +18,7 @@ export const metadata: Metadata = {
   title: 'LuxStay',
   description: 'Hệ thống quản lý khách sạn và nhà hàng - Property Management System',
   icons: {
-    icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', type: 'image/x-icon' }
-    ],
+    icon: '/favicon.svg',
   },
 }
 

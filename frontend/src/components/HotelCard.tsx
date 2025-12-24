@@ -25,17 +25,24 @@ export default function HotelCard({ property }: HotelCardProps) {
 
   // Get all available images (from property.images or fallbacks)
   const getAllImages = () => {
+    const allImages: string[] = []
+    
     if (property.images && property.images.length > 0) {
-      return property.images
+      allImages.push(...property.images)
     }
-    // Use property ID to consistently select fallback images
-    const startIndex = property.id ? parseInt(property.id.replace(/-/g, '').slice(0, 8), 16) % fallbacks.length : 0
-    // Return 3-4 fallback images in a cycle
-    return [
-      fallbacks[startIndex % fallbacks.length],
-      fallbacks[(startIndex + 1) % fallbacks.length],
-      fallbacks[(startIndex + 2) % fallbacks.length],
-    ]
+    
+    if (allImages.length === 0) {
+      // Use property ID to consistently select fallback images
+      const startIndex = property.id ? parseInt(property.id.replace(/-/g, '').slice(0, 8), 16) % fallbacks.length : 0
+      // Return 3-4 fallback images in a cycle
+      return [
+        fallbacks[startIndex % fallbacks.length],
+        fallbacks[(startIndex + 1) % fallbacks.length],
+        fallbacks[(startIndex + 2) % fallbacks.length],
+      ]
+    }
+    
+    return allImages
   }
 
   const images = getAllImages()
