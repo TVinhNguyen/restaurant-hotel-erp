@@ -1,5 +1,5 @@
 import { List, useTable, DateField } from "@refinedev/antd";
-import { Table, Tag, Space, Button, Modal, message, Tooltip, Card, Row, Col, Statistic, Select, Spin, Typography } from "antd";
+import { Table, Tag, Space, Button, Tooltip, Card, Row, Col, Statistic, App } from "antd";
 import { 
     EyeOutlined, 
     EditOutlined, 
@@ -8,13 +8,11 @@ import {
     UserOutlined,
     ExclamationCircleOutlined,
     CheckOutlined,
-    TeamOutlined,
-    TableOutlined
+    TeamOutlined
 } from "@ant-design/icons";
-import { useNavigation, useCan, useCustomMutation, useInvalidate } from "@refinedev/core";
+import { useNavigation, useCan, useInvalidate } from "@refinedev/core";
 import { useState } from "react";
-
-const { Text } = Typography;
+import { TOKEN_KEY } from "../../authProvider";
 
 interface BookingRecord {
     id: string;
@@ -40,6 +38,8 @@ const statusConfig: Record<string, { color: string; label: string; icon: React.R
 };
 
 export const DatBanList: React.FC = () => {
+    const { modal, message } = App.useApp();
+    
     const { tableProps, tableQuery } = useTable<BookingRecord>({
         resource: "restaurants/bookings",
         syncWithLocation: true,
@@ -48,16 +48,9 @@ export const DatBanList: React.FC = () => {
     const { show, edit, create } = useNavigation();
     const invalidate = useInvalidate();
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [seatModalVisible, setSeatModalVisible] = useState(false);
-    const [selectedBooking, setSelectedBooking] = useState<BookingRecord | null>(null);
-    const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
-    const [availableTables, setAvailableTables] = useState<Array<{ id: string; tableNumber: string; capacity: number }>>([]);
-    const [loadingTables, setLoadingTables] = useState(false);
     
     const { data: canEdit } = useCan({ resource: "dat-ban", action: "edit" });
     const { data: canCreate } = useCan({ resource: "dat-ban", action: "create" });
-
-    const { mutate: customMutate } = useCustomMutation();
     
     const API_URL = import.meta.env.VITE_API_URL;
 
@@ -67,66 +60,9 @@ export const DatBanList: React.FC = () => {
     const confirmedCount = bookings.filter((b: BookingRecord) => b.status === "confirmed").length;
     const seatedCount = bookings.filter((b: BookingRecord) => b.status === "seated").length;
 
-    // Fetch available tables when modal opens
-    const fetchAvailableTables = async (restaurantId: string) => {
-        setLoadingTables(true);
-        try {
-            const response = await fetch(
-                `${API_URL}/restaurants/tables?restaurantId=${restaurantId}&status=available`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    }
-                }
-            );
-            const data = await response.json();
-            setAvailableTables(data.tables || data || []);
-        } catch (error) {
-            console.error("Error fetching tables:", error);
-            message.error("Không thể tải danh sách bàn");
-        } finally {
-            setLoadingTables(false);
-        }
-    };
-
-    const handleOpenSeatModal = (booking: BookingRecord) => {
-        setSelectedBooking(booking);
-        setSeatModalVisible(true);
-        fetchAvailableTables(booking.restaurantId);
-    };
-
-    const handleSeatConfirm = async () => {
-        if (!selectedTableId || !selectedBooking) {
-            message.warning("Vui lòng chọn bàn");
-            return;
-        }
-        
-        setActionLoading(`${selectedBooking.id}-seat`);
-        try {
-            await customMutate({
-                url: `${API_URL}/restaurants/bookings/${selectedBooking.id}/seat`,
-                method: "post",
-                values: { tableId: selectedTableId },
-            }, {
-                onSuccess: () => {
-                    message.success("Xác nhận khách đã đến thành công!");
-                    invalidate({ resource: "restaurants/bookings", invalidates: ["list"] });
-                    setSeatModalVisible(false);
-                    setSelectedTableId(null);
-                    setSelectedBooking(null);
-                },
-                onError: (error) => {
-                    message.error(`Lỗi: ${error?.message || "Không thể thực hiện"}`);
-                },
-            });
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
     const handleAction = async (
         bookingId: string, 
-        action: "confirm" | "cancel" | "complete" | "no_show"
+        action: "confirm" | "cancel" | "complete"
     ) => {
         setActionLoading(`${bookingId}-${action}`);
 
@@ -134,42 +70,45 @@ export const DatBanList: React.FC = () => {
             confirm: "Xác nhận",
             cancel: "Hủy",
             complete: "Hoàn thành",
-            no_show: "Đánh dấu không đến",
         };
 
         try {
-            await customMutate({
-                url: `${API_URL}/restaurants/bookings/${bookingId}/${action}`,
-                method: "post",
-                values: {},
-            }, {
-                onSuccess: () => {
-                    message.success(`${actionLabels[action]} thành công!`);
-                    invalidate({ resource: "restaurants/bookings", invalidates: ["list"] });
-                },
-                onError: (error) => {
-                    message.error(`Lỗi: ${error?.message || "Không thể thực hiện"}`);
+            const response = await fetch(`${API_URL}/restaurants/bookings/${bookingId}/${action}`, {
+                method: "POST",
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
+                    'Content-Type': 'application/json',
                 },
             });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || "Không thể thực hiện");
+            }
+            
+            message.success(`${actionLabels[action]} thành công!`);
+            invalidate({ resource: "restaurants/bookings", invalidates: ["list"] });
+        } catch (error) {
+            const err = error as Error;
+            message.error(`Lỗi: ${err?.message || "Không thể thực hiện"}`);
         } finally {
             setActionLoading(null);
         }
     };
 
-    const showConfirmModal = (bookingId: string, action: "confirm" | "cancel" | "complete" | "no_show") => {
+    const showConfirmModal = (bookingId: string, action: "confirm" | "cancel" | "complete") => {
         const titles: Record<string, string> = {
             confirm: "Xác nhận đặt bàn này?",
             cancel: "Hủy đặt bàn này?",
             complete: "Đánh dấu hoàn thành?",
-            no_show: "Đánh dấu khách không đến?",
         };
 
-        Modal.confirm({
+        modal.confirm({
             title: titles[action],
-            icon: action === "cancel" || action === "no_show" ? <CloseCircleOutlined /> : <CheckCircleOutlined />,
+            icon: action === "cancel" ? <CloseCircleOutlined /> : <CheckCircleOutlined />,
             okText: "Đồng ý",
             cancelText: "Hủy",
-            okButtonProps: { danger: action === "cancel" || action === "no_show" },
+            okButtonProps: { danger: action === "cancel" },
             onOk: () => handleAction(bookingId, action),
         });
     };
@@ -225,36 +164,8 @@ export const DatBanList: React.FC = () => {
                     </>
                 )}
 
-                {status === "confirmed" && (
-                    <>
-                        <Tooltip title="Khách đã đến - chọn bàn">
-                            <Button
-                                size="small"
-                                type="primary"
-                                style={{ background: "#52c41a" }}
-                                icon={<TableOutlined />}
-                                loading={isLoading("seat")}
-                                onClick={() => handleOpenSeatModal(record)}
-                            >
-                                Chọn bàn
-                            </Button>
-                        </Tooltip>
-                        <Tooltip title="Khách không đến">
-                            <Button
-                                size="small"
-                                danger
-                                icon={<CloseCircleOutlined />}
-                                loading={isLoading("no_show")}
-                                onClick={() => showConfirmModal(id, "no_show")}
-                            >
-                                Không đến
-                            </Button>
-                        </Tooltip>
-                    </>
-                )}
-
-                {status === "seated" && (
-                    <Tooltip title="Khách đã dùng xong">
+                {(status === "confirmed" || status === "seated") && (
+                    <Tooltip title="Hoàn thành phục vụ">
                         <Button
                             size="small"
                             type="primary"
@@ -314,25 +225,23 @@ export const DatBanList: React.FC = () => {
                 </Col>
             </Row>
 
-            <Table {...tableProps} rowKey="id" size="middle">
+            <Table {...tableProps} rowKey="id" scroll={{ x: 1200 }}>
                 <Table.Column
                     title="Nhà hàng"
                     dataIndex={["restaurant", "name"]}
-                    key="restaurantName"
+                    key="restaurant"
                     render={(value: string) => value || "N/A"}
                 />
                 <Table.Column
                     title="Khách hàng"
-                    key="guestName"
+                    key="guest"
                     render={(_: unknown, record: BookingRecord) => (
-                        <div>
-                            <div style={{ fontWeight: 500 }}>
-                                {record.guest?.fullName || record.contactName || "N/A"}
-                            </div>
-                            <div style={{ fontSize: 12, color: "#666" }}>
-                                {record.contactPhone || record.guest?.phone || ""}
-                            </div>
-                        </div>
+                        <Space direction="vertical" size={0}>
+                            <span>{record.guest?.fullName || record.contactName || "N/A"}</span>
+                            <small style={{ color: "#999" }}>
+                                {record.contactPhone || record.guest?.phone}
+                            </small>
+                        </Space>
                     )}
                 />
                 <Table.Column
@@ -343,18 +252,16 @@ export const DatBanList: React.FC = () => {
                     sorter
                 />
                 <Table.Column
-                    title="Giờ"
+                    title="Giờ đặt"
                     dataIndex="bookingTime"
                     key="bookingTime"
-                    width={80}
                 />
                 <Table.Column
                     title="Số người"
                     dataIndex="pax"
                     key="pax"
-                    width={90}
                     render={(value: number) => (
-                        <Tag color="blue">{value} người</Tag>
+                        <Tag color="blue" icon={<TeamOutlined />}>{value}</Tag>
                     )}
                 />
                 <Table.Column
@@ -388,60 +295,11 @@ export const DatBanList: React.FC = () => {
                 <Table.Column
                     title="Thao tác"
                     key="actions"
-                    width={280}
+                    width={250}
                     fixed="right"
                     render={(_: unknown, record: BookingRecord) => renderActions(record)}
                 />
             </Table>
-
-            {/* Seat Modal - Table Selection */}
-            <Modal
-                title={
-                    <Space>
-                        <TableOutlined />
-                        <span>Chọn bàn cho khách</span>
-                    </Space>
-                }
-                open={seatModalVisible}
-                onOk={handleSeatConfirm}
-                onCancel={() => {
-                    setSeatModalVisible(false);
-                    setSelectedTableId(null);
-                    setSelectedBooking(null);
-                }}
-                confirmLoading={actionLoading === `${selectedBooking?.id}-seat`}
-                okText="Xác nhận"
-                cancelText="Hủy"
-            >
-                {selectedBooking && (
-                    <div style={{ marginBottom: 16 }}>
-                        <Text>
-                            Đặt bàn cho <Text strong>{selectedBooking.guest?.fullName || selectedBooking.contactName}</Text> - {selectedBooking.pax} người
-                        </Text>
-                    </div>
-                )}
-                
-                {loadingTables ? (
-                    <div style={{ textAlign: "center", padding: 20 }}>
-                        <Spin tip="Đang tải danh sách bàn..." />
-                    </div>
-                ) : availableTables.length > 0 ? (
-                    <Select
-                        style={{ width: "100%" }}
-                        placeholder="Chọn bàn trống"
-                        value={selectedTableId}
-                        onChange={setSelectedTableId}
-                        options={availableTables.map(table => ({
-                            value: table.id,
-                            label: `Bàn ${table.tableNumber} - Sức chứa: ${table.capacity} người`,
-                        }))}
-                    />
-                ) : (
-                    <div style={{ textAlign: "center", padding: 20, color: "#999" }}>
-                        <Text type="secondary">Không có bàn trống. Vui lòng kiểm tra lại.</Text>
-                    </div>
-                )}
-            </Modal>
         </List>
     );
 };

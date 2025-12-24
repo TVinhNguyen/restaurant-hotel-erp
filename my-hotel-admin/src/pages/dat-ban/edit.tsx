@@ -1,7 +1,9 @@
-import { Edit, useForm, useSelect } from "@refinedev/antd";
-import { Form, Input, Select, DatePicker, TimePicker, InputNumber, Spin, Row, Col, Card } from "antd";
+import { Edit, useSelect } from "@refinedev/antd";
+import { Form, Input, Select, DatePicker, TimePicker, InputNumber, Spin, Row, Col, Card, App } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router";
+import { TOKEN_KEY } from "../../authProvider";
 
 const { TextArea } = Input;
 
@@ -15,13 +17,15 @@ const statusOptions = [
 ];
 
 export const DatBanEdit: React.FC = () => {
-    const { formProps, saveButtonProps, query } = useForm({
-        resource: "restaurants/bookings",
-        action: "edit",
-        redirect: "show",
-    });
-
+    const { message } = App.useApp();
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const [form] = Form.useForm();
+    
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    const API_URL = import.meta.env.VITE_API_URL;
 
     const { selectProps: restaurantSelectProps } = useSelect({
         resource: "restaurants",
@@ -31,45 +35,129 @@ export const DatBanEdit: React.FC = () => {
 
     const { selectProps: guestSelectProps } = useSelect({
         resource: "guests",
-        optionLabel: "fullName",
+        optionLabel: "name",
         optionValue: "id",
     });
 
-    // Set form values when data is loaded
-    useEffect(() => {
-        if (query?.data?.data) {
-            const record = query.data.data;
-            formProps.form?.setFieldsValue({
-                restaurantId: record.restaurantId,
-                guestId: record.guestId,
-                contactName: record.contactName,
-                contactPhone: record.contactPhone,
-                bookingDate: record.bookingDate ? dayjs(record.bookingDate) : undefined,
-                bookingTime: record.bookingTime ? dayjs(record.bookingTime, "HH:mm") : undefined,
-                pax: record.pax,
-                durationMinutes: record.durationMinutes,
-                status: record.status,
-                specialRequests: record.specialRequests,
-                notes: record.notes,
-            });
-            setLoading(false);
+    // Fetch guest details when selected
+    const handleGuestChange = async (value: string | undefined) => {
+        form.setFieldValue('guestId', value);
+        if (value) {
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const response = await fetch(`${API_URL}/guests/${value}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                if (response.ok) {
+                    const guest = await response.json();
+                    form.setFieldsValue({
+                        contactName: guest.name || '',
+                        contactPhone: guest.phone || '',
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching guest:', error);
+            }
         }
-    }, [query?.data?.data, formProps.form]);
+    };
 
-    const handleFinish = (values: Record<string, unknown>) => {
+    // Fetch booking data
+    useEffect(() => {
+        const fetchBooking = async () => {
+            if (!id) return;
+            
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const response = await fetch(`${API_URL}/restaurants/bookings/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Set form values including restaurantId
+                    form.setFieldsValue({
+                        restaurantId: data.restaurantId,
+                        guestId: data.guestId,
+                        contactName: data.contactName || data.guest?.name || '',
+                        contactPhone: data.contactPhone || data.guest?.phone || '',
+                        bookingDate: data.bookingDate ? dayjs(data.bookingDate) : undefined,
+                        bookingTime: data.bookingTime ? dayjs(data.bookingTime, "HH:mm") : undefined,
+                        pax: data.pax,
+                        durationMinutes: data.durationMinutes,
+                        status: data.status,
+                        specialRequests: data.specialRequests,
+                        notes: data.notes,
+                    });
+                } else {
+                    message.error("Không thể tải dữ liệu đặt bàn");
+                }
+            } catch (error) {
+                console.error("Error fetching booking:", error);
+                message.error("Lỗi khi tải dữ liệu");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBooking();
+    }, [id, API_URL, form, message]);
+
+    const handleFinish = async (values: Record<string, unknown>) => {
+        setSaving(true);
+        
+        // Include all fields that the backend accepts
         const formattedValues = {
-            ...values,
+            restaurantId: values.restaurantId,
+            guestId: values.guestId,
             bookingDate: values.bookingDate
                 ? dayjs(values.bookingDate as string).format("YYYY-MM-DD")
                 : undefined,
             bookingTime: values.bookingTime
                 ? dayjs(values.bookingTime as string).format("HH:mm")
                 : undefined,
+            pax: values.pax,
+            durationMinutes: values.durationMinutes,
+            status: values.status,
+            contactName: values.contactName,
+            contactPhone: values.contactPhone,
+            specialRequests: values.specialRequests,
+            notes: values.notes,
         };
-        return formProps.onFinish?.(formattedValues);
+
+        try {
+            const token = localStorage.getItem(TOKEN_KEY);
+            const response = await fetch(`${API_URL}/restaurants/bookings/${id}`, {
+                method: "PUT",
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formattedValues),
+            });
+
+            if (response.ok) {
+                message.success("Cập nhật đặt bàn thành công!");
+                navigate(`/dat-ban/chi-tiet/${id}`);
+            } else {
+                const error = await response.json();
+                throw new Error(error.message || "Không thể cập nhật");
+            }
+        } catch (error) {
+            const err = error as Error;
+            message.error(`Lỗi: ${err?.message || "Không thể cập nhật"}`);
+        } finally {
+            setSaving(false);
+        }
     };
 
-    if (query?.isLoading || loading) {
+    if (loading) {
         return (
             <Edit title="Chỉnh sửa đặt bàn" breadcrumb={false}>
                 <div style={{ textAlign: "center", padding: "50px" }}>
@@ -82,15 +170,18 @@ export const DatBanEdit: React.FC = () => {
     return (
         <Edit
             title="Chỉnh sửa đặt bàn"
-            saveButtonProps={saveButtonProps}
+            saveButtonProps={{ 
+                loading: saving,
+                onClick: () => form.submit(),
+            }}
             breadcrumb={false}
         >
-            <Form {...formProps} layout="vertical" onFinish={handleFinish}>
+            <Form form={form} layout="vertical" onFinish={handleFinish}>
                 <Row gutter={16}>
                     <Col xs={24} md={12}>
                         <Card title="Thông tin đặt bàn" size="small" style={{ marginBottom: 16 }}>
-                            <Form.Item
-                                label="Nhà hàng"
+                            <Form.Item 
+                                label="Nhà hàng" 
                                 name="restaurantId"
                                 rules={[{ required: true, message: "Vui lòng chọn nhà hàng" }]}
                             >
@@ -150,39 +241,32 @@ export const DatBanEdit: React.FC = () => {
                     </Col>
 
                     <Col xs={24} md={12}>
-                        <Card title="Thông tin liên hệ" size="small" style={{ marginBottom: 16 }}>
+                        <Card title="Thông tin khách hàng" size="small" style={{ marginBottom: 16 }}>
                             <Form.Item label="Khách hàng" name="guestId">
-                                <Select
-                                    {...guestSelectProps}
-                                    placeholder="Chọn khách hàng (tùy chọn)"
+                                <Select 
+                                    {...guestSelectProps} 
+                                    placeholder="Chọn khách hàng (nếu có)" 
                                     allowClear
+                                    onChange={(value) => handleGuestChange(String(value || ''))}
                                 />
                             </Form.Item>
 
-                            <Form.Item
-                                label="Tên người đặt"
-                                name="contactName"
-                                rules={[{ required: true, message: "Vui lòng nhập tên" }]}
-                            >
-                                <Input placeholder="Nhập tên người đặt" />
+                            <Form.Item label="Tên liên hệ" name="contactName">
+                                <Input placeholder="Nhập tên người liên hệ" />
                             </Form.Item>
 
-                            <Form.Item
-                                label="Số điện thoại"
-                                name="contactPhone"
-                                rules={[{ required: true, message: "Vui lòng nhập SĐT" }]}
-                            >
+                            <Form.Item label="Số điện thoại" name="contactPhone">
                                 <Input placeholder="Nhập số điện thoại" />
                             </Form.Item>
                         </Card>
 
                         <Card title="Ghi chú" size="small">
                             <Form.Item label="Yêu cầu đặc biệt" name="specialRequests">
-                                <TextArea rows={2} placeholder="Yêu cầu đặc biệt" />
+                                <TextArea rows={3} placeholder="Nhập yêu cầu đặc biệt" />
                             </Form.Item>
 
                             <Form.Item label="Ghi chú" name="notes">
-                                <TextArea rows={2} placeholder="Ghi chú thêm" />
+                                <TextArea rows={3} placeholder="Nhập ghi chú" />
                             </Form.Item>
                         </Card>
                     </Col>

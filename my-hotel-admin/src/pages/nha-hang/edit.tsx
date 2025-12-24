@@ -1,6 +1,8 @@
-import { Edit, useForm } from "@refinedev/antd";
-import { Form, Input, Select, Spin } from "antd";
+import { Edit } from "@refinedev/antd";
+import { Form, Input, Select, Spin, App } from "antd";
 import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router";
+import { TOKEN_KEY } from "../../authProvider";
 
 const { TextArea } = Input;
 
@@ -20,31 +22,94 @@ const cuisineOptions = [
 ];
 
 export const NhaHangEdit: React.FC = () => {
-    const { formProps, saveButtonProps, query } = useForm({
-        resource: "restaurants",
-        action: "edit",
-        redirect: "show",
-    });
-
+    const { message } = App.useApp();
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const [form] = Form.useForm();
+    
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
-    // Set form values when data is loaded
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    // Fetch restaurant data
     useEffect(() => {
-        if (query?.data?.data) {
-            const record = query.data.data;
-            formProps.form?.setFieldsValue({
-                name: record.name,
-                cuisineType: record.cuisineType,
-                location: record.location,
-                openingHours: record.openingHours,
-                description: record.description,
-                propertyId: record.propertyId,
-            });
-            setLoading(false);
-        }
-    }, [query?.data?.data, formProps.form]);
+        const fetchRestaurant = async () => {
+            if (!id) return;
+            
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const response = await fetch(`${API_URL}/restaurants/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Set form values (exclude propertyId as it's not allowed in update)
+                    form.setFieldsValue({
+                        name: data.name,
+                        cuisineType: data.cuisineType,
+                        location: data.location,
+                        openingHours: data.openingHours,
+                        description: data.description,
+                    });
+                } else {
+                    message.error("Không thể tải dữ liệu nhà hàng");
+                }
+            } catch (error) {
+                console.error("Error fetching restaurant:", error);
+                message.error("Lỗi khi tải dữ liệu");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    if (query?.isLoading || loading) {
+        fetchRestaurant();
+    }, [id, API_URL, form, message]);
+
+    const handleFinish = async (values: Record<string, unknown>) => {
+        setSaving(true);
+
+        // Only send allowed fields (no propertyId)
+        const allowedValues = {
+            name: values.name,
+            description: values.description,
+            location: values.location,
+            openingHours: values.openingHours,
+            cuisineType: values.cuisineType,
+        };
+
+        try {
+            const token = localStorage.getItem(TOKEN_KEY);
+            const response = await fetch(`${API_URL}/restaurants/${id}`, {
+                method: "PUT",
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(allowedValues),
+            });
+
+            if (response.ok) {
+                message.success("Cập nhật nhà hàng thành công!");
+                navigate(`/nha-hang/show/${id}`);
+            } else {
+                const error = await response.json();
+                throw new Error(error.message || "Không thể cập nhật");
+            }
+        } catch (error) {
+            const err = error as Error;
+            message.error(`Lỗi: ${err?.message || "Không thể cập nhật"}`);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
         return (
             <Edit title="Chỉnh sửa thông tin nhà hàng" breadcrumb={false}>
                 <div style={{ textAlign: "center", padding: "50px" }}>
@@ -57,14 +122,13 @@ export const NhaHangEdit: React.FC = () => {
     return (
         <Edit
             title="Chỉnh sửa thông tin nhà hàng"
-            saveButtonProps={saveButtonProps}
+            saveButtonProps={{ 
+                loading: saving,
+                onClick: () => form.submit(),
+            }}
             breadcrumb={false}
         >
-            <Form {...formProps} layout="vertical">
-                <Form.Item name="propertyId" hidden>
-                    <Input />
-                </Form.Item>
-
+            <Form form={form} layout="vertical" onFinish={handleFinish}>
                 <Form.Item
                     label="Tên nhà hàng"
                     name="name"

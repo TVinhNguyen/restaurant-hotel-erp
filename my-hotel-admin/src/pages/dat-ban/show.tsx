@@ -1,6 +1,6 @@
 import { Show, DateField } from "@refinedev/antd";
-import { useShow, useCustomMutation, useInvalidate, useNavigation } from "@refinedev/core";
-import { Typography, Descriptions, Tag, Button, Space, Modal, message, Card, Timeline, Divider, Select, Spin } from "antd";
+import { useNavigation } from "@refinedev/core";
+import { Typography, Descriptions, Tag, Button, Space, Card, Timeline, Divider, Spin, App } from "antd";
 import { 
     CheckCircleOutlined, 
     CloseCircleOutlined, 
@@ -12,10 +12,11 @@ import {
     MailOutlined,
     ClockCircleOutlined,
     TeamOutlined,
-    ShopOutlined,
-    TableOutlined
+    ShopOutlined
 } from "@ant-design/icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router";
+import { TOKEN_KEY } from "../../authProvider";
 
 const { Title, Text } = Typography;
 
@@ -23,7 +24,7 @@ interface BookingData {
     id: string;
     restaurantId: string;
     restaurant?: { id: string; name: string; location?: string };
-    guest?: { fullName: string; phone?: string; email?: string };
+    guest?: { name: string; phone?: string; email?: string };
     contactName?: string;
     contactPhone?: string;
     bookingDate: string;
@@ -47,80 +48,48 @@ const statusConfig: Record<string, { color: string; label: string; icon: React.R
 };
 
 export const DatBanShow: React.FC = () => {
-    const { query: queryResult } = useShow<BookingData>({
-        resource: "restaurants/bookings",
-    });
+    const { modal, message } = App.useApp();
+    const { id } = useParams<{ id: string }>();
     const { edit } = useNavigation();
-    const invalidate = useInvalidate();
-    const { mutate: customMutate } = useCustomMutation();
-    const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [seatModalVisible, setSeatModalVisible] = useState(false);
-    const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
-    const [availableTables, setAvailableTables] = useState<Array<{ id: string; tableNumber: string; capacity: number }>>([]);
-    const [loadingTables, setLoadingTables] = useState(false);
-
-    const { data, isLoading } = queryResult;
-    const record = data?.data;
     
+    const [record, setRecord] = useState<BookingData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+
     const API_URL = import.meta.env.VITE_API_URL;
 
-    // Fetch available tables when modal opens
-    const fetchAvailableTables = async () => {
-        if (!record) return;
-        setLoadingTables(true);
-        try {
-            const response = await fetch(
-                `${API_URL}/restaurants/tables?restaurantId=${record.restaurant?.id || record.restaurantId}&status=available`,
-                {
+    // Fetch booking data
+    useEffect(() => {
+        const fetchBooking = async () => {
+            if (!id) return;
+            
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const response = await fetch(`${API_URL}/restaurants/bookings/${id}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    }
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    setRecord(data);
+                } else {
+                    message.error("Không thể tải dữ liệu đặt bàn");
                 }
-            );
-            const data = await response.json();
-            setAvailableTables(data.tables || data || []);
-        } catch (error) {
-            console.error("Error fetching tables:", error);
-            message.error("Không thể tải danh sách bàn");
-        } finally {
-            setLoadingTables(false);
-        }
-    };
+            } catch (error) {
+                console.error("Error fetching booking:", error);
+                message.error("Lỗi khi tải dữ liệu");
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    const handleOpenSeatModal = () => {
-        setSeatModalVisible(true);
-        fetchAvailableTables();
-    };
+        fetchBooking();
+    }, [id, API_URL, message]);
 
-    const handleSeatConfirm = async () => {
-        if (!selectedTableId) {
-            message.warning("Vui lòng chọn bàn");
-            return;
-        }
-        
-        setActionLoading("seat");
-        try {
-            await customMutate({
-                url: `${API_URL}/restaurants/bookings/${record?.id}/seat`,
-                method: "post",
-                values: { tableId: selectedTableId },
-            }, {
-                onSuccess: () => {
-                    message.success("Xác nhận khách đã đến thành công!");
-                    invalidate({ resource: "restaurants/bookings", invalidates: ["detail", "list"] });
-                    setSeatModalVisible(false);
-                    setSelectedTableId(null);
-                },
-                onError: (error) => {
-                    message.error(`Lỗi: ${error?.message || "Không thể thực hiện"}`);
-                },
-            });
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
-    const handleAction = async (action: "confirm" | "cancel" | "complete" | "no_show") => {
+    const handleAction = async (action: "confirm" | "cancel" | "complete") => {
         if (!record?.id) return;
         
         setActionLoading(action);
@@ -129,57 +98,69 @@ export const DatBanShow: React.FC = () => {
             confirm: "Xác nhận",
             cancel: "Hủy",
             complete: "Hoàn thành",
-            no_show: "Đánh dấu không đến",
         };
 
         try {
-            await customMutate({
-                url: `${API_URL}/restaurants/bookings/${record.id}/${action}`,
-                method: "post",
-                values: {},
-            }, {
-                onSuccess: () => {
-                    message.success(`${actionLabels[action]} thành công!`);
-                    invalidate({ resource: "restaurants/bookings", invalidates: ["detail", "list"] });
-                },
-                onError: (error) => {
-                    message.error(`Lỗi: ${error?.message || "Không thể thực hiện"}`);
+            const response = await fetch(`${API_URL}/restaurants/bookings/${record.id}/${action}`, {
+                method: "POST",
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
+                    'Content-Type': 'application/json',
                 },
             });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || "Không thể thực hiện");
+            }
+            
+            message.success(`${actionLabels[action]} thành công!`);
+            // Reload data
+            const updatedResponse = await fetch(`${API_URL}/restaurants/bookings/${record.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (updatedResponse.ok) {
+                setRecord(await updatedResponse.json());
+            }
+        } catch (error) {
+            const err = error as Error;
+            message.error(`Lỗi: ${err?.message || "Không thể thực hiện"}`);
         } finally {
             setActionLoading(null);
         }
     };
 
-    const showConfirmModal = (action: "confirm" | "cancel" | "complete" | "no_show") => {
+    const showConfirmModal = (action: "confirm" | "cancel" | "complete") => {
         const titles: Record<string, string> = {
             confirm: "Xác nhận đặt bàn này?",
             cancel: "Hủy đặt bàn này?",
             complete: "Đánh dấu hoàn thành?",
-            no_show: "Đánh dấu khách không đến?",
         };
 
-        Modal.confirm({
+        modal.confirm({
             title: titles[action],
-            icon: action === "cancel" || action === "no_show" ? <CloseCircleOutlined /> : <CheckCircleOutlined />,
+            icon: action === "cancel" ? <CloseCircleOutlined /> : <CheckCircleOutlined />,
             okText: "Đồng ý",
             cancelText: "Hủy",
-            okButtonProps: { danger: action === "cancel" || action === "no_show" },
+            okButtonProps: { danger: action === "cancel" },
             onOk: () => handleAction(action),
         });
     };
 
     const renderActionButtons = () => {
         if (!record) return null;
-        const { status, id } = record;
-        const isLoading = (action: string) => actionLoading === action;
+        const { status, id: recordId } = record;
+        const isLoadingAction = (action: string) => actionLoading === action;
 
         return (
-            <Space wrap>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 {status !== "completed" && status !== "cancelled" && (
                     <Button
                         icon={<EditOutlined />}
-                        onClick={() => edit("dat-ban", id)}
+                        onClick={() => edit("dat-ban", recordId)}
                     >
                         Chỉnh sửa
                     </Button>
@@ -190,63 +171,51 @@ export const DatBanShow: React.FC = () => {
                         <Button
                             type="primary"
                             icon={<CheckCircleOutlined />}
-                            loading={isLoading("confirm")}
+                            loading={isLoadingAction("confirm")}
                             onClick={() => showConfirmModal("confirm")}
                         >
-                            Xác nhận đặt bàn
+                            Xác nhận
                         </Button>
                         <Button
                             danger
                             icon={<CloseCircleOutlined />}
-                            loading={isLoading("cancel")}
+                            loading={isLoadingAction("cancel")}
                             onClick={() => showConfirmModal("cancel")}
                         >
-                            Hủy đặt bàn
+                            Hủy
                         </Button>
                     </>
                 )}
 
-                {status === "confirmed" && (
-                    <>
-                        <Button
-                            type="primary"
-                            style={{ background: "#52c41a" }}
-                            icon={<TableOutlined />}
-                            loading={isLoading("seat")}
-                            onClick={handleOpenSeatModal}
-                        >
-                            Khách đã đến - Chọn bàn
-                        </Button>
-                        <Button
-                            danger
-                            icon={<CloseCircleOutlined />}
-                            loading={isLoading("no_show")}
-                            onClick={() => showConfirmModal("no_show")}
-                        >
-                            Khách không đến
-                        </Button>
-                    </>
-                )}
-
-                {status === "seated" && (
+                {(status === "confirmed" || status === "seated") && (
                     <Button
                         type="primary"
                         icon={<CheckOutlined />}
-                        loading={isLoading("complete")}
+                        loading={isLoadingAction("complete")}
                         onClick={() => showConfirmModal("complete")}
                     >
-                        Hoàn thành phục vụ
+                        Hoàn thành
                     </Button>
                 )}
-            </Space>
+            </div>
         );
     };
+
+    if (isLoading) {
+        return (
+            <Show title="Chi tiết đặt bàn">
+                <div style={{ textAlign: "center", padding: "50px" }}>
+                    <Spin size="large" />
+                </div>
+            </Show>
+        );
+    }
 
     const config = record?.status ? statusConfig[record.status] : null;
 
     return (
         <Show 
-            isLoading={isLoading} 
+            isLoading={false} 
             title="Chi tiết đặt bàn"
             headerButtons={renderActionButtons}
         >
@@ -265,7 +234,7 @@ export const DatBanShow: React.FC = () => {
                         </Tag>
                         <div>
                             <Text strong style={{ fontSize: 18 }}>
-                                {record.guest?.fullName || record.contactName}
+                                {record.guest?.name || record.contactName}
                             </Text>
                             <Text type="secondary" style={{ marginLeft: 16 }}>
                                 <TeamOutlined /> {record.pax} người • <ClockCircleOutlined /> {record.bookingTime}
@@ -309,14 +278,14 @@ export const DatBanShow: React.FC = () => {
             <Title level={5}><UserOutlined /> Thông tin liên hệ</Title>
             <Descriptions bordered column={{ xs: 1, sm: 2 }} style={{ marginBottom: 24 }}>
                 <Descriptions.Item label="Tên khách hàng">
-                    <Text strong>{record?.guest?.fullName || record?.contactName || "N/A"}</Text>
+                    <Text strong>{record?.guest?.name || record?.contactName || "Chưa có"}</Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Số điện thoại">
                     {(record?.contactPhone || record?.guest?.phone) && (
                         <Space>
                             <PhoneOutlined />
-                            <a href={`tel:${record.contactPhone || record.guest?.phone}`}>
-                                {record.contactPhone || record.guest?.phone}
+                            <a href={`tel:${record?.contactPhone || record?.guest?.phone}`}>
+                                {record?.contactPhone || record?.guest?.phone}
                             </a>
                         </Space>
                     )}
@@ -373,52 +342,6 @@ export const DatBanShow: React.FC = () => {
                     },
                 ]}
             />
-
-            {/* Seat Modal - Table Selection */}
-            <Modal
-                title={
-                    <Space>
-                        <TableOutlined />
-                        <span>Chọn bàn cho khách</span>
-                    </Space>
-                }
-                open={seatModalVisible}
-                onOk={handleSeatConfirm}
-                onCancel={() => {
-                    setSeatModalVisible(false);
-                    setSelectedTableId(null);
-                }}
-                confirmLoading={actionLoading === "seat"}
-                okText="Xác nhận"
-                cancelText="Hủy"
-            >
-                <div style={{ marginBottom: 16 }}>
-                    <Text>
-                        Đặt bàn cho <Text strong>{record?.guest?.fullName || record?.contactName}</Text> - {record?.pax} người
-                    </Text>
-                </div>
-                
-                {loadingTables ? (
-                    <div style={{ textAlign: "center", padding: 20 }}>
-                        <Spin tip="Đang tải danh sách bàn..." />
-                    </div>
-                ) : availableTables.length > 0 ? (
-                    <Select
-                        style={{ width: "100%" }}
-                        placeholder="Chọn bàn trống"
-                        value={selectedTableId}
-                        onChange={setSelectedTableId}
-                        options={availableTables.map(table => ({
-                            value: table.id,
-                            label: `Bàn ${table.tableNumber} - Sức chứa: ${table.capacity} người`,
-                        }))}
-                    />
-                ) : (
-                    <div style={{ textAlign: "center", padding: 20, color: "#999" }}>
-                        <Text type="secondary">Không có bàn trống. Vui lòng kiểm tra lại.</Text>
-                    </div>
-                )}
-            </Modal>
         </Show>
     );
 };
