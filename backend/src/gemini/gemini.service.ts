@@ -5,12 +5,14 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, In, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { RoomType } from '../entities/inventory/room-type.entity';
 import { Promotion } from '../entities/reservation/promotion.entity';
 import { Restaurant } from '../entities/restaurant/restaurant.entity';
 import { Property } from '../entities/core/property.entity';
+import { Room } from '../entities/inventory/room.entity';
+import { Reservation } from '../entities/reservation/reservation.entity';
 
 @Injectable()
 export class GeminiService {
@@ -27,6 +29,10 @@ export class GeminiService {
     private readonly restaurantRepository: Repository<Restaurant>,
     @InjectRepository(Property)
     private readonly propertyRepository: Repository<Property>,
+    @InjectRepository(Room)
+    private readonly roomRepository: Repository<Room>,
+    @InjectRepository(Reservation)
+    private readonly reservationRepository: Repository<Reservation>,
     private readonly configService: ConfigService,
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
@@ -36,6 +42,201 @@ export class GeminiService {
       this.genAI = new GoogleGenerativeAI(apiKey);
       this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     }
+  }
+
+  /**
+   * Check room availability for a date range
+   * Returns available rooms grouped by room type
+   */
+  async checkRoomAvailability(
+    checkIn: string,
+    checkOut: string,
+    propertyId?: string,
+  ): Promise<{
+    available: boolean;
+    checkIn: string;
+    checkOut: string;
+    availableRooms: Array<{
+      roomTypeName: string;
+      totalRooms: number;
+      bookedRooms: number;
+      availableCount: number;
+      basePrice: number;
+      rooms: Array<{ id: string; number: string; floor: number }>;
+    }>;
+    summary: string;
+  }> {
+    try {
+      const checkInDate = new Date(checkIn);
+      const checkOutDate = new Date(checkOut);
+
+      // Get all room types with their rooms
+      const roomTypesQuery = this.roomTypeRepository
+        .createQueryBuilder('rt')
+        .leftJoinAndSelect('rt.rooms', 'room', 'room.operationalStatus = :status', { status: 'available' });
+
+      if (propertyId) {
+        roomTypesQuery.where('rt.propertyId = :propertyId', { propertyId });
+      }
+
+      const roomTypes = await roomTypesQuery.getMany();
+
+      const result: Array<{
+        roomTypeName: string;
+        totalRooms: number;
+        bookedRooms: number;
+        availableCount: number;
+        basePrice: number;
+        rooms: Array<{ id: string; number: string; floor: number }>;
+      }> = [];
+
+      for (const roomType of roomTypes) {
+        const rooms = roomType.rooms || [];
+        const roomIds = rooms.map((r) => r.id);
+
+        if (roomIds.length === 0) {
+          result.push({
+            roomTypeName: roomType.name,
+            totalRooms: 0,
+            bookedRooms: 0,
+            availableCount: 0,
+            basePrice: Number(roomType.basePrice) || 0,
+            rooms: [],
+          });
+          continue;
+        }
+
+        // Find conflicting reservations
+        const conflictingReservations = await this.reservationRepository.find({
+          where: {
+            assignedRoomId: In(roomIds),
+            status: In(['confirmed', 'checked_in']),
+            checkIn: LessThanOrEqual(checkOutDate),
+            checkOut: MoreThanOrEqual(checkInDate),
+          },
+          select: ['assignedRoomId'],
+        });
+
+        const bookedRoomIds = new Set(
+          conflictingReservations.map((r) => r.assignedRoomId),
+        );
+
+        const availableRooms = rooms.filter((r) => !bookedRoomIds.has(r.id));
+
+        result.push({
+          roomTypeName: roomType.name,
+          totalRooms: rooms.length,
+          bookedRooms: bookedRoomIds.size,
+          availableCount: availableRooms.length,
+          basePrice: Number(roomType.basePrice) || 0,
+          rooms: availableRooms.map((r) => ({
+            id: r.id,
+            number: r.number,
+            floor: r.floor,
+          })),
+        });
+      }
+
+      const totalAvailable = result.reduce((sum, r) => sum + r.availableCount, 0);
+      const hasAvailability = totalAvailable > 0;
+
+      // Build summary
+      const summaryParts: string[] = [];
+      if (hasAvailability) {
+        summaryParts.push(`Có ${totalAvailable} phòng trống từ ${checkIn} đến ${checkOut}:`);
+        result
+          .filter((r) => r.availableCount > 0)
+          .forEach((r) => {
+            summaryParts.push(
+              `- ${r.roomTypeName}: ${r.availableCount}/${r.totalRooms} phòng trống (${r.basePrice.toLocaleString('vi-VN')} VNĐ/đêm)`,
+            );
+          });
+      } else {
+        summaryParts.push(`Không có phòng trống từ ${checkIn} đến ${checkOut}.`);
+      }
+
+      return {
+        available: hasAvailability,
+        checkIn,
+        checkOut,
+        availableRooms: result,
+        summary: summaryParts.join('\n'),
+      };
+    } catch (error) {
+      this.logger.error('Error checking room availability', error);
+      throw new InternalServerErrorException('Unable to check room availability');
+    }
+  }
+
+  /**
+   * Parse date from user message (supports various formats)
+   */
+  private parseDateFromMessage(message: string): { checkIn?: string; checkOut?: string } {
+    // Patterns for Vietnamese date formats
+    const datePatterns = [
+      /từ\s*(?:ngày\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i,
+      /từ\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i,
+      /check.?in[:\s]*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i,
+      /ngày\s*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i,
+    ];
+    
+    const dateToPatterns = [
+      /đến\s*(?:ngày\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i,
+      /đến\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i,
+      /check.?out[:\s]*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i,
+    ];
+
+    let checkIn: string | undefined;
+    let checkOut: string | undefined;
+    const currentYear = new Date().getFullYear();
+
+    // Try to find check-in date
+    for (const pattern of datePatterns) {
+      const match = message.match(pattern);
+      if (match) {
+        const day = match[1].padStart(2, '0');
+        const month = match[2].padStart(2, '0');
+        const year = match[3] ? (match[3].length === 2 ? '20' + match[3] : match[3]) : currentYear.toString();
+        checkIn = `${year}-${month}-${day}`;
+        break;
+      }
+    }
+
+    // Try to find check-out date
+    for (const pattern of dateToPatterns) {
+      const match = message.match(pattern);
+      if (match) {
+        const day = match[1].padStart(2, '0');
+        const month = match[2].padStart(2, '0');
+        const year = match[3] ? (match[3].length === 2 ? '20' + match[3] : match[3]) : currentYear.toString();
+        checkOut = `${year}-${month}-${day}`;
+        break;
+      }
+    }
+
+    return { checkIn, checkOut };
+  }
+
+  /**
+   * Check if user is asking about room availability
+   */
+  private isAskingAboutAvailability(message: string): boolean {
+    const keywords = [
+      'phòng trống',
+      'còn phòng',
+      'đặt phòng',
+      'book phòng',
+      'available',
+      'availability',
+      'check phòng',
+      'kiểm tra phòng',
+      'xem phòng',
+      'từ ngày',
+      'check-in',
+      'checkin',
+    ];
+    const lowerMessage = message.toLowerCase();
+    return keywords.some((kw) => lowerMessage.includes(kw));
   }
 
   /**
@@ -180,6 +381,27 @@ export class GeminiService {
         );
       }
 
+      // Check if user is asking about room availability
+      let availabilityContext = '';
+      if (this.isAskingAboutAvailability(userMessage)) {
+        const { checkIn, checkOut } = this.parseDateFromMessage(userMessage);
+        
+        if (checkIn && checkOut) {
+          this.logger.log(`Checking availability from ${checkIn} to ${checkOut}`);
+          const availability = await this.checkRoomAvailability(checkIn, checkOut);
+          availabilityContext = `\n\n=== ROOM AVAILABILITY (${checkIn} to ${checkOut}) ===\n${availability.summary}`;
+        } else if (checkIn) {
+          // Default to 1 night if only check-in provided
+          const checkOutDate = new Date(checkIn);
+          checkOutDate.setDate(checkOutDate.getDate() + 1);
+          const defaultCheckOut = checkOutDate.toISOString().split('T')[0];
+          
+          this.logger.log(`Checking availability from ${checkIn} to ${defaultCheckOut} (default 1 night)`);
+          const availability = await this.checkRoomAvailability(checkIn, defaultCheckOut);
+          availabilityContext = `\n\n=== ROOM AVAILABILITY (${checkIn} to ${defaultCheckOut}) ===\n${availability.summary}`;
+        }
+      }
+
       // Build context from real database data
       const context = await this.buildContext();
 
@@ -192,9 +414,11 @@ You are a helpful and professional Hotel Receptionist AI assistant.
 - If the information is not in the Context, politely tell the user to contact support or visit the front desk.
 - Be friendly, concise, and helpful.
 - Do not make up information.
+- When answering about room availability, use the ROOM AVAILABILITY section if provided.
+- Format prices in VNĐ (Vietnamese Dong).
 
 **CONTEXT (Real Hotel Data):**
-${context}
+${context}${availabilityContext}
 
 **USER QUESTION:**
 ${userMessage}

@@ -1,5 +1,5 @@
 import { List, useTable, DateField } from "@refinedev/antd";
-import { Table, Tag, Space, Button, Tooltip, Card, Row, Col, Statistic, App } from "antd";
+import { Table, Tag, Space, Button, Tooltip, Card, Row, Col, Statistic, App, Input } from "antd";
 import { 
     EyeOutlined, 
     EditOutlined, 
@@ -8,17 +8,18 @@ import {
     UserOutlined,
     ExclamationCircleOutlined,
     CheckOutlined,
-    TeamOutlined
+    TeamOutlined,
+    SearchOutlined
 } from "@ant-design/icons";
 import { useNavigation, useCan, useInvalidate } from "@refinedev/core";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { TOKEN_KEY } from "../../authProvider";
 
 interface BookingRecord {
     id: string;
     restaurantId: string;
     restaurant?: { name: string };
-    guest?: { fullName: string; phone?: string };
+    guest?: { name: string; phone?: string };
     contactName?: string;
     contactPhone?: string;
     bookingDate: string;
@@ -53,12 +54,26 @@ export const DatBanList: React.FC = () => {
     const { data: canCreate } = useCan({ resource: "dat-ban", action: "create" });
     
     const API_URL = import.meta.env.VITE_API_URL;
+    
+    // Search state
+    const [searchText, setSearchText] = useState("");
 
     // Calculate stats from data
     const bookings = tableQuery.data?.data || [];
     const pendingCount = bookings.filter((b: BookingRecord) => b.status === "pending").length;
     const confirmedCount = bookings.filter((b: BookingRecord) => b.status === "confirmed").length;
     const seatedCount = bookings.filter((b: BookingRecord) => b.status === "seated").length;
+
+    // Filter bookings by search text (name or phone)
+    const filteredBookings = useMemo(() => {
+        if (!searchText.trim()) return bookings;
+        const search = searchText.toLowerCase().trim();
+        return bookings.filter((b: BookingRecord) => {
+            const guestName = (b.guest?.name || b.contactName || "").toLowerCase();
+            const guestPhone = (b.contactPhone || b.guest?.phone || "").toLowerCase();
+            return guestName.includes(search) || guestPhone.includes(search);
+        });
+    }, [bookings, searchText]);
 
     const handleAction = async (
         bookingId: string, 
@@ -225,7 +240,19 @@ export const DatBanList: React.FC = () => {
                 </Col>
             </Row>
 
-            <Table {...tableProps} rowKey="id" scroll={{ x: 1200 }}>
+            {/* Search Input */}
+            <Card size="small" style={{ marginBottom: 16 }}>
+                <Input
+                    placeholder="Tìm kiếm theo tên hoặc số điện thoại..."
+                    prefix={<SearchOutlined />}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    allowClear
+                    style={{ maxWidth: 400 }}
+                />
+            </Card>
+
+            <Table {...tableProps} dataSource={filteredBookings} rowKey="id" scroll={{ x: 1200 }}>
                 <Table.Column
                     title="Nhà hàng"
                     dataIndex={["restaurant", "name"]}
@@ -237,9 +264,9 @@ export const DatBanList: React.FC = () => {
                     key="guest"
                     render={(_: unknown, record: BookingRecord) => (
                         <Space direction="vertical" size={0}>
-                            <span>{record.guest?.fullName || record.contactName || "N/A"}</span>
-                            <small style={{ color: "#999" }}>
-                                {record.contactPhone || record.guest?.phone}
+                            <span style={{ fontWeight: 500 }}>{record.guest?.name || record.contactName || "N/A"}</span>
+                            <small style={{ color: "#666" }}>
+                                📞 {record.contactPhone || record.guest?.phone || "N/A"}
                             </small>
                         </Space>
                     )}

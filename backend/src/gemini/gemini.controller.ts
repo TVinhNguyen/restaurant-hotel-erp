@@ -1,7 +1,9 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
+  Query,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -9,6 +11,7 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { GeminiService } from './gemini.service';
 import { ChatRequestDto, ChatResponseDto } from './dto/chat.dto';
@@ -45,5 +48,25 @@ export class GeminiController {
   async chat(@Body() chatRequestDto: ChatRequestDto): Promise<ChatResponseDto> {
     const response = await this.geminiService.chat(chatRequestDto.message);
     return { response };
+  }
+
+  @Get('check-availability')
+  @ApiOperation({
+    summary: 'Check room availability',
+    description: 'Check room availability for a specific date range',
+  })
+  @ApiQuery({ name: 'checkIn', required: true, description: 'Check-in date (YYYY-MM-DD)', example: '2025-12-25' })
+  @ApiQuery({ name: 'checkOut', required: true, description: 'Check-out date (YYYY-MM-DD)', example: '2025-12-27' })
+  @ApiQuery({ name: 'propertyId', required: false, description: 'Property ID (optional)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Room availability information',
+  })
+  async checkAvailability(
+    @Query('checkIn') checkIn: string,
+    @Query('checkOut') checkOut: string,
+    @Query('propertyId') propertyId?: string,
+  ) {
+    return await this.geminiService.checkRoomAvailability(checkIn, checkOut, propertyId);
   }
 }

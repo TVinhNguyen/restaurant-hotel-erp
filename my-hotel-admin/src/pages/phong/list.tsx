@@ -297,15 +297,16 @@ export const PhongList: React.FC = () => {
                                 >
                                     Xem
                                 </Button>
-                                {/* {canEdit?.can && (
+                                {canEdit?.can && (
                                     <Button
                                         size="small"
+                                        type="primary"
                                         icon={<EditOutlined />}
                                         onClick={() => edit("phong", record.id)}
                                     >
                                         Sửa
                                     </Button>
-                                )} */}
+                                )}
                             </Space>
                         )}
                     />

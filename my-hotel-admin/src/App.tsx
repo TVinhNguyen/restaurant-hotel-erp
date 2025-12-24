@@ -35,7 +35,8 @@ import { DatPhongList, DatPhongCreate, DatPhongEdit, DatPhongShow } from "./page
 import { KhachHangList, KhachHangCreate, KhachHangEdit, KhachHangShow } from "./pages/khach-hang";
 import { CheckInList } from "./pages/check-in";
 import { CheckOutList } from "./pages/check-out";
-import { PhongList, PhongShow } from "./pages/phong";
+import { PhongList, PhongShow, PhongEdit } from "./pages/phong";
+import { LoaiPhongList, LoaiPhongCreate, LoaiPhongEdit, LoaiPhongShow } from "./pages/loai-phong";
 import { NhaHangList } from "./pages/nha-hang/list";
 import { NhaHangCreate } from "./pages/nha-hang/create";
 import { NhaHangEdit } from "./pages/nha-hang/edit";
@@ -155,7 +156,16 @@ function App() {
                     {/* Phòng routes */}
                     <Route path="/phong">
                       <Route index element={<PhongList />} />
+                      <Route path="chinh-sua/:id" element={<PhongEdit />} />
                       <Route path="chi-tiet/:id" element={<PhongShow />} />
+                    </Route>
+
+                    {/* Loại phòng routes */}
+                    <Route path="/loai-phong">
+                      <Route index element={<LoaiPhongList />} />
+                      <Route path="tao-moi" element={<LoaiPhongCreate />} />
+                      <Route path="chinh-sua/:id" element={<LoaiPhongEdit />} />
+                      <Route path="chi-tiet/:id" element={<LoaiPhongShow />} />
                     </Route>
 
                     {/* Nhà hàng routes */}

@@ -1,13 +1,29 @@
 import { List, DateField, useTable } from "@refinedev/antd";
-import { Table, Space, Button, Tag, Card, Row, Col, Typography } from "antd";
+import { Table, Space, Button, Tag, Card, Row, Col, Typography, App, Modal, Select } from "antd";
 import { CheckCircleOutlined, UserOutlined, HomeOutlined } from "@ant-design/icons";
-import { useNavigation, useCan } from "@refinedev/core";
+import { useCan } from "@refinedev/core";
+import { useState } from "react";
 import dayjs from "dayjs";
+import { TOKEN_KEY } from "../../authProvider";
 
 const { Text } = Typography;
 
+interface RoomOption {
+    id: string;
+    number: string;
+    housekeepingStatus: string;
+    operationalStatus: string;
+}
+
 export const CheckInList: React.FC = () => {
-    const { show } = useNavigation();
+    const { message } = App.useApp();
+    const [checkInModalVisible, setCheckInModalVisible] = useState(false);
+    const [selectedReservation, setSelectedReservation] = useState<any>(null);
+    const [availableRooms, setAvailableRooms] = useState<RoomOption[]>([]);
+    const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>();
+    const [actionLoading, setActionLoading] = useState(false);
+
+    const API_URL = import.meta.env.VITE_API_URL;
 
     // Check permissions
     const { data: canCheckIn } = useCan({
@@ -16,28 +32,102 @@ export const CheckInList: React.FC = () => {
     });
 
     // Fetch reservations cần check-in hôm nay
-    const { tableProps } = useTable({
+    const { tableProps, tableQuery } = useTable({
         resource: "reservations",
         syncWithLocation: true,
         filters: {
             permanent: [
                 {
-                    field: "checkInDate",
+                    field: "checkInFrom",
+                    operator: "eq",
+                    value: dayjs().format("YYYY-MM-DD"),
+                },
+                {
+                    field: "checkInTo",
                     operator: "eq",
                     value: dayjs().format("YYYY-MM-DD"),
                 },
                 {
                     field: "status",
-                    operator: "in",
-                    value: ["confirmed"],
+                    operator: "eq",
+                    value: "confirmed",
+                },
+                {
+                    field: "includeRelations",
+                    operator: "eq",
+                    value: true,
                 },
             ],
         },
     });
 
-    const handleCheckIn = (record: any) => {
-        // Navigate to check-in form
-        show("reservations", record.id, "replace");
+    // Fetch available rooms for check-in
+    const fetchAvailableRooms = async (roomTypeId: string) => {
+        try {
+            const token = localStorage.getItem(TOKEN_KEY);
+            const response = await fetch(`${API_URL}/rooms?roomTypeId=${roomTypeId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const rooms = Array.isArray(data) ? data : data.data || [];
+                const available = rooms.filter((room: RoomOption) => 
+                    room.operationalStatus === 'available' && 
+                    room.housekeepingStatus !== 'dirty'
+                );
+                setAvailableRooms(available);
+            }
+        } catch (error) {
+            console.error("Error fetching rooms:", error);
+        }
+    };
+
+    const handleCheckInClick = (record: any) => {
+        setSelectedReservation(record);
+        if (record.roomTypeId) {
+            fetchAvailableRooms(record.roomTypeId);
+        }
+        if (record.assignedRoomId) {
+            setSelectedRoomId(record.assignedRoomId);
+        }
+        setCheckInModalVisible(true);
+    };
+
+    const handleCheckIn = async () => {
+        if (!selectedReservation) return;
+
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem(TOKEN_KEY);
+            const response = await fetch(`${API_URL}/reservations/${selectedReservation.id}/checkin`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ roomId: selectedRoomId }),
+            });
+
+            if (response.ok) {
+                message.success("Check-in thành công!");
+                setCheckInModalVisible(false);
+                setSelectedReservation(null);
+                setSelectedRoomId(undefined);
+                tableQuery.refetch();
+            } else {
+                const errorData = await response.json();
+                message.error(errorData.message || "Check-in thất bại");
+            }
+        } catch (error) {
+            console.error("Error checking in:", error);
+            message.error("Lỗi khi check-in");
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     const statusColors: Record<string, string> = {
@@ -85,13 +175,12 @@ export const CheckInList: React.FC = () => {
                     />
                     <Table.Column
                         title="Tên khách"
-                        dataIndex={["guest", "fullName"]}
                         key="guestName"
-                        render={(value, record: any) => (
+                        render={(_, record: any) => (
                             <Space>
                                 <UserOutlined />
                                 <div>
-                                    <div>{value}</div>
+                                    <div>{record.guest?.name || "N/A"}</div>
                                     <Text type="secondary" style={{ fontSize: 12 }}>
                                         {record.guest?.email}
                                     </Text>
@@ -101,22 +190,21 @@ export const CheckInList: React.FC = () => {
                     />
                     <Table.Column
                         title="Số điện thoại"
-                        dataIndex={["guest", "phone"]}
                         key="phone"
+                        render={(_, record: any) => record.guest?.phone || "N/A"}
                     />
                     <Table.Column
                         title="Loại phòng"
-                        dataIndex={["roomType", "name"]}
                         key="roomType"
-                        render={(value, record: any) => (
+                        render={(_, record: any) => (
                             <Space direction="vertical" size={0}>
                                 <Space>
                                     <HomeOutlined />
-                                    <Text>{value}</Text>
+                                    <Text>{record.roomType?.name || "N/A"}</Text>
                                 </Space>
-                                {record.room?.roomNumber && (
+                                {record.assignedRoom?.number && (
                                     <Text type="secondary" style={{ fontSize: 12 }}>
-                                        Phòng số: {record.room.roomNumber}
+                                        Phòng số: {record.assignedRoom.number}
                                     </Text>
                                 )}
                             </Space>
@@ -128,13 +216,13 @@ export const CheckInList: React.FC = () => {
                         render={(_, record: any) => (
                             <Space direction="vertical" size={0}>
                                 <Text>
-                                    Check-in: <DateField value={record.checkInDate} format="DD/MM/YYYY" />
+                                    Check-in: <DateField value={record.checkIn} format="DD/MM/YYYY" />
                                 </Text>
                                 <Text>
-                                    Check-out: <DateField value={record.checkOutDate} format="DD/MM/YYYY" />
+                                    Check-out: <DateField value={record.checkOut} format="DD/MM/YYYY" />
                                 </Text>
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                    ({dayjs(record.checkOutDate).diff(dayjs(record.checkInDate), 'day')} đêm)
+                                    ({dayjs(record.checkOut).diff(dayjs(record.checkIn), 'day')} đêm)
                                 </Text>
                             </Space>
                         )}
@@ -144,7 +232,7 @@ export const CheckInList: React.FC = () => {
                         key="guests"
                         render={(_, record: any) => (
                             <Text>
-                                {record.numberOfAdults} người lớn
+                                {record.numberOfAdults || 0} người lớn
                                 {record.numberOfChildren > 0 && `, ${record.numberOfChildren} trẻ em`}
                             </Text>
                         )}
@@ -168,7 +256,7 @@ export const CheckInList: React.FC = () => {
                                     <Button
                                         type="primary"
                                         icon={<CheckCircleOutlined />}
-                                        onClick={() => handleCheckIn(record)}
+                                        onClick={() => handleCheckInClick(record)}
                                     >
                                         Check-in
                                     </Button>
@@ -181,6 +269,56 @@ export const CheckInList: React.FC = () => {
                     />
                 </Table>
             </List>
+
+            {/* Check-in Modal */}
+            <Modal
+                title="Check-in khách hàng"
+                open={checkInModalVisible}
+                onOk={handleCheckIn}
+                onCancel={() => {
+                    setCheckInModalVisible(false);
+                    setSelectedReservation(null);
+                    setSelectedRoomId(undefined);
+                }}
+                okText="Xác nhận Check-in"
+                cancelText="Hủy"
+                confirmLoading={actionLoading}
+                okButtonProps={{ style: { backgroundColor: "#52c41a", borderColor: "#52c41a" } }}
+            >
+                {selectedReservation && (
+                    <>
+                        <div style={{ marginBottom: 16 }}>
+                            <p><strong>Khách hàng:</strong> {selectedReservation.guest?.name}</p>
+                            <p><strong>Mã đặt phòng:</strong> {selectedReservation.confirmationCode}</p>
+                            <p><strong>Loại phòng:</strong> {selectedReservation.roomType?.name}</p>
+                            <p><strong>Ngày check-in:</strong> {dayjs(selectedReservation.checkIn).format("DD/MM/YYYY")}</p>
+                            <p><strong>Ngày check-out:</strong> {dayjs(selectedReservation.checkOut).format("DD/MM/YYYY")}</p>
+                        </div>
+
+                        <div style={{ marginBottom: 8 }}>
+                            <label><strong>Chọn phòng:</strong></label>
+                        </div>
+                        <Select
+                            style={{ width: "100%" }}
+                            placeholder="Chọn phòng để gán (hoặc để trống để tự động)"
+                            value={selectedRoomId}
+                            onChange={setSelectedRoomId}
+                            allowClear
+                        >
+                            {availableRooms.map((room) => (
+                                <Select.Option key={room.id} value={room.id}>
+                                    Phòng {room.number} ({room.housekeepingStatus === 'clean' ? 'Sạch' : room.housekeepingStatus === 'inspected' ? 'Đã kiểm tra' : room.housekeepingStatus})
+                                </Select.Option>
+                            ))}
+                        </Select>
+                        {availableRooms.length === 0 && (
+                            <p style={{ color: "#faad14", marginTop: 8 }}>
+                                Không có phòng trống cho loại phòng này. Hệ thống sẽ tự động tìm phòng phù hợp.
+                            </p>
+                        )}
+                    </>
+                )}
+            </Modal>
         </div>
     );
 };

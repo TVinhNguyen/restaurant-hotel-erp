@@ -7,11 +7,13 @@ import { RoomType } from '../entities/inventory/room-type.entity';
 import { Promotion } from '../entities/reservation/promotion.entity';
 import { Restaurant } from '../entities/restaurant/restaurant.entity';
 import { Property } from '../entities/core/property.entity';
+import { Room } from '../entities/inventory/room.entity';
+import { Reservation } from '../entities/reservation/reservation.entity';
 
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([RoomType, Promotion, Restaurant, Property]),
+    TypeOrmModule.forFeature([RoomType, Promotion, Restaurant, Property, Room, Reservation]),
   ],
   controllers: [GeminiController],
   providers: [GeminiService],

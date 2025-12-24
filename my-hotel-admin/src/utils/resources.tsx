@@ -98,6 +98,22 @@ export const getResourcesByPermissions = (permissions: string[]): ResourceProps[
         });
     }
 
+    // FrontDesk - Loại phòng
+    if (accessibleResources.has("loai-phong")) {
+        resources.push({
+            name: "loai-phong",
+            list: "/loai-phong",
+            create: permissions.includes("roomtype.manage") ? "/loai-phong/tao-moi" : undefined,
+            edit: permissions.includes("roomtype.manage") ? "/loai-phong/chinh-sua/:id" : undefined,
+            show: "/loai-phong/chi-tiet/:id",
+            meta: {
+                label: "Loại phòng",
+                icon: <HomeOutlined />,
+                canDelete: permissions.includes("roomtype.manage"),
+            },
+        });
+    }
+
     // FrontDesk - Thanh toán
     if (accessibleResources.has("thanh-toan")) {
         resources.push({
