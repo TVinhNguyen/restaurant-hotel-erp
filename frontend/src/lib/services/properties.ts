@@ -51,6 +51,7 @@ export interface RoomType {
   basePrice: number | string
   bedType?: string
   images?: string[]
+  photos?: Array<{ url: string }>  // Ảnh từ backend
   amenities?: string[] | RoomTypeAmenity[]
   roomTypeAmenities?: RoomTypeAmenity[]
 }

@@ -169,8 +169,11 @@ function RoomImageCarousel({ roomType, roomId }: { roomType?: RoomType; roomId?:
     "/modern-hotel-room-with-city-view-london.jpg",
   ]
 
-  // Get all available images (from roomType.images or fallbacks)
+  // Get all available images (from roomType.photos or roomType.images or fallbacks)
   const getAllImages = () => {
+    if (roomType?.photos && roomType.photos.length > 0) {
+      return roomType.photos.map(photo => photo.url)
+    }
     if (roomType?.images && roomType.images.length > 0) {
       return roomType.images
     }
@@ -870,10 +873,39 @@ export default function PropertyDetailPage() {
     )
   }
 
-  const images = property.images && property.images.length > 0 
-    ? property.images 
-    : [getImageUrl([], 0), getImageUrl([], 1), getImageUrl([], 2), getImageUrl([], 3), getImageUrl([], 4)]
+  // Lấy ảnh từ property và roomTypes
+  const getPropertyImages = () => {
+    const allImages: string[] = []
+    
+    // 1. Thêm ảnh từ property
+    if (property.images && property.images.length > 0) {
+      allImages.push(...property.images)
+    }
+    
+    // 2. Thêm ảnh từ các roomTypes
+    if (roomTypes && roomTypes.length > 0) {
+      roomTypes.forEach(roomType => {
+        // Ưu tiên lấy từ photos (backend trả về)
+        if (roomType.photos && roomType.photos.length > 0) {
+          const roomPhotos = roomType.photos.map(photo => photo.url)
+          allImages.push(...roomPhotos)
+        } 
+        // Nếu không có photos thì lấy từ images
+        else if (roomType.images && roomType.images.length > 0) {
+          allImages.push(...roomType.images)
+        }
+      })
+    }
+    
+    // 3. Nếu không có ảnh nào, dùng fallback
+    if (allImages.length === 0) {
+      return [getImageUrl([], 0), getImageUrl([], 1), getImageUrl([], 2), getImageUrl([], 3), getImageUrl([], 4)]
+    }
+    
+    return allImages
+  }
 
+  const images = getPropertyImages()
   const displayImages = images.slice(0, 5)
 
   return (

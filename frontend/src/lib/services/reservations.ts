@@ -46,6 +46,7 @@ export interface Reservation {
     name: string
     description?: string
     basePrice?: number | string
+    photos?: Array<{ url: string }>
   }
 }
 

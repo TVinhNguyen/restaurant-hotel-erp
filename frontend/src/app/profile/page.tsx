@@ -81,7 +81,20 @@ export default function ProfilePage() {
           guestId: guest.id,
           limit: 50,
         })
-        setReservations(response.data || [])
+        
+        // Gọi API by ID để lấy đầy đủ thông tin property, roomType, guest
+        const detailedReservations = await Promise.all(
+          (response.data || []).map(async (reservation) => {
+            try {
+              const detailed = await reservationsService.getReservationById(reservation.id)
+              return detailed
+            } catch (error) {
+              console.error(`Failed to load reservation ${reservation.id}:`, error)
+              return reservation // Fallback to original data
+            }
+          })
+        )
+        setReservations(detailedReservations)
       }
     } catch (error) {
       console.error("Failed to load reservations:", error)
@@ -210,10 +223,21 @@ export default function ProfilePage() {
     })
   }
 
-  const getImageUrl = (property?: { images?: string[] }) => {
+  const getImageUrl = (
+    roomType?: { photos?: Array<{ url: string }> },
+    property?: { images?: string[] }
+  ) => {
+    // Ưu tiên lấy ảnh từ roomType trước
+    if (roomType?.photos && roomType.photos.length > 0) {
+      return roomType.photos[0].url
+    }
+    
+    // Nếu không có ảnh roomType, lấy từ property
     if (property?.images && property.images.length > 0) {
       return property.images[0]
     }
+    
+    // Fallback ảnh mặc định
     const fallbacks = [
       "/luxury-hotel-room-with-blue-accents-and-modern-des.jpg",
       "/modern-hotel-room-with-city-view-london.jpg",
@@ -401,8 +425,8 @@ export default function ProfilePage() {
                         >
                           <div className="flex gap-6">
                             <img
-                              src={getImageUrl(reservation.property)}
-                              alt={reservation.property?.name || "Property"}
+                              src={getImageUrl(reservation.roomType, reservation.property)}
+                              alt={reservation.roomType?.name || reservation.property?.name || "Property"}
                               className="w-48 h-32 object-cover flex-shrink-0"
                               style={{ borderRadius: borderRadius.image }}
                             />
@@ -551,23 +575,6 @@ export default function ProfilePage() {
                                         💳 Đã thanh toán - không thể hủy
                                       </div>
                                     )}
-                                  {reservation.propertyId && (
-                                    <Link href={`/property/${reservation.propertyId}`}>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex items-center gap-2"
-                                        style={{
-                                          borderColor: colors.border,
-                                          color: colors.textPrimary,
-                                          fontFamily: 'system-ui, -apple-system, sans-serif',
-                                        }}
-                                      >
-                                        Xem chi tiết
-                                        <ChevronRight className="w-4 h-4" />
-                                      </Button>
-                                    </Link>
-                                  )}
                                 </div>
                               </div>
                             </div>
